@@ -1,0 +1,133 @@
+/* Geist – self-hosted via `geist` package (variable 100-900, 2 woff2 = best perf) */
+@font-face {
+  font-family: 'Geist';
+  src: url('/assets/fonts/geist-sans/Geist-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/assets/fonts/geist-mono/GeistMono-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@import 'tailwindcss';
+
+@theme {
+  --color-background: #08070b;
+  --color-surface: #121018;
+  --color-foreground: #f5f3fa;
+  --color-muted: #b9b4c7;
+  --color-border: #272230;
+  --color-accent: #5b21b6;
+  --color-accent-secondary: #7c3aed;
+
+  --font-sans: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Tailwind v4 generates bg-background, text-foreground, border-border, etc. from @theme */
+
+@layer base {
+  html,
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  * {
+    border-color: var(--color-border);
+  }
+
+  code,
+  pre,
+  kbd,
+  samp {
+    font-family: var(--font-mono);
+  }
+
+  a {
+    color: var(--color-accent-secondary);
+  }
+
+  a:hover {
+    color: var(--color-accent);
+  }
+
+  ::selection {
+    background: rgba(124, 58, 237, 0.32);
+  }
+}
+
+/* ── Taiga UI dark-only overrides ──────────────────────────────────────────
+   Map Taiga's CSS variables to the same palette. Both light & dark mixins are
+   forced to the dark palette (site is dark-only). Must come after Tailwind import
+   so it wins over taiga-ui-theme.less (loaded via angular.json styles[]). */
+:root,
+:host,
+[tuiTheme='light'],
+[tuiTheme='dark'],
+[tuiTheme] {
+  color-scheme: dark;
+
+  /* Typography – replace Manrope with Geist */
+  --tui-typography-family-text: 'Geist', system-ui, sans-serif;
+  --tui-typography-family-display: 'Geist', system-ui, sans-serif;
+
+  /* Backgrounds */
+  --tui-background-base: #08070b;
+  --tui-background-base-alt: #121018;
+  --tui-background-neutral-1: rgba(185, 180, 199, 0.08);
+  --tui-background-neutral-1-hover: rgba(185, 180, 199, 0.14);
+  --tui-background-neutral-1-pressed: rgba(185, 180, 199, 0.2);
+  --tui-background-neutral-2: rgba(185, 180, 199, 0.16);
+  --tui-background-neutral-2-hover: rgba(185, 180, 199, 0.24);
+  --tui-background-neutral-2-pressed: rgba(185, 180, 199, 0.32);
+  --tui-background-accent-1: #5b21b6;
+  --tui-background-accent-1-hover: #7c3aed;
+  --tui-background-accent-1-pressed: #4c1aa0;
+  --tui-background-accent-2: #7c3aed;
+  --tui-background-accent-2-hover: #8b5cf6;
+  --tui-background-accent-2-pressed: #6d28d9;
+  --tui-background-accent-opposite: #f5f3fa;
+  --tui-background-accent-opposite-hover: #e9e6f0;
+  --tui-background-accent-opposite-pressed: #d6d0e3;
+  --tui-background-elevation-1: #121018;
+  --tui-background-elevation-2: #121018;
+  --tui-background-elevation-3: #1a1622;
+
+  /* Services */
+  --tui-service-autofill-background: #1a1622;
+  --tui-service-selection-background: rgba(124, 58, 237, 0.2);
+  --tui-service-backdrop: rgba(8, 7, 11, 0.75);
+
+  /* Borders */
+  --tui-border-normal: #272230;
+  --tui-border-hover: #3a3448;
+  --tui-border-focus: #7c3aed;
+
+  /* Text */
+  --tui-text-primary: #f5f3fa;
+  --tui-text-secondary: #b9b4c7;
+  --tui-text-tertiary: rgba(185, 180, 199, 0.6);
+  --tui-text-primary-on-accent-1: #f5f3fa;
+  --tui-text-primary-on-accent-2: #f5f3fa;
+  --tui-text-action: #7c3aed;
+  --tui-text-action-hover: #8b5cf6;
+  --tui-text-positive: #44c596;
+  --tui-text-positive-hover: #3aa981;
+  --tui-text-negative: #ff4d4d;
+  --tui-text-negative-hover: #ff6b6b;
+
+  /* Statuses – keep defaults compatible with dark bg */
+  --tui-status-negative: #ff4d4d;
+  --tui-status-positive: #44c596;
+  --tui-status-warning: #ffc700;
+  --tui-status-info: #70b6f6;
+  --tui-status-neutral: #959ba4;
+}
