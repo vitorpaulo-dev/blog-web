@@ -51,7 +51,6 @@ export interface PostDto {
   tags: TagDto[];
   projects: ProjectDto[];
   reactionCount?: number;
-  commentCount?: number;
 }
 
 export interface CreatePostPayload {
@@ -71,6 +70,7 @@ export interface SearchParams {
   page?: number;
   limit?: number;
   sort?: string;
+  direction?: 'ASC' | 'DESC';
 }
 
 @Injectable({ providedIn: 'root' })
@@ -86,11 +86,7 @@ export class PostService {
     return this.http.put<PostDto>(`${this.base}/${id}`, payload);
   }
 
-  delete(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.base}/${id}`);
-  }
-
-  massDelete(ids: string[]): Observable<void> {
+  delete(ids: string[]): Observable<void> {
     return this.http.delete<void>(this.base, { body: { ids } });
   }
 
@@ -108,6 +104,7 @@ export class PostService {
     if (params.page !== undefined) httpParams = httpParams.set('page', params.page.toString());
     if (params.limit !== undefined) httpParams = httpParams.set('limit', params.limit.toString());
     if (params.sort) httpParams = httpParams.set('sort', params.sort);
+    if (params.direction) httpParams = httpParams.set('direction', params.direction);
     return this.http.get<GenericPageableResponse<PostDto>>(this.base, { params: httpParams });
   }
 }
