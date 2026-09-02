@@ -1,131 +1,168 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, effect, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { TuiButton, TuiTextfield } from '@taiga-ui/core';
-import { TuiPagination } from '@taiga-ui/kit';
+import { TuiAppearance, TuiButton, TuiTextfield } from '@taiga-ui/core';
+import { TuiChip, TuiPagination } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Search01Icon, Calendar01Icon, Clock01Icon, Tag01Icon } from '@hugeicons/core-free-icons';
-import { PostService, PostDto } from '../../data-access/post.service';
+import {
+	Calendar01Icon,
+	Clock01Icon,
+	EyeIcon,
+	Loading03Icon,
+	Search01Icon,
+	SmilePlusIcon,
+	Tag01Icon,
+	Timer02Icon,
+} from '@hugeicons/core-free-icons';
+import { PostDto, PostService } from '../../data-access/post.service';
 import { CommonModule } from '@angular/common';
+import { excerpt } from '../../../../core/util/text.util';
 
 @Component({
-  selector: 'app-post-list',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TuiButton, TuiTextfield, TuiPagination, HugeiconsIconComponent],
-  template: `
-    <div class="mx-auto max-w-5xl px-6 py-8">
-      <div class="flex flex-col gap-4 mb-6">
-        <h1 class="text-3xl font-bold tracking-tight">Posts</h1>
-        <div class="flex gap-3">
-          <tui-textfield class="flex-1">
-            <label tuiLabel>Search posts</label>
-            <input tuiTextfield [(ngModel)]="query" (ngModelChange)="onSearch()" placeholder="Search by title or content" />
-          </tui-textfield>
-          <button tuiButton appearance="primary" (click)="onSearch()">
-            <hugeicons-icon [icon]="Search01Icon" [size]="18" [strokeWidth]="2.5" />
-            Search
-          </button>
-        </div>
-      </div>
+	selector: 'app-post-list',
+	standalone: true,
+	imports: [
+		CommonModule,
+		FormsModule,
+		RouterLink,
+		HugeiconsIconComponent,
+		TuiChip,
+		TuiPagination,
+	],
+	template: `
+		<div class="py-2">
+			<h1 class="text-3xl font-bold tracking-tight">Posts</h1>
 
-      @if (loading()) {
-        <p class="text-muted text-sm">Loading posts...</p>
-      } @else if (error()) {
-        <p class="text-red-400 text-sm" role="alert">{{ error() }}</p>
-      } @else if (posts().length === 0) {
-        <div class="rounded-xl border border-border bg-surface p-8 text-center">
-          <p class="text-muted">No posts found.</p>
-        </div>
-      } @else {
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          @for (post of posts(); track post.id) {
-            <article class="rounded-xl border border-border bg-surface overflow-hidden flex flex-col hover:border-accent/30 transition-colors">
-              @if (post.bannerUrl) {
-                <img [src]="post.bannerUrl" [alt]="post.title" class="aspect-video object-cover border-b border-border" />
-              } @else {
-                <div class="aspect-video bg-background border-b border-border flex items-center justify-center text-muted text-sm">banner</div>
-              }
-              <div class="p-5 flex flex-col gap-3 flex-1">
-                <div class="flex items-center gap-2 text-xs text-muted">
-                  <hugeicons-icon [icon]="Calendar01Icon" [size]="14" [strokeWidth]="2.5" />
-                  <span>{{ post.createdAt | date:'mediumDate' }}</span>
-                  <span aria-hidden="true">·</span>
-                  <span class="inline-flex items-center gap-1"><hugeicons-icon [icon]="Clock01Icon" [size]="14" [strokeWidth]="2.5" /> {{ post.estimatedReadingTimeMinutes || 5 }} min</span>
-                </div>
-                <h3 class="text-lg font-semibold leading-tight">
-                  <a [routerLink]="['/post', post.slug]" class="hover:text-accent transition-colors">{{ post.title }}</a>
-                </h3>
-                <p class="text-sm text-muted line-clamp-2">{{ post.content | slice:0:150 }}</p>
-                <div class="mt-auto flex flex-wrap gap-1.5 pt-2">
-                  @for (tag of post.tags; track tag.id) {
-                    <span class="inline-flex items-center gap-1 rounded-full bg-background border border-border px-2.5 py-1 text-xs text-muted"><hugeicons-icon [icon]="Tag01Icon" [size]="12" [strokeWidth]="2.5" /> {{ tag.name }}</span>
-                  }
-                </div>
-                <div class="flex items-center gap-2 text-xs text-muted pt-2">
-                  <span>{{ post.viewCount }} views</span>
-                  <span>·</span>
-                  <span>{{ post.status }}</span>
-                </div>
-              </div>
-            </article>
-          }
-        </div>
-        <div class="mt-6 flex justify-center">
-          <tui-pagination [index]="page()" [length]="totalPages()" (indexChange)="onPage($event)" />
-        </div>
-      }
-    </div>
-  `,
+			@if (loading()) {
+				<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
+					<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="1.5" />
+				</div>
+			} @else if (posts().length === 0) {
+				<div class="relative rounded-xl border border-border bg-surface px-8 pt-10 pb-3 text-center shadow-sm">
+					<div
+						class="absolute left-1/2 top-0 -translate-x-1/2 text-7xl font-serif leading-none text-muted/20"
+					>
+						“
+					</div>
+
+					<blockquote class="relative font-serif text-xl italic leading-relaxed text-foreground sm:text-2xl">
+						“Although I am ready to defend what I have said, many people expect me to defend what others
+						have attributed to me.”
+					</blockquote>
+
+					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">T. S.</footer>
+				</div>
+			} @else {
+				<div class="w-full">
+					@for (post of posts(); track post.id; let index = $index) {
+						@if (index > 0) {
+							<div class="py-4">
+								<hr />
+							</div>
+						}
+
+						<a
+							[routerLink]="['/post', post.slug]"
+							class="flex flex-col md:flex-row items-center w-full hover:bg-surface transition-all p-2 md:px-4 rounded-lg group"
+						>
+							@if (post.bannerUrl) {
+								<div
+									class="md:mr-5 aspect-video w-80 rounded-xl border border-border bg-surface overflow-hidden"
+								>
+									<img
+										[src]="post.bannerUrl"
+										[alt]="post.title"
+										class="aspect-video object-cover border-b border-border group-hover:scale-105 transition-all"
+									/>
+								</div>
+							}
+							<div class="py-2 md:py-5 flex flex-col gap-3 w-full">
+								<div
+									class="flex items-center gap-2 text-xs text-muted font-mono group-hover:text-muted/50 transition-all"
+								>
+									<hugeicons-icon [icon]="Calendar01Icon" [size]="14" [strokeWidth]="1.5" />
+									<span>{{ post.createdAt | date: 'dd MMM yyyy' }}</span>
+
+									<span aria-hidden="true">·</span>
+
+									<hugeicons-icon [icon]="Timer02Icon" [size]="16" [strokeWidth]="1.5" />
+									<span>{{ post.estimatedReading || 5 }} min</span>
+								</div>
+								<h3
+									class="truncate w-full text-lg font-semibold leading-tight text-foreground group-hover:text-accent transition-colors"
+								>
+									{{ post.title }}
+								</h3>
+								<p
+									class="text-sm text-muted leading-relaxed line-clamp-3 group-hover:text-muted/50 transition-all"
+								>
+									{{ excerpt(post.content) }}
+								</p>
+							</div>
+
+							<div class="flex flex-wrap gap-1.5 h-full items-center justify-end">
+								@for (tag of post.tags; track tag.id) {
+									<span tuiChip>
+										<hugeicons-icon [icon]="Tag01Icon" [size]="12" [strokeWidth]="1.5" />
+										{{ tag.name }}
+									</span>
+								}
+							</div>
+						</a>
+					}
+				</div>
+				
+				<tui-pagination [activePadding]="1" [index]="page()" [length]="totalPages()" (indexChange)="page.set($event)"/>
+			}
+		</div>
+	`,
 })
-export class PostListComponent implements OnInit {
-  private readonly postService = inject(PostService);
+export class PostListComponent {
+	private readonly postService = inject(PostService);
 
-  readonly Search01Icon = Search01Icon;
-  readonly Calendar01Icon = Calendar01Icon;
-  readonly Clock01Icon = Clock01Icon;
-  readonly Tag01Icon = Tag01Icon;
+	query = '';
+	posts = signal<PostDto[]>([]);
+	loading = signal(false);
+	error = signal<string | null>(null);
+	page = signal(0);
+	totalPages = signal(1);
+	totalElements = signal(0);
 
-  query = '';
-  posts = signal<PostDto[]>([]);
-  loading = signal(false);
-  error = signal<string | null>(null);
-  page = signal(0);
-  totalPages = signal(1);
-  totalElements = signal(0);
+	constructor() {
+		effect(() => {
+			this.load();
+		});
+	}
 
-  private debounceTimer: ReturnType<typeof setTimeout> | null = null;
+	load(): void {
+		this.loading.set(true);
+		this.error.set(null);
+		console.log('Loading page', this.page());
+		this.postService
+			.search({
+				query: { query: this.query || undefined },
+				page: this.page(),
+				size: 10,
+				sort: 'createdAt',
+				direction: 'DESC',
+			})
+			.subscribe({
+				next: (res) => {
+					this.posts.set(res.content);
+					this.totalPages.set(res.totalPages);
+					this.totalElements.set(res.totalElements);
+					this.loading.set(false);
+				},
+				error: () => {
+					this.error.set('Failed to load posts');
+					this.loading.set(false);
+				},
+			});
+	}
 
-  ngOnInit(): void {
-    this.load();
-  }
-
-  onSearch(): void {
-    if (this.debounceTimer) clearTimeout(this.debounceTimer);
-    this.debounceTimer = setTimeout(() => {
-      this.page.set(0);
-      this.load();
-    }, 300);
-  }
-
-  onPage(index: number): void {
-    this.page.set(index);
-    this.load();
-  }
-
-  private load(): void {
-    this.loading.set(true);
-    this.error.set(null);
-    this.postService.search({ query: this.query || undefined, page: this.page(), limit: 6, sort: 'createdAt' }).subscribe({
-      next: res => {
-        this.posts.set(res.content);
-        this.totalPages.set(res.totalPages || 1);
-        this.totalElements.set(res.totalElements);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.error.set('Failed to load posts');
-        this.loading.set(false);
-      },
-    });
-  }
+	protected readonly Timer02Icon = Timer02Icon;
+	protected readonly Loading03Icon = Loading03Icon;
+	protected readonly Calendar01Icon = Calendar01Icon;
+	protected readonly Tag01Icon = Tag01Icon;
+	protected readonly excerpt = excerpt;
 }

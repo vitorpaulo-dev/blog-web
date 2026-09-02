@@ -1,20 +1,49 @@
 <tui-root tuiTheme="dark">
-  <div class="min-h-dvh bg-background text-foreground font-sans antialiased">
-    <!-- header -->
-    <header class="border-b border-border sticky top-0 z-10 bg-background/80 backdrop-blur">
-      <div class="mx-auto max-w-5xl px-6 h-14 flex items-center justify-between">
-        <a href="/" class="font-semibold tracking-tight text-foreground text-[1.05rem]">vitorpaulo<span class="text-accent">.</span><span class="underline decoration-accent underline-offset-4">dev</span></a>
-        <nav class="flex items-center gap-6 text-sm">
-          <a href="#" class="text-muted hover:text-foreground transition-colors">Writing</a>
-          <a href="#" class="text-muted hover:text-foreground transition-colors">Projects</a>
-          <a href="#" class="text-muted hover:text-foreground transition-colors">About</a>
-          <a href="#" class="inline-flex items-center justify-center text-muted hover:text-foreground transition-colors" aria-label="Search">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          </a>
-        </nav>
-      </div>
-    </header>
+	<header tuiNavigationHeader class="flex items-center justify-between w-full h-full border-b border-border">
+		<a href="/" class="pl-4 md:pl-18 font-semibold tracking-tight text-foreground text-xl">vitorpaulo<span
+			class="text-accent">.</span><span class="underline decoration-accent underline-offset-4">dev</span></a>
 
-    <router-outlet />
-  </div>
+		<section class="hidden md:block">
+			<tui-textfield
+				class="border-accent md:min-w-lg">
+				<input
+					tuiSearchHotkey
+					[formControl]="control"
+					[tuiInputSearch]="search"
+					[(tuiInputSearchOpen)]="open"
+				/>
+				<ng-template #search>
+					<tui-search-results [results]="results$ | async">
+						<tui-search-history [popular]="popular" />
+						<ng-template let-item>
+							<a tuiCell [href]="'/post/' + item.slug">
+								<hugeicons-icon [icon]="StickyNote01Icon" [size]="28" [strokeWidth]="1.5" />
+								<span tuiTitle>
+									{{ item.title }}
+									<span tuiSubtitle>{{ item.description }}</span>
+								</span>
+							</a>
+						</ng-template>
+					</tui-search-results>
+				</ng-template>
+			</tui-textfield>
+		</section>
+
+		<section class="pr-4 pt-1.5 md:pr-16 inline-flex items-center gap-4">
+			<a class="p-1 block md:hidden text-muted hover:text-accent h-full" (click)="open.set(true)">
+				<hugeicons-icon [icon]="Search01Icon" [size]="28" [strokeWidth]="1.5" />
+			</a>
+
+			<a class="text-muted hover:text-accent h-full" target="_blank" href="https://www.linkedin.com/in/vitor-paulo-910186164/">
+				<hugeicons-icon [icon]="Linkedin01Icon" [size]="28" [strokeWidth]="1.5" />
+			</a>
+
+			<a class="text-muted hover:text-accent" target="_blank" href="https://github.com/vitorpaulo.dev">
+				<hugeicons-icon [icon]="Github01Icon" [size]="28" [strokeWidth]="1.5" />
+			</a>
+		</section>
+	</header>
+	<main tuiNavigationMain class="md:px-16">
+		<router-outlet />
+	</main>
 </tui-root>

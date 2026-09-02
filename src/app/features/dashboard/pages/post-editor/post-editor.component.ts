@@ -21,7 +21,7 @@ interface ProjectOption {
   template: `
     <div class="mx-auto max-w-3xl px-6 py-8">
       <a (click)="goBack()" class="inline-flex items-center gap-1 text-sm text-accent cursor-pointer mb-6">
-        <hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="2.5" /> Back to dashboard
+        <hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" /> Back to dashboard
       </a>
 
       <h1 class="text-2xl font-bold mb-2">{{ isEdit() ? 'Edit Post' : 'New Post' }}</h1>
@@ -67,7 +67,7 @@ interface ProjectOption {
 
         <div class="flex items-center gap-3 flex-wrap">
           <button tuiButton appearance="outline" type="button" (click)="openProjectsDialog()" class="gap-1">
-            <hugeicons-icon [icon]="Layers01Icon" [size]="16" [strokeWidth]="2.5" /> Projects ({{ projectIds().length }})
+            <hugeicons-icon [icon]="Layers01Icon" [size]="16" [strokeWidth]="1.5" /> Projects ({{ projectIds().length }})
           </button>
           @for (pid of projectIds(); track pid) {
             <span tuiChip size="s" class="gap-1">{{ pid.slice(0,8) }}… <button type="button" (click)="removeProject(pid)" class="ml-1">×</button></span>
@@ -105,7 +105,7 @@ interface ProjectOption {
         <div class="bg-surface border border-border rounded-xl p-6 w-full max-w-lg max-h-[80vh] overflow-auto flex flex-col gap-4" (click)="$event.stopPropagation()">
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-semibold">Select Projects</h2>
-            <button tuiButton appearance="outline" size="s" type="button" (click)="closeProjectsDialog()"><hugeicons-icon [icon]="Cancel01Icon" [size]="16" [strokeWidth]="2.5" /></button>
+            <button tuiButton appearance="outline" size="s" type="button" (click)="closeProjectsDialog()"><hugeicons-icon [icon]="Cancel01Icon" [size]="16" [strokeWidth]="1.5" /></button>
           </div>
           <tui-textfield>
             <label tuiLabel>Search projects</label>
