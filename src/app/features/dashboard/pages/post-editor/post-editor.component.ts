@@ -47,8 +47,6 @@ interface ProjectOption {
           <label class="text-sm font-medium">Content * (Markdown)</label>
           @if (isBrowser) {
             <div #milkdown class="min-h-[320px] rounded-xl border border-border bg-surface p-3"></div>
-            <textarea formControlName="content" class="hidden"></textarea>
-            <p class="text-xs text-muted">Milkdown editor loaded in browser. Fallback textarea hidden.</p>
           } @else {
             <textarea formControlName="content" rows="16" class="w-full rounded-xl border border-border bg-surface p-3 text-sm font-mono" placeholder="Write markdown..."></textarea>
           }
@@ -186,7 +184,6 @@ export class PostEditorComponent implements OnInit, AfterViewInit {
 
   @ViewChild('milkdown') milkdownRef?: ElementRef<HTMLDivElement>;
   private milkdownEditor: any = null;
-  private milkdownContent = '';
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -205,10 +202,6 @@ export class PostEditorComponent implements OnInit, AfterViewInit {
           this.projectIds.set(p.projects.map(pr => pr.id));
           this.slug.set(p.slug);
           this.currentStatus.set(p.status);
-          // sync milkdownContent from form content (fix empty editor on edit)
-          this.milkdownContent = p.content;
-          this.form.controls.content.setValue(p.content);
-          if (this.isBrowser) setTimeout(() => this.syncMilkdownContent(), 200);
         },
         error: () => this.error.set('Failed to load post'),
       });
@@ -222,62 +215,26 @@ export class PostEditorComponent implements OnInit, AfterViewInit {
   private async initMilkdown(): Promise<void> {
     if (!isPlatformBrowser(this.platformId) || !this.milkdownRef) return;
     try {
-      const { Editor } = await import('@milkdown/core');
+      const { Editor, rootCtx, defaultValueCtx } = await import('@milkdown/kit/core');
+      const { listener, listenerCtx } = await import('@milkdown/kit/plugin/listener');
+      const { commonmark } = await import('@milkdown/kit/preset/commonmark');
+      
       const el = this.milkdownRef.nativeElement;
-      try {
-        const kit: any = await import('@milkdown/kit');
-        const commonmark = kit.commonmark;
-        const listener = kit.listener;
-        const listenerCtx = kit.listenerCtx;
-        const editor = await new Editor()
-          .config((ctx: any) => {
-            if (listenerCtx) ctx.get(listenerCtx).markdownUpdated((_c: any, md: string) => {
-              this.milkdownContent = md;
-              this.form.controls.content.setValue(md);
-            });
-          })
-          .use(commonmark)
-          .use(listener)
-          .create();
-        editor.action((ctx: any) => {
-          const view = ctx.get('viewCtx');
-          el.appendChild(view.dom);
-        });
-        this.milkdownEditor = editor;
-      } catch {
-        console.warn('Milkdown kit not available, using textarea');
-      }
-      // ensure initial content sync after editor ready
-      if (this.milkdownContent || this.form.controls.content.value) {
-        if (!this.milkdownContent) this.milkdownContent = this.form.controls.content.value;
-        this.syncMilkdownContent();
-      }
+      const initialContent = this.form.controls.content.value;
+
+      this.milkdownEditor = await Editor.make()
+        .config((ctx) => {
+          ctx.set(rootCtx, el);
+          ctx.set(defaultValueCtx, initialContent);
+          ctx.get(listenerCtx).markdownUpdated((_ctx, markdown) => {
+            this.form.controls.content.setValue(markdown);
+          });
+        })
+        .use(commonmark)
+        .use(listener)
+        .create();
     } catch (e) {
       console.warn('Milkdown failed to load', e);
-    }
-  }
-
-  private syncMilkdownContent(): void {
-    const content = this.milkdownContent || this.form.controls.content.value;
-    if (!content) return;
-    // keep form and internal content in sync
-    if (this.form.controls.content.value !== content) {
-      this.form.controls.content.setValue(content);
-    }
-    this.milkdownContent = content;
-    // try to push content into milkdown editor if it exists
-    if (this.milkdownEditor) {
-      try {
-        this.milkdownEditor.action((ctx: any) => {
-          // Milkdown view update — fallback to DOM if API differs
-          const view = ctx?.get?.('viewCtx');
-          if (view?.updateState) {
-            // no direct setMarkdown API in core; ensure content reflected via form value
-          } else if (view?.dom) {
-            // ensure DOM contains content as fallback (textarea hidden already synced via form)
-          }
-        });
-      } catch {}
     }
   }
 
@@ -308,7 +265,7 @@ export class PostEditorComponent implements OnInit, AfterViewInit {
     this.error.set(null);
     this.success.set(null);
 
-    const content = this.isBrowser && this.milkdownContent ? this.milkdownContent : this.form.controls.content.value;
+    const content = this.form.controls.content.value;
     const tagIds = this.form.controls.tagsInput.value.split(',').map(s => s.trim()).filter(Boolean);
     const payload = {
       title: this.form.controls.title.value,
