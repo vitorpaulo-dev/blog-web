@@ -16,7 +16,8 @@ import {
   TranslateIcon,
   SaveIcon,
   SendIcon,
-  EyeIcon
+  EyeIcon,
+  ExternalLinkIcon
 } from '@hugeicons/core-free-icons';
 import { PostService } from '../../../posts/data-access/post.service';
 import { MarkdownService } from '../../../posts/data-access/markdown.service';
@@ -54,9 +55,17 @@ interface TagOption {
 	],
 	template: `
 		<div class="mx-auto max-w-3xl px-6 py-8">
-			<a (click)="goBack()" class="inline-flex items-center gap-1 text-sm text-accent cursor-pointer mb-6">
-				<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" /> Back to dashboard
-			</a>
+			<div class="flex items-center justify-between mb-6">
+				<a (click)="goBack()" class="inline-flex items-center gap-1 text-sm text-accent cursor-pointer">
+					<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" /> Back to dashboard
+				</a>
+				@if (isEdit() && slug()) {
+					<a [href]="'/post/' + slug()" target="_blank" class="inline-flex items-center gap-1 text-sm text-accent cursor-pointer">
+						<hugeicons-icon [icon]="viewPostIcon" [size]="16" [strokeWidth]="2.5" />
+						View Post
+					</a>
+				}
+			</div>
 
 			<h1 class="text-2xl font-bold mb-2">{{ isEdit() ? 'Edit Post' : 'New Post' }}</h1>
 
@@ -300,6 +309,7 @@ export class PostEditorComponent implements OnInit {
 	readonly editTabIcon = Edit01Icon;
 	readonly previewTabIcon = EyeIcon;
 	readonly imageUploadIcon = Image01Icon;
+	readonly viewPostIcon = ExternalLinkIcon;
 
 	form = new FormGroup({
 		title: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(500)] }),

@@ -23,6 +23,7 @@ import {
 	SmilePlusIcon,
 	Tag01Icon,
 	Timer02Icon,
+	Share01Icon,
 } from '@hugeicons/core-free-icons';
 
 import { TuiAppearance, TuiButton } from '@taiga-ui/core';
@@ -122,45 +123,52 @@ import { GiscusComponent } from '../../components/giscus.component';
 				
 				<hr class="my-8">
 
-				<section class="flex flex-wrap gap-2">
-					<button tuiChip class="inline-flex items-center gap-2">
-						<img
-							src="/reactions/red-heart.png"
-							alt="Love"
-							class="w-5"
-						/>
-						<span>Loved it</span>
-						<span class="font-mono text-muted text-xs">{{ p.loveCount }}</span>
-					</button>
+				<section class="flex flex-wrap items-center justify-between gap-2">
+					<div class="flex flex-wrap gap-2">
+						<button tuiChip class="inline-flex items-center gap-2">
+							<img
+								src="/reactions/red-heart.png"
+								alt="Love"
+								class="w-5"
+							/>
+							<span>Loved it</span>
+							<span class="font-mono text-muted text-xs">{{ p.loveCount }}</span>
+						</button>
 
-					<button tuiChip class="inline-flex items-center gap-2">
-						<img
-							src="/reactions/party-popper.png"
-							alt="Celebrate"
-							class="w-5"
-						/>
-						<span>Hell yeah</span>
-						<span class="font-mono text-muted text-xs">{{ p.celebrateCount }}</span>
-					</button>
+						<button tuiChip class="inline-flex items-center gap-2">
+							<img
+								src="/reactions/party-popper.png"
+								alt="Celebrate"
+								class="w-5"
+							/>
+							<span>Hell yeah</span>
+							<span class="font-mono text-muted text-xs">{{ p.celebrateCount }}</span>
+						</button>
 
-					<button tuiChip class="inline-flex items-center gap-2">
-						<img
-							src="/reactions/exploding-head.png"
-							alt="Mind blown"
-							class="w-5"
-						/>
-						<span>Mind blown</span>
-						<span class="font-mono text-muted text-xs">{{ p.geniusCount }}</span>
-					</button>
+						<button tuiChip class="inline-flex items-center gap-2">
+							<img
+								src="/reactions/exploding-head.png"
+								alt="Mind blown"
+								class="w-5"
+							/>
+							<span>Mind blown</span>
+							<span class="font-mono text-muted text-xs">{{ p.geniusCount }}</span>
+						</button>
 
-					<button tuiChip class="inline-flex items-center gap-2">
-						<img
-							src="/reactions/suffering-cat.webp"
-							alt="Suffering cat"
-							class="w-5"
-						/>
-						<span>What?!</span>
-						<span class="font-mono text-muted text-xs">{{ p.helpCount }}</span>
+						<button tuiChip class="inline-flex items-center gap-2">
+							<img
+								src="/reactions/suffering-cat.webp"
+								alt="Suffering cat"
+								class="w-5"
+							/>
+							<span>What?!</span>
+							<span class="font-mono text-muted text-xs">{{ p.helpCount }}</span>
+						</button>
+					</div>
+
+					<button tuiChip class="inline-flex items-center gap-2" (click)="sharePost()">
+						<hugeicons-icon [icon]="shareIcon" [size]="16" [strokeWidth]="2.5" />
+						<span>Share</span>
 					</button>
 				</section>
 
@@ -189,6 +197,7 @@ export class PostDetailComponent implements OnInit, AfterViewInit {
 	readonly Tag01Icon = Tag01Icon;
 	readonly ArrowLeft01Icon = ArrowLeft01Icon;
 	readonly Timer02Icon = Timer02Icon;
+	readonly shareIcon = Share01Icon;
 
 	readonly post = signal<PostDto | null>(null);
 	readonly loading = signal(true);
@@ -234,6 +243,40 @@ export class PostDetailComponent implements OnInit, AfterViewInit {
 			this.loading.set(false);
 			this.error.set('Sorry, this post could not be rendered.');
 		}
+	}
+
+	sharePost(): void {
+		if (!this.isBrowser) return;
+		
+		const post = this.post();
+		if (!post) return;
+
+		const url = window.location.href;
+		const text = post.title;
+
+		if (navigator.share) {
+			navigator.share({ title: text, url }).catch(() => {
+				// User cancelled or error - fallback to clipboard
+				this.copyToClipboard(url);
+			});
+		} else {
+			this.copyToClipboard(url);
+		}
+	}
+
+	private copyToClipboard(text: string): void {
+		navigator.clipboard.writeText(text).then(() => {
+			// Could add a toast notification here
+			console.log('Link copied to clipboard');
+		}).catch(() => {
+			// Fallback for older browsers
+			const textarea = document.createElement('textarea');
+			textarea.value = text;
+			document.body.appendChild(textarea);
+			textarea.select();
+			document.execCommand('copy');
+			document.body.removeChild(textarea);
+		});
 	}
 
 	protected readonly SmilePlusIcon = SmilePlusIcon;
