@@ -220,3 +220,59 @@ a {
 		@apply border-red-900 text-red-100;
 	}
 }
+
+/* ── Milkdown dark mode overrides ────────────────────────────────────────────
+   Force dark mode for Milkdown editor regardless of system preference.
+*/
+.milkdown-theme-nord.prose {
+	--color-gray-50: #1a1b26;
+	--color-gray-100: #24283b;
+	--color-gray-200: #414868;
+	--color-gray-600: #565f89;
+	--color-gray-700: #737aa2;
+	--color-gray-800: #9aa5ce;
+	--color-gray-900: #c0caf5;
+	color: var(--color-foreground);
+}
+
+.milkdown-theme-nord.prose :where(td, th):nth-child(odd) {
+	background-color: var(--color-gray-50);
+}
+
+.milkdown-theme-nord.prose tr {
+	border-color: var(--color-gray-600);
+}
+
+.milkdown-theme-nord pre {
+	background-color: var(--color-gray-50);
+}
+
+.milkdown-theme-nord code {
+	background-color: var(--color-gray-200);
+	color: var(--color-foreground);
+}
+
+.milkdown-theme-nord.prose :where(blockquote) {
+	border-left-color: var(--color-gray-600);
+	color: var(--color-muted);
+}
+
+.milkdown-theme-nord.prose :where(h1, h2, h3, h4, h5, h6) {
+	color: var(--color-foreground);
+}
+
+.milkdown-theme-nord.prose :where(a) {
+	color: var(--color-accent);
+}
+
+.milkdown-theme-nord.prose :where(hr) {
+	border-color: var(--color-border);
+}
+
+.milkdown-theme-nord.prose :where(table) {
+	border-color: var(--color-border);
+}
+
+.milkdown-theme-nord.prose :where(td, th) {
+	border-color: var(--color-border);
+}
