@@ -96,4 +96,13 @@ export class ClerkService {
   unmountUserButton(node: HTMLDivElement): void {
     this.clerk?.unmountUserButton(node);
   }
+
+  async getToken(): Promise<string | null> {
+    if (!isPlatformBrowser(this.platformId) || !this.clerk?.session) return null;
+    try {
+      return await this.clerk.session.getToken();
+    } catch {
+      return null;
+    }
+  }
 }
