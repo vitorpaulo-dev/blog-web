@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, PLATFORM_ID, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, signal, OnInit, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -13,11 +13,14 @@ import {
   Image01Icon,
   File01Icon,
   Tag01Icon,
-  Globe02Icon,
-  Download01Icon,
-  Upload01Icon
+  TranslateIcon,
+  SaveIcon,
+  SendIcon,
+  EyeIcon
 } from '@hugeicons/core-free-icons';
 import { PostService } from '../../../posts/data-access/post.service';
+import { MarkdownService } from '../../../posts/data-access/markdown.service';
+import { SafeHtml } from '@angular/platform-browser';
 
 interface ProjectOption {
   id: string;
@@ -56,11 +59,6 @@ interface TagOption {
 			</a>
 
 			<h1 class="text-2xl font-bold mb-2">{{ isEdit() ? 'Edit Post' : 'New Post' }}</h1>
-			@if (slug()) {
-				<p class="text-xs text-muted mb-4">
-					Slug (read-only): <span class="font-mono">{{ slug() }}</span>
-				</p>
-			}
 
 			<form [formGroup]="form" class="flex flex-col gap-5" (ngSubmit)="onSave()">
 				<tui-textfield>
@@ -92,19 +90,69 @@ interface TagOption {
 			</div>
 
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium flex items-center gap-1.5">
-						<hugeicons-icon [icon]="contentIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-						<span>Content *</span>
-					</label>
-					@if (isBrowser) {
-						<div #milkdown class="min-h-[320px] rounded-xl border border-border bg-surface p-3"></div>
+					<div class="flex items-center justify-between">
+						<label class="text-sm font-medium flex items-center gap-1.5">
+							<hugeicons-icon [icon]="contentIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
+							<span>Content *</span>
+						</label>
+						<div class="flex gap-1">
+							<button
+								type="button"
+								class="px-3 py-1 text-xs rounded-t-lg transition-colors"
+								[class.bg-surface]="activeTab() === 'edit'"
+								[class.text-foreground]="activeTab() === 'edit'"
+								[class.text-muted]="activeTab() !== 'edit'"
+								[class.hover:text-foreground]="activeTab() !== 'edit'"
+								(click)="activeTab.set('edit')"
+							>
+								<hugeicons-icon [icon]="editTabIcon" [size]="14" [strokeWidth]="2.5" class="inline mr-1" />
+								Edit
+							</button>
+							<button
+								type="button"
+								class="px-3 py-1 text-xs rounded-t-lg transition-colors"
+								[class.bg-surface]="activeTab() === 'preview'"
+								[class.text-foreground]="activeTab() === 'preview'"
+								[class.text-muted]="activeTab() !== 'preview'"
+								[class.hover:text-foreground]="activeTab() !== 'preview'"
+								(click)="switchToPreview()"
+							>
+								<hugeicons-icon [icon]="previewTabIcon" [size]="14" [strokeWidth]="2.5" class="inline mr-1" />
+								Preview
+							</button>
+						</div>
+					</div>
+					
+					@if (activeTab() === 'edit') {
+						<div
+							class="relative"
+							(dragover)="onDragOver($event)"
+							(dragleave)="onDragLeave($event)"
+							(drop)="onDrop($event)"
+						>
+							<textarea
+								formControlName="content"
+								rows="20"
+								class="w-full rounded-xl border border-border bg-surface p-3 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-accent"
+								placeholder="Write markdown... (drag & drop images here)"
+							></textarea>
+							@if (isDragging()) {
+								<div class="absolute inset-0 bg-accent/10 border-2 border-dashed border-accent rounded-xl flex items-center justify-center pointer-events-none">
+									<div class="text-center">
+										<hugeicons-icon [icon]="imageUploadIcon" [size]="48" [strokeWidth]="1.5" class="mx-auto mb-2 text-accent" />
+										<p class="text-sm font-medium text-accent">Drop image here</p>
+									</div>
+								</div>
+							}
+						</div>
 					} @else {
-						<textarea
-							formControlName="content"
-							rows="16"
-							class="w-full rounded-xl border border-border bg-surface p-3 text-sm font-mono"
-							placeholder="Write markdown..."
-						></textarea>
+						<div class="w-full rounded-xl border border-border bg-surface p-4 min-h-[500px] prose prose-invert max-w-none">
+							@if (previewHtml()) {
+								<div [innerHTML]="previewHtml()"></div>
+							} @else {
+								<p class="text-muted text-sm">Nothing to preview</p>
+							}
+						</div>
 					}
 				</div>
 
@@ -115,16 +163,16 @@ interface TagOption {
 					</label>
 					<input tuiComboBox formControlName="language" placeholder="Select language" />
 					<tui-data-list *tuiDropdown>
-						<button tuiOption value="English">
-							<span class="flex items-center gap-2">
-								<span class="text-lg">🇺🇸</span>
-								<span>English</span>
-							</span>
-						</button>
 						<button tuiOption value="pt">
 							<span class="flex items-center gap-2">
 								<span class="text-lg">🇧🇷</span>
 								<span>Portuguese</span>
+							</span>
+						</button>
+						<button tuiOption value="en">
+							<span class="flex items-center gap-2">
+								<span class="text-lg">🇺🇸</span>
+								<span>English</span>
 							</span>
 						</button>
 					</tui-data-list>
@@ -175,7 +223,7 @@ interface TagOption {
 							[disabled]="form.invalid || saving()"
 							class="gap-1"
 						>
-							<hugeicons-icon [icon]="saveDraftIcon" [size]="16" [strokeWidth]="2.5" />
+							<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
 							Save Draft
 						</button>
 						<button
@@ -198,7 +246,7 @@ interface TagOption {
 							[disabled]="form.invalid || saving()"
 							class="gap-1"
 						>
-							<hugeicons-icon [icon]="saveDraftIcon" [size]="16" [strokeWidth]="2.5" />
+							<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
 							Save
 						</button>
 						@if (currentStatus() === 'PUBLISHED') {
@@ -210,7 +258,7 @@ interface TagOption {
 								[disabled]="saving()"
 								class="gap-1"
 							>
-								<hugeicons-icon [icon]="saveDraftIcon" [size]="16" [strokeWidth]="2.5" />
+								<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
 								Unpublish
 							</button>
 						} @else {
@@ -232,10 +280,11 @@ interface TagOption {
 		</div>
 	`,
 })
-export class PostEditorComponent implements OnInit, AfterViewInit {
+export class PostEditorComponent implements OnInit {
 	private readonly route = inject(ActivatedRoute);
 	private readonly router = inject(Router);
 	private readonly postService = inject(PostService);
+	private readonly markdownService = inject(MarkdownService);
 	private readonly platformId = inject(PLATFORM_ID);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
@@ -245,9 +294,12 @@ export class PostEditorComponent implements OnInit, AfterViewInit {
 	readonly contentIcon = File01Icon;
 	readonly tagsIcon = Tag01Icon;
 	readonly projectsIcon = Layers01Icon;
-	readonly languageIcon = Globe02Icon;
-	readonly saveDraftIcon = Download01Icon;
-	readonly publishIcon = Upload01Icon;
+	readonly languageIcon = TranslateIcon;
+	readonly saveIcon = SaveIcon;
+	readonly publishIcon = SendIcon;
+	readonly editTabIcon = Edit01Icon;
+	readonly previewTabIcon = EyeIcon;
+	readonly imageUploadIcon = Image01Icon;
 
 	form = new FormGroup({
 		title: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(500)] }),
@@ -264,24 +316,22 @@ export class PostEditorComponent implements OnInit, AfterViewInit {
 	saving = signal(false);
 	error = signal<string | null>(null);
 	success = signal<string | null>(null);
+	activeTab = signal<'edit' | 'preview'>('edit');
+	previewHtml = signal<SafeHtml | null>(null);
+	isDragging = signal(false);
 	private postId: string | null = null;
 
-	// Placeholder tag list; replace with real endpoint when available
 	availableTags: TagOption[] = [
 		{ id: 'tag-1', name: 'Angular' },
 		{ id: 'tag-2', name: 'TypeScript' },
 		{ id: 'tag-3', name: 'Spring Boot' },
 	];
 
-	// Placeholder project list; replace with real endpoint when available (Q5 deferred)
 	availableProjects = signal<ProjectOption[]>([
 		{ id: '00000000-0000-0000-0000-000000000001', title: 'Demo Project Alpha' },
 		{ id: '00000000-0000-0000-0000-000000000002', title: 'Demo Project Beta' },
 		{ id: '00000000-0000-0000-0000-000000000003', title: 'Infrastructure' },
 	]);
-
-	@ViewChild('milkdown') milkdownRef?: ElementRef<HTMLDivElement>;
-	private milkdownEditor: any = null;
 
 	ngOnInit(): void {
 		const id = this.route.snapshot.paramMap.get('id');
@@ -310,54 +360,67 @@ export class PostEditorComponent implements OnInit, AfterViewInit {
 		}
 	}
 
-	ngAfterViewInit(): void {
-		if (this.isBrowser) this.initMilkdown();
-	}
+	stringifyTag = (tag: TagOption): string => tag.name;
+	stringifyProject = (project: ProjectOption): string => project.title;
 
-	private async initMilkdown(): Promise<void> {
-		if (!isPlatformBrowser(this.platformId) || !this.milkdownRef) return;
-		try {
-			const { Editor, rootCtx, defaultValueCtx } = await import('@milkdown/kit/core');
-			const { listener, listenerCtx } = await import('@milkdown/kit/plugin/listener');
-			const { commonmark } = await import('@milkdown/kit/preset/commonmark');
-			const { nord } = await import('@milkdown/theme-nord');
-
-			const el = this.milkdownRef.nativeElement;
-			const initialContent = this.form.controls.content.value;
-
-			this.milkdownEditor = await Editor.make()
-				.config((ctx) => {
-					ctx.set(rootCtx, el);
-					ctx.set(defaultValueCtx, initialContent);
-					nord(ctx);
-					ctx.get(listenerCtx).markdownUpdated((_ctx, markdown) => {
-						this.form.controls.content.setValue(markdown);
-					});
-				})
-				.use(commonmark)
-				.use(listener)
-				.create();
-		} catch (e) {
-			console.warn('Milkdown failed to load', e);
+	async switchToPreview(): Promise<void> {
+		this.activeTab.set('preview');
+		const content = this.form.controls.content.value;
+		if (content) {
+			const html = await this.markdownService.renderMarkdown(content, this.isBrowser);
+			this.previewHtml.set(html);
+		} else {
+			this.previewHtml.set(null);
 		}
 	}
 
-  stringifyTag = (tag: TagOption): string => tag.name;
-  stringifyProject = (project: ProjectOption): string => project.title;
+	onBannerFileSelected(event: Event): void {
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		this.handleImageFile(file);
+	}
 
-  onBannerFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
+	onDragOver(event: DragEvent): void {
+		event.preventDefault();
+		event.stopPropagation();
+		if (event.dataTransfer?.types.includes('Files')) {
+			this.isDragging.set(true);
+		}
+	}
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.form.controls.bannerUrl.setValue(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  }
+	onDragLeave(event: DragEvent): void {
+		event.preventDefault();
+		event.stopPropagation();
+		this.isDragging.set(false);
+	}
 
-  save(status: string): void {
+	onDrop(event: DragEvent): void {
+		event.preventDefault();
+		event.stopPropagation();
+		this.isDragging.set(false);
+
+		const files = event.dataTransfer?.files;
+		if (!files || files.length === 0) return;
+
+		const file = files[0];
+		if (file.type.startsWith('image/')) {
+			this.handleImageFile(file);
+		}
+	}
+
+	private handleImageFile(file: File): void {
+		const reader = new FileReader();
+		reader.onload = () => {
+			const base64 = reader.result as string;
+			const markdown = `\n![${file.name}](${base64})\n`;
+			const currentContent = this.form.controls.content.value;
+			this.form.controls.content.setValue(currentContent + markdown);
+		};
+		reader.readAsDataURL(file);
+	}
+
+	save(status: string): void {
 		if (this.form.invalid) return;
 		this.saving.set(true);
 		this.error.set(null);
