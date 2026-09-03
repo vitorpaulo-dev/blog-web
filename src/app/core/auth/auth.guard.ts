@@ -1,11 +1,10 @@
 import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateFn } from '@angular/router';
 import { ClerkService } from '../../clerk.service';
 
 export const authGuard: CanActivateFn = () => {
   const clerkService = inject(ClerkService);
-  const router = inject(Router);
   const platformId = inject(PLATFORM_ID);
 
   // SSR: allow navigation to avoid blocking server render, client will redirect
@@ -17,6 +16,7 @@ export const authGuard: CanActivateFn = () => {
     return true;
   }
 
+  // Open sign-in modal and block navigation (don't redirect)
   clerkService.openSignIn();
-  return router.createUrlTree(['/']);
+  return false;
 };
