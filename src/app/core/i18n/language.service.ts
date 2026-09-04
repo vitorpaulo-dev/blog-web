@@ -25,11 +25,8 @@ export class LanguageService {
           this.transferState.set(LANGUAGE_KEY, stored as Language);
           return stored as Language;
         }
-      } catch {
-        // localStorage unavailable
-      }
+      } catch {}
 
-      // Try to detect from browser language
       const browserLang = this.document.defaultView?.navigator?.language?.toLowerCase();
       if (browserLang) {
         if (browserLang.startsWith('pt')) {
@@ -52,9 +49,7 @@ export class LanguageService {
     if (isPlatformBrowser(this.platformId)) {
       try {
         this.document.defaultView?.localStorage?.setItem(STORAGE_KEY, language);
-      } catch {
-        // localStorage unavailable
-      }
+      } catch {}
     }
   }
 }
