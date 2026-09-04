@@ -28,6 +28,19 @@ export class LanguageService {
       } catch {
         // localStorage unavailable
       }
+
+      // Try to detect from browser language
+      const browserLang = this.document.defaultView?.navigator?.language?.toLowerCase();
+      if (browserLang) {
+        if (browserLang.startsWith('pt')) {
+          this.transferState.set(LANGUAGE_KEY, 'PORTUGUESE');
+          return 'PORTUGUESE';
+        }
+        if (browserLang.startsWith('en')) {
+          this.transferState.set(LANGUAGE_KEY, 'ENGLISH');
+          return 'ENGLISH';
+        }
+      }
     }
 
     return 'ENGLISH';
