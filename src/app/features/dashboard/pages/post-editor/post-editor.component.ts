@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { TuiButton, TuiTextfield, TuiDropdown, TuiDataList, TuiInput } from '@taiga-ui/core';
-import { TuiChip, TuiInputChip, TuiMultiSelect, TuiChevron, TuiDataListWrapper, TuiComboBox } from '@taiga-ui/kit';
+import { TuiChip, TuiInputChip, TuiMultiSelect, TuiChevron, TuiDataListWrapper, TuiComboBox, TuiToastService } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { 
   ArrowLeft01Icon, 
@@ -85,7 +85,7 @@ interface TranslationForm {
 							[class.text-accent]="activeLang() === lang"
 							[class.text-muted]="activeLang() !== lang"
 							[class.hover:text-foreground]="activeLang() !== lang"
-							(click)="activeLang.set(lang)"
+							(click)="changeLanguage(lang)"
 						>
 							{{ lang === 'ENGLISH' ? '🇺🇸 English' : '🇧🇷 Português' }}
 						</button>
@@ -298,6 +298,7 @@ export class PostEditorComponent implements OnInit {
 	private readonly postService = inject(PostService);
 	private readonly markdownService = inject(MarkdownService);
 	private readonly platformId = inject(PLATFORM_ID);
+	private readonly toastService = inject(TuiToastService);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
 	readonly ArrowLeft01Icon = ArrowLeft01Icon;
@@ -516,6 +517,10 @@ export class PostEditorComponent implements OnInit {
 				this.success.set(this.isEdit() ? 'Saved!' : 'Created!');
 				this.slug.set(res.slug);
 				this.currentStatus.set(res.status);
+				this.toastService.open(this.isEdit() ? 'Post updated successfully' : 'Post created successfully', {
+					appearance: 'success',
+					autoClose: 3000,
+				});
 				if (!this.isEdit()) {
 					setTimeout(() => this.router.navigate(['/dashboard/post', res.id]), 800);
 				}
@@ -526,6 +531,10 @@ export class PostEditorComponent implements OnInit {
 					? JSON.stringify(err.error.details)
 					: 'Save failed — check validation/permissions';
 				this.error.set(msg);
+				this.toastService.open('Failed to save post. Please try again.', {
+					appearance: 'error',
+					autoClose: 5000,
+				});
 			},
 		});
 	}
@@ -536,5 +545,10 @@ export class PostEditorComponent implements OnInit {
 
 	goBack(): void {
 		this.router.navigate(['/dashboard/post']);
+	}
+
+	changeLanguage(lang: Language): void {
+		this.activeLang.set(lang);
+		void this.switchToPreview();
 	}
 }

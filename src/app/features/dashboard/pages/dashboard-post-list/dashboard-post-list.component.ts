@@ -21,6 +21,7 @@ import {
 
 import { PostDto, PostService } from '../../../posts/data-access/post.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { TuiToastService } from '@taiga-ui/kit';
 
 @Component({
 	selector: 'app-dashboard-post-list',
@@ -248,6 +249,7 @@ export class DashboardPostListComponent {
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly destroyRef = inject(DestroyRef);
 	private readonly languageService = inject(LanguageService);
+	private readonly toastService = inject(TuiToastService);
 
 	readonly Search01Icon = Search01Icon;
 	readonly PlusSignIcon = PlusSignIcon;
@@ -405,11 +407,18 @@ export class DashboardPostListComponent {
 
 		this.postService.delete([id]).subscribe({
 			next: () => {
+				this.toastService.open('Post deleted successfully', {
+					appearance: 'success',
+					autoClose: 3000,
+				});
 				this.load();
 			},
 
 			error: () => {
-				alert('Delete failed — check permissions.');
+				this.toastService.open('Failed to delete post. Please try again.', {
+					appearance: 'error',
+					autoClose: 5000,
+				});
 			},
 		});
 	}
@@ -438,11 +447,18 @@ export class DashboardPostListComponent {
 		this.postService.delete(ids).subscribe({
 			next: () => {
 				this.selected.set(new Set());
+				this.toastService.open(`${ids.length} posts deleted successfully`, {
+					appearance: 'success',
+					autoClose: 3000,
+				});
 				this.load();
 			},
 
 			error: () => {
-				alert('Mass delete failed — ensure you own all selected posts or are admin.');
+				this.toastService.open('Failed to delete posts. Please try again.', {
+					appearance: 'error',
+					autoClose: 5000,
+				});
 			},
 		});
 	}
