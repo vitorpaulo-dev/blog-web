@@ -2,9 +2,9 @@ import {
 	AfterViewInit,
 	Component,
 	CUSTOM_ELEMENTS_SCHEMA,
+	effect,
 	ElementRef,
 	inject,
-	OnInit,
 	PLATFORM_ID,
 	signal,
 	ViewChild,
@@ -31,6 +31,7 @@ import { TuiChip } from '@taiga-ui/kit';
 
 import { MarkdownService } from '../../data-access/markdown.service';
 import { GiscusComponent } from '../../components/giscus.component';
+import { LanguageService } from '../../../../core/i18n/language.service';
 
 @Component({
 	selector: 'app-post-detail',
@@ -55,14 +56,14 @@ import { GiscusComponent } from '../../components/giscus.component';
 				@if (p.bannerUrl) {
 					<img
 						[src]="p.bannerUrl"
-						[alt]="p.title"
+						[alt]="content()?.title"
 						class="w-full aspect-video object-cover rounded-xl border border-border mb-6"
 					/>
 				}
 				<h1
 					class="text-3xl md:text-4xl font-bold tracking-tight leading-tight max-w-4xl break-words"
 				>
-					{{ p.title }}
+					{{ content()?.title }}
 				</h1>
 
 				<div class="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted">
@@ -110,7 +111,7 @@ import { GiscusComponent } from '../../components/giscus.component';
 						<a tuiChip [href]="'/tag/' + tag.slug">
 							<hugeicons-icon [icon]="Tag01Icon" [size]="12" [strokeWidth]="1.5" />
 
-							{{ tag.name }}
+							{{ tag.translations[lang()]?.name }}
 						</a>
 					}
 				</div>
@@ -183,12 +184,13 @@ import { GiscusComponent } from '../../components/giscus.component';
 		</div>
 	`,
 })
-export class PostDetailComponent implements OnInit, AfterViewInit {
+export class PostDetailComponent implements AfterViewInit {
 	private readonly route = inject(ActivatedRoute);
 	private readonly postService = inject(PostService);
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly router = inject(Router);
 	private readonly markdownService = inject(MarkdownService);
+	private readonly languageService = inject(LanguageService);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
 
@@ -203,23 +205,41 @@ export class PostDetailComponent implements OnInit, AfterViewInit {
 	readonly loading = signal(true);
 	readonly error = signal<string | null>(null);
 	readonly html = signal<string | SafeHtml>('');
+	readonly lang = this.languageService.language.asReadonly();
+	readonly slug = this.route.snapshot.paramMap.get('slug');
 
 	@ViewChild('articleEl')
 	articleEl!: ElementRef<HTMLElement>;
 
-	ngOnInit(): void {
-		const slug = this.route.snapshot.paramMap.get('slug');
-		if (!slug) {
+	content() {
+		const p = this.post();
+		if (!p) return null;
+		return p.translations?.[this.lang()] ?? null;
+	}
+
+	constructor() {
+		if (!this.slug) {
 			void this.router.navigate(['']);
 			return;
 		}
 
-		this.postService.getBySlug(slug).subscribe({
+		effect(() => {
+			this.loadPost(this.slug!);
+		});
+	}
+
+	private loadPost(slug: string): void {
+		this.loading.set(true);
+		this.postService.getBySlug(slug, this.lang()).subscribe({
 			next: (post) => {
 				this.post.set(post);
-				void this.renderMarkdown(post.content);
+				const c = this.content();
+				if (c) {
+					void this.renderMarkdown(c.content);
+				}
 			},
 			error: () => {
+				this.loading.set(false);
 				void this.router.navigate(['']);
 			},
 		});
@@ -252,11 +272,10 @@ export class PostDetailComponent implements OnInit, AfterViewInit {
 		if (!post) return;
 
 		const url = window.location.href;
-		const text = post.title;
+		const text = this.content()?.title || '';
 
 		if (navigator.share) {
 			navigator.share({ title: text, url }).catch(() => {
-				// User cancelled or error - fallback to clipboard
 				this.copyToClipboard(url);
 			});
 		} else {
@@ -266,10 +285,8 @@ export class PostDetailComponent implements OnInit, AfterViewInit {
 
 	private copyToClipboard(text: string): void {
 		navigator.clipboard.writeText(text).then(() => {
-			// Could add a toast notification here
 			console.log('Link copied to clipboard');
 		}).catch(() => {
-			// Fallback for older browsers
 			const textarea = document.createElement('textarea');
 			textarea.value = text;
 			document.body.appendChild(textarea);

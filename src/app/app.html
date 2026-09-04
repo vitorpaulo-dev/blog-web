@@ -19,8 +19,8 @@
 							<a tuiCell [href]="'/post/' + item.slug">
 								<hugeicons-icon [icon]="StickyNote01Icon" [size]="28" [strokeWidth]="1.5" />
 								<span tuiTitle>
-									{{ item.title }}
-									<span tuiSubtitle>{{ item.description }}</span>
+									{{ item.translations[languageService.language()]?.title }}
+									<span tuiSubtitle>{{ item.translations[languageService.language()]?.content }}</span>
 								</span>
 							</a>
 						</ng-template>
@@ -34,6 +34,34 @@
 				<hugeicons-icon [icon]="Search01Icon" [size]="28" [strokeWidth]="1.5" />
 			</a>
 
+		<button
+			tuiButton
+			appearance="flat"
+			tuiChevron
+			type="button"
+			class="text-muted hover:text-accent text-sm !p-0"
+			[tuiDropdown]="langDropdown"
+			[(tuiDropdownOpen)]="langDropdownOpen"
+		>
+			{{ languageService.language() === 'ENGLISH' ? '🇺🇸 EN' : '🇧🇷 PT' }}
+		</button>
+		<ng-template #langDropdown>
+			<tui-data-list>
+				<button tuiOption type="button" (click)="setLanguage('ENGLISH')">
+					🇺🇸 English
+					@if (languageService.language() === 'ENGLISH') {
+						<span class="ml-auto text-accent">✓</span>
+					}
+				</button>
+				<button tuiOption type="button" (click)="setLanguage('PORTUGUESE')">
+					🇧🇷 Português
+					@if (languageService.language() === 'PORTUGUESE') {
+						<span class="ml-auto text-accent">✓</span>
+					}
+				</button>
+			</tui-data-list>
+		</ng-template>
+
 			<a class="text-muted hover:text-accent h-full" target="_blank" href="https://www.linkedin.com/in/vitor-paulo-910186164/">
 				<hugeicons-icon [icon]="Linkedin01Icon" [size]="28" [strokeWidth]="1.5" />
 			</a>
@@ -41,6 +69,10 @@
 			<a class="text-muted hover:text-accent" target="_blank" href="https://github.com/vitorpaulo.dev">
 				<hugeicons-icon [icon]="Github01Icon" [size]="28" [strokeWidth]="1.5" />
 			</a>
+
+			@if (!clerkService.isSignedIn()) {
+				<a routerLink="/login" class="text-sm text-muted hover:text-accent">Sign In</a>
+			}
 		</section>
 	</header>
 	<main tuiNavigationMain class="md:px-16">

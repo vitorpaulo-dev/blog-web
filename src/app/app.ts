@@ -1,10 +1,11 @@
-import { TuiCell, TuiRoot, TuiTextfield, TuiTitle } from '@taiga-ui/core';
+import { TuiButton, TuiCell, TuiDataList, TuiDropdown, TuiRoot, TuiTextfield, TuiTitle } from '@taiga-ui/core';
 import { Component, inject, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, RouterLink } from '@angular/router';
+import { TuiChevron } from '@taiga-ui/kit';
 import { TuiInputSearch, TuiNavigation } from '@taiga-ui/layout';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AsyncPipe } from '@angular/common';
-import {TuiSearchResults} from '@taiga-ui/experimental';
+import { TuiSearchResults } from '@taiga-ui/experimental';
 import { debounceTime, distinctUntilChanged, map, of, switchMap } from 'rxjs';
 import { PostService } from './features/posts/data-access/post.service';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
@@ -16,17 +17,25 @@ import {
 	Search01Icon,
 	StickyNote01Icon,
 } from '@hugeicons/core-free-icons';
+import { LanguageService } from './core/i18n/language.service';
+import { ClerkService } from './clerk.service';
 
 @Component({
 	selector: 'app-root',
 	imports: [
 		RouterOutlet,
-		TuiRoot,
+		RouterLink,
 		AsyncPipe,
+		FormsModule,
 		ReactiveFormsModule,
+		TuiButton,
 		TuiCell,
+		TuiChevron,
+		TuiDataList,
+		TuiDropdown,
 		TuiInputSearch,
 		TuiNavigation,
+		TuiRoot,
 		TuiSearchResults,
 		TuiTextfield,
 		TuiTitle,
@@ -40,7 +49,10 @@ export class App {
 		nonNullable: true,
 	});
 	open = signal(false);
+	langDropdownOpen = false;
 	postService = inject(PostService);
+	languageService = inject(LanguageService);
+	clerkService = inject(ClerkService);
 
 	protected readonly popular = [];
 
@@ -57,7 +69,7 @@ export class App {
 			}
 
 			return this.postService.search({
-				query: { query },
+				query: { query, language: this.languageService.language() },
 				page: 0,
 				size: 5,
 				sort: 'viewCount',
@@ -74,4 +86,9 @@ export class App {
 	protected readonly Github01Icon = Github01Icon;
 	protected readonly StickyNote01Icon = StickyNote01Icon;
 	protected readonly ChevronRight = ChevronRight;
+
+	protected setLanguage(lang: 'ENGLISH' | 'PORTUGUESE'): void {
+		this.languageService.setLanguage(lang);
+		this.langDropdownOpen = false;
+	}
 }

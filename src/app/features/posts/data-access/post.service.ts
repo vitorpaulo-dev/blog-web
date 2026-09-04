@@ -1,7 +1,9 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+
+export type Language = 'ENGLISH' | 'PORTUGUESE';
 
 export interface GenericPageableResponse<T> {
 	content: T[];
@@ -16,37 +18,52 @@ export interface GenericPageableRequest<T> {
 	direction: 'ASC' | 'DESC';
 }
 
+export interface PostContentDto {
+	title: string;
+	content: string;
+}
+
+export interface TagContentDto {
+	name: string;
+	description?: string;
+}
+
+export interface ProjectContentDto {
+	title: string;
+	description?: string;
+}
+
+export interface AuthorContentDto {
+	bio?: string;
+	jobTitle?: string;
+}
+
 export interface AuthorDto {
 	id: string;
 	slug: string;
 	name: string;
 	avatarUrl?: string;
-	jobTitle?: string;
+	translations: Record<Language, AuthorContentDto>;
 }
 
 export interface TagDto {
 	id: string;
-	name: string;
 	slug: string;
-	description?: string;
+	translations: Record<Language, TagContentDto>;
 }
 
 export interface ProjectDto {
 	id: string;
 	slug: string;
-	title: string;
 	logoUrl?: string;
-	description?: string;
 	programmingLanguage?: string;
+	translations: Record<Language, ProjectContentDto>;
 }
 
 export interface PostDto {
 	id: string;
 	slug: string;
-	title: string;
 	bannerUrl?: string;
-	content: string;
-	language?: string;
 	status: string;
 	estimatedReading?: number;
 	createdAt: string;
@@ -60,13 +77,12 @@ export interface PostDto {
 	celebrateCount: number;
 	geniusCount: number;
 	helpCount: number;
+	translations: Record<Language, PostContentDto>;
 }
 
 export interface CreatePostPayload {
-	title: string;
 	bannerUrl?: string;
-	content: string;
-	language?: string;
+	translations: Record<Language, PostContentDto>;
 	tagIds?: string[];
 	projectIds?: string[];
 	status?: string;
@@ -77,6 +93,7 @@ export interface UpdatePostPayload extends CreatePostPayload {}
 export interface SearchParams {
 	query?: string;
 	authorId?: string;
+	language?: Language;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -100,8 +117,8 @@ export class PostService {
 		return this.http.get<PostDto>(`${this.base}/${id}`);
 	}
 
-	getBySlug(slug: string): Observable<PostDto> {
-		return this.http.get<PostDto>(`${this.base}/slug/${slug}`);
+	getBySlug(slug: string, language: Language): Observable<PostDto> {
+		return this.http.get<PostDto>(`${this.base}/slug/${slug}/${language}`);
 	}
 
 	search(params: GenericPageableRequest<SearchParams>): Observable<GenericPageableResponse<PostDto>> {

@@ -19,7 +19,7 @@ import {
   EyeIcon,
   ExternalLinkIcon
 } from '@hugeicons/core-free-icons';
-import { PostService } from '../../../posts/data-access/post.service';
+import { PostService, Language } from '../../../posts/data-access/post.service';
 import { MarkdownService } from '../../../posts/data-access/markdown.service';
 import { SafeHtml } from '@angular/platform-browser';
 
@@ -31,6 +31,11 @@ interface ProjectOption {
 interface TagOption {
   id: string;
   name: string;
+}
+
+interface TranslationForm {
+  title: FormControl<string>;
+  content: FormControl<string>;
 }
 
 @Component({
@@ -70,122 +75,120 @@ interface TagOption {
 			<h1 class="text-2xl font-bold mb-2">{{ isEdit() ? 'Edit Post' : 'New Post' }}</h1>
 
 			<form [formGroup]="form" class="flex flex-col gap-5" (ngSubmit)="onSave()">
-				<tui-textfield>
-					<label tuiLabel class="flex items-center gap-1.5">
-						<hugeicons-icon [icon]="titleIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-						<span>Title *</span>
-					</label>
-					<input tuiInput formControlName="title" placeholder="Post title" />
-				</tui-textfield>
-
-			<div class="flex flex-col gap-2">
-				<label class="text-sm font-medium flex items-center gap-1.5">
-					<hugeicons-icon [icon]="bannerIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-					<span>Banner Image</span>
-				</label>
-				<input 
-					type="file" 
-					accept="image/*" 
-					(change)="onBannerFileSelected($event)"
-					class="w-full rounded-xl border border-border bg-surface p-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent-secondary file:cursor-pointer cursor-pointer"
-				/>
-				@if (form.controls.bannerUrl.value) {
-					<img
-						[src]="form.controls.bannerUrl.value"
-						alt="banner preview"
-						class="w-full aspect-video object-cover rounded-xl border border-border"
-					/>
-				}
-			</div>
-
-				<div class="flex flex-col gap-2">
-					<div class="flex items-center justify-between">
-						<label class="text-sm font-medium flex items-center gap-1.5">
-							<hugeicons-icon [icon]="contentIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-							<span>Content *</span>
-						</label>
-						<div class="flex gap-1">
-							<button
-								type="button"
-								class="px-3 py-1 text-xs rounded-t-lg transition-colors"
-								[class.bg-surface]="activeTab() === 'edit'"
-								[class.text-foreground]="activeTab() === 'edit'"
-								[class.text-muted]="activeTab() !== 'edit'"
-								[class.hover:text-foreground]="activeTab() !== 'edit'"
-								(click)="activeTab.set('edit')"
-							>
-								<hugeicons-icon [icon]="editTabIcon" [size]="14" [strokeWidth]="2.5" class="inline mr-1" />
-								Edit
-							</button>
-							<button
-								type="button"
-								class="px-3 py-1 text-xs rounded-t-lg transition-colors"
-								[class.bg-surface]="activeTab() === 'preview'"
-								[class.text-foreground]="activeTab() === 'preview'"
-								[class.text-muted]="activeTab() !== 'preview'"
-								[class.hover:text-foreground]="activeTab() !== 'preview'"
-								(click)="switchToPreview()"
-							>
-								<hugeicons-icon [icon]="previewTabIcon" [size]="14" [strokeWidth]="2.5" class="inline mr-1" />
-								Preview
-							</button>
-						</div>
-					</div>
-					
-					@if (activeTab() === 'edit') {
-						<div
-							class="relative"
-							(dragover)="onDragOver($event)"
-							(dragleave)="onDragLeave($event)"
-							(drop)="onDrop($event)"
+				<!-- Language Tabs -->
+				<div class="flex gap-1 border-b border-border">
+					@for (lang of languages; track lang) {
+						<button
+							type="button"
+							class="px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
+							[class.border-accent]="activeLang() === lang"
+							[class.text-accent]="activeLang() === lang"
+							[class.text-muted]="activeLang() !== lang"
+							[class.hover:text-foreground]="activeLang() !== lang"
+							(click)="activeLang.set(lang)"
 						>
-							<textarea
-								formControlName="content"
-								rows="20"
-								class="w-full rounded-xl border border-border bg-surface p-3 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-accent"
-								placeholder="Write markdown... (drag & drop images here)"
-							></textarea>
-							@if (isDragging()) {
-								<div class="absolute inset-0 bg-accent/10 border-2 border-dashed border-accent rounded-xl flex items-center justify-center pointer-events-none">
-									<div class="text-center">
-										<hugeicons-icon [icon]="imageUploadIcon" [size]="48" [strokeWidth]="1.5" class="mx-auto mb-2 text-accent" />
-										<p class="text-sm font-medium text-accent">Drop image here</p>
-									</div>
-								</div>
-							}
-						</div>
-					} @else {
-						<div class="w-full rounded-xl border border-border bg-surface p-4 min-h-[500px] prose prose-invert max-w-none">
-							@if (previewHtml()) {
-								<div [innerHTML]="previewHtml()"></div>
-							} @else {
-								<p class="text-muted text-sm">Nothing to preview</p>
-							}
-						</div>
+							{{ lang === 'ENGLISH' ? '🇺🇸 English' : '🇧🇷 Português' }}
+						</button>
 					}
 				</div>
 
-				<tui-textfield tuiChevron>
-					<label tuiLabel class="flex items-center gap-1.5">
-						<hugeicons-icon [icon]="languageIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-						<span>Language</span>
+				<!-- Translation fields for active language -->
+				@for (lang of languages; track lang) {
+					@if (activeLang() === lang) {
+						<div class="flex flex-col gap-5">
+							<tui-textfield>
+								<label tuiLabel class="flex items-center gap-1.5">
+									<hugeicons-icon [icon]="titleIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
+									<span>Title *</span>
+								</label>
+								<input tuiInput [formControl]="translationForms()[lang].title" placeholder="Post title" />
+							</tui-textfield>
+
+							<div class="flex flex-col gap-2">
+								<!-- Content tabs -->
+								<div class="flex gap-1 border-b border-border">
+									<button
+										type="button"
+										class="px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
+										[class.border-accent]="activeTab() === 'edit'"
+										[class.text-accent]="activeTab() === 'edit'"
+										[class.text-muted]="activeTab() !== 'edit'"
+										[class.hover:text-foreground]="activeTab() !== 'edit'"
+										(click)="activeTab.set('edit')"
+									>
+										<hugeicons-icon [icon]="editTabIcon" [size]="14" [strokeWidth]="2.5" class="inline mr-1" />
+										Edit
+									</button>
+									<button
+										type="button"
+										class="px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
+										[class.border-accent]="activeTab() === 'preview'"
+										[class.text-accent]="activeTab() === 'preview'"
+										[class.text-muted]="activeTab() !== 'preview'"
+										[class.hover:text-foreground]="activeTab() !== 'preview'"
+										(click)="switchToPreview()"
+									>
+										<hugeicons-icon [icon]="previewTabIcon" [size]="14" [strokeWidth]="2.5" class="inline mr-1" />
+										Preview
+									</button>
+								</div>
+								
+								@if (activeTab() === 'edit') {
+									<div
+										class="relative"
+										(dragover)="onDragOver($event)"
+										(dragleave)="onDragLeave($event)"
+										(drop)="onDrop($event)"
+									>
+										<textarea
+											[formControl]="translationForms()[lang].content"
+											rows="20"
+											class="w-full rounded-xl border border-border bg-surface p-3 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-accent"
+											placeholder="Write markdown... (drag & drop images here)"
+										></textarea>
+										@if (isDragging()) {
+											<div class="absolute inset-0 bg-accent/10 border-2 border-dashed border-accent rounded-xl flex items-center justify-center pointer-events-none">
+												<div class="text-center">
+													<hugeicons-icon [icon]="imageUploadIcon" [size]="48" [strokeWidth]="1.5" class="mx-auto mb-2 text-accent" />
+													<p class="text-sm font-medium text-accent">Drop image here</p>
+												</div>
+											</div>
+										}
+									</div>
+								} @else {
+									<div class="w-full rounded-xl border border-border bg-surface p-4 min-h-[500px] prose prose-invert max-w-none">
+										@if (previewHtml()) {
+											<div [innerHTML]="previewHtml()"></div>
+										} @else {
+											<p class="text-muted text-sm">Nothing to preview</p>
+										}
+									</div>
+								}
+							</div>
+						</div>
+					}
+				}
+
+				<!-- Shared fields (outside language tabs) -->
+				<div class="flex flex-col gap-2">
+					<label class="text-sm font-medium flex items-center gap-1.5">
+						<hugeicons-icon [icon]="bannerIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
+						<span>Banner Image</span>
 					</label>
-					<input tuiComboBox formControlName="language" placeholder="Select language" />
-					<tui-data-list *tuiDropdown>
-						<button tuiOption value="pt">
-							<span class="flex items-center gap-2">
-								<span class="text-lg">🇧🇷</span>
-								<span>Portuguese</span>
-							</span>
-						</button>
-						<button tuiOption value="en">
-							<span class="flex items-center gap-2">
-								<span class="text-lg">🇺🇸</span>
-								<span>English</span>
-							</span>
-						</button>
-					</tui-data-list>
-				</tui-textfield>
+					<input 
+						type="file" 
+						accept="image/*" 
+						(change)="onBannerFileSelected($event)"
+						class="w-full rounded-xl border border-border bg-surface p-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent-secondary file:cursor-pointer cursor-pointer"
+					/>
+					@if (form.controls.bannerUrl.value) {
+						<img
+							[src]="form.controls.bannerUrl.value"
+							alt="banner preview"
+							class="w-full aspect-video object-cover rounded-xl border border-border"
+						/>
+					}
+				</div>
 
 				<tui-textfield multi tuiChevron [stringify]="stringifyTag">
 					<label tuiLabel class="flex items-center gap-1.5">
@@ -229,7 +232,7 @@ interface TagOption {
 							appearance="outline"
 							type="button"
 							(click)="save('DRAFT')"
-							[disabled]="form.invalid || saving()"
+							[disabled]="!isFormValid() || saving()"
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
@@ -240,7 +243,7 @@ interface TagOption {
 							appearance="primary"
 							type="button"
 							(click)="save('PUBLISHED')"
-							[disabled]="form.invalid || saving()"
+							[disabled]="!isFormValid() || saving()"
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="publishIcon" [size]="16" [strokeWidth]="2.5" />
@@ -252,7 +255,7 @@ interface TagOption {
 							appearance="primary"
 							type="button"
 							(click)="save(currentStatus() === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT')"
-							[disabled]="form.invalid || saving()"
+							[disabled]="!isFormValid() || saving()"
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
@@ -303,7 +306,6 @@ export class PostEditorComponent implements OnInit {
 	readonly contentIcon = File01Icon;
 	readonly tagsIcon = Tag01Icon;
 	readonly projectsIcon = Layers01Icon;
-	readonly languageIcon = TranslateIcon;
 	readonly saveIcon = SaveIcon;
 	readonly publishIcon = SendIcon;
 	readonly editTabIcon = Edit01Icon;
@@ -311,15 +313,26 @@ export class PostEditorComponent implements OnInit {
 	readonly imageUploadIcon = Image01Icon;
 	readonly viewPostIcon = ExternalLinkIcon;
 
+	readonly languages: Language[] = ['ENGLISH', 'PORTUGUESE'];
+
 	form = new FormGroup({
-		title: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(500)] }),
 		bannerUrl: new FormControl('', { nonNullable: true }),
-		content: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-		language: new FormControl('pt', { nonNullable: true }),
 		tags: new FormControl<TagOption[]>([], { nonNullable: true }),
 		projects: new FormControl<ProjectOption[]>([], { nonNullable: true }),
 	});
 
+	translationForms = signal<Record<Language, TranslationForm>>({
+		ENGLISH: {
+			title: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(500)] }),
+			content: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+		},
+		PORTUGUESE: {
+			title: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(500)] }),
+			content: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+		},
+	});
+
+	activeLang = signal<Language>('ENGLISH');
 	slug = signal<string | null>(null);
 	currentStatus = signal<string>('DRAFT');
 	isEdit = signal(false);
@@ -351,17 +364,31 @@ export class PostEditorComponent implements OnInit {
 			this.postService.getById(id).subscribe({
 				next: (p) => {
 					this.form.patchValue({
-						title: p.title,
 						bannerUrl: p.bannerUrl || '',
-						content: p.content,
-						language: p.language || 'en',
 					});
-					// Map tags from post to TagOption objects
-					const tags = p.tags.map((t) => ({ id: t.id, name: t.name || t.id }));
+
+					// Load translations
+					const forms = this.translationForms();
+					for (const lang of this.languages) {
+						const translation = p.translations?.[lang];
+						if (translation) {
+							forms[lang].title.setValue(translation.title || '');
+							forms[lang].content.setValue(translation.content || '');
+						}
+					}
+
+					const tags = p.tags.map((t) => {
+						const name = t.translations?.['ENGLISH']?.name || t.id;
+						return { id: t.id, name };
+					});
 					this.form.patchValue({ tags });
-					// Map projects from post to ProjectOption objects
-					const projects = p.projects.map((pr) => ({ id: pr.id, title: pr.title || pr.id }));
+
+					const projects = p.projects.map((pr) => {
+						const title = pr.translations?.['ENGLISH']?.title || pr.id;
+						return { id: pr.id, title };
+					});
 					this.form.patchValue({ projects });
+
 					this.slug.set(p.slug);
 					this.currentStatus.set(p.status);
 				},
@@ -370,12 +397,20 @@ export class PostEditorComponent implements OnInit {
 		}
 	}
 
+	isFormValid(): boolean {
+		if (this.form.invalid) return false;
+		const forms = this.translationForms();
+		// At least English translation must be valid
+		return forms['ENGLISH'].title.valid && forms['ENGLISH'].content.valid;
+	}
+
 	stringifyTag = (tag: TagOption): string => tag.name;
 	stringifyProject = (project: ProjectOption): string => project.title;
 
 	async switchToPreview(): Promise<void> {
 		this.activeTab.set('preview');
-		const content = this.form.controls.content.value;
+		const lang = this.activeLang();
+		const content = this.translationForms()[lang].content.value;
 		if (content) {
 			const html = await this.markdownService.renderMarkdown(content, this.isBrowser);
 			this.previewHtml.set(html);
@@ -424,29 +459,47 @@ export class PostEditorComponent implements OnInit {
 		reader.onload = () => {
 			const base64 = reader.result as string;
 			const markdown = `\n![${file.name}](${base64})\n`;
-			const currentContent = this.form.controls.content.value;
-			this.form.controls.content.setValue(currentContent + markdown);
+			const lang = this.activeLang();
+			const currentContent = this.translationForms()[lang].content.value;
+			this.translationForms()[lang].content.setValue(currentContent + markdown);
 		};
 		reader.readAsDataURL(file);
 	}
 
 	save(status: string): void {
-		if (this.form.invalid) return;
+		if (!this.isFormValid()) return;
 		this.saving.set(true);
 		this.error.set(null);
 		this.success.set(null);
 
-		const content = this.form.controls.content.value;
 		const tags = this.form.controls.tags.value;
 		const projects = this.form.controls.projects.value;
 		const tagIds = tags.map((t) => t.id);
 		const projectIds = projects.map((p) => p.id);
 
+		const forms = this.translationForms();
+		const translations: Record<Language, { title: string; content: string }> = {
+			ENGLISH: {
+				title: forms.ENGLISH.title.value,
+				content: forms.ENGLISH.content.value,
+			},
+			PORTUGUESE: {
+				title: forms.PORTUGUESE.title.value,
+				content: forms.PORTUGUESE.content.value,
+			},
+		};
+
+		// Only send non-empty translations
+		const filteredTranslations = {} as Record<Language, { title: string; content: string }>;
+		for (const lang of this.languages) {
+			if (translations[lang].title || translations[lang].content) {
+				filteredTranslations[lang] = translations[lang];
+			}
+		}
+
 		const payload = {
-			title: this.form.controls.title.value,
 			bannerUrl: this.form.controls.bannerUrl.value || undefined,
-			content,
-			language: this.form.controls.language.value || undefined,
+			translations: filteredTranslations,
 			tagIds: tagIds.length ? tagIds : undefined,
 			projectIds: projectIds.length ? projectIds : undefined,
 			status,

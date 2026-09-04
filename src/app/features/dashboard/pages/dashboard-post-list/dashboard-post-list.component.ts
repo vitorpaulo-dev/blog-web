@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, PLATFORM_ID, signal } from '@angular/core';
+import { Component, DestroyRef, effect, inject, PLATFORM_ID, signal } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -20,6 +20,7 @@ import {
 } from '@hugeicons/core-free-icons';
 
 import { PostDto, PostService } from '../../../posts/data-access/post.service';
+import { LanguageService } from '../../../../core/i18n/language.service';
 
 @Component({
 	selector: 'app-dashboard-post-list',
@@ -64,12 +65,12 @@ import { PostDto, PostService } from '../../../posts/data-access/post.service';
 					<div
 						class="absolute left-1/2 top-0 -translate-x-1/2 text-7xl font-serif leading-none text-muted/20"
 					>
-						“
+						"
 					</div>
 
 					<blockquote class="relative font-serif text-xl italic leading-relaxed text-foreground sm:text-2xl">
-						“Although I am ready to defend what I have said, many people expect me to defend what others
-						have attributed to me.”
+						"Although I am ready to defend what I have said, many people expect me to defend what others
+						have attributed to me."
 					</blockquote>
 
 					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">T. S.</footer>
@@ -108,7 +109,7 @@ import { PostDto, PostService } from '../../../posts/data-access/post.service';
 							<tr tuiTr>
 								
 								<td *tuiCell="'title'" tuiTd class="font-medium truncate max-w-60">
-									{{ post.title }}
+									{{ postTitle(post) }}
 								</td>
 
 								
@@ -153,7 +154,7 @@ import { PostDto, PostService } from '../../../posts/data-access/post.service';
 								<td *tuiCell="'tags'" tuiTd>
 									<div class="flex flex-wrap gap-1">
 										@for (tag of post.tags; track tag.id) {
-											<span class="text-xs"> #{{ tag.name }} </span>
+											<span class="text-xs"> #{{ tagName(tag) }} </span>
 										}
 									</div>
 								</td>
@@ -246,6 +247,7 @@ export class DashboardPostListComponent {
 	private readonly postService = inject(PostService);
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly destroyRef = inject(DestroyRef);
+	private readonly languageService = inject(LanguageService);
 
 	readonly Search01Icon = Search01Icon;
 	readonly PlusSignIcon = PlusSignIcon;
@@ -295,16 +297,23 @@ export class DashboardPostListComponent {
 				this.load();
 			});
 
-		if (isPlatformBrowser(this.platformId)) {
+		effect(() => {
+			this.languageService.language();
 			this.load();
-		}
+		});
+	}
+
+	postTitle(post: PostDto): string {
+		const lang = this.languageService.language();
+		return post.translations?.[lang]?.title || post.translations?.['ENGLISH']?.title || '';
+	}
+
+	tagName(tag: { translations: Record<string, { name?: string }> }): string {
+		const lang = this.languageService.language();
+		return tag.translations?.[lang]?.name || tag.translations?.['ENGLISH']?.name || '';
 	}
 
 	load(): void {
-		if (!isPlatformBrowser(this.platformId)) {
-			return;
-		}
-
 		this.loading.set(true);
 		this.error.set(null);
 
@@ -316,6 +325,7 @@ export class DashboardPostListComponent {
 			.search({
 				query: {
 					query: query || undefined,
+					language: this.languageService.language(),
 				},
 				page: this.page(),
 				size: 10,
