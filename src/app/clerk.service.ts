@@ -34,6 +34,7 @@ function resolvePublishableKey(): string {
 export class ClerkService {
   private readonly platformId = inject(PLATFORM_ID);
   private clerk: Clerk | null = null;
+  private initPromise: Promise<void> | null = null;
 
   readonly isLoaded = signal(false);
   readonly isSignedIn = signal(false);
@@ -46,6 +47,16 @@ export class ClerkService {
   async init(publishableKey?: string): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
 
+    // If already initialized or currently initializing, return the existing promise
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    this.initPromise = this.doInit(publishableKey);
+    return this.initPromise;
+  }
+
+  private async doInit(publishableKey?: string): Promise<void> {
     const key = publishableKey || resolvePublishableKey();
     if (!key) {
       console.warn('[Clerk] Missing publishableKey. Set VITE_CLERK_PUBLISHABLE_KEY or update src/app/clerk.service.ts FALLBACK_PUBLISHABLE_KEY. Get key from https://dashboard.clerk.com (app_3IcT5NxUR5kLQ01BGfdOuwvL4Kc).');
@@ -87,6 +98,22 @@ export class ClerkService {
 
   signOut(): Promise<void> {
     return this.clerk?.signOut() ?? Promise.resolve();
+  }
+
+  mountSignIn(node: HTMLDivElement, props?: Parameters<Clerk['mountSignIn']>[1]): void {
+    this.clerk?.mountSignIn(node, props);
+  }
+
+  unmountSignIn(node: HTMLDivElement): void {
+    this.clerk?.unmountSignIn(node);
+  }
+
+  mountSignUp(node: HTMLDivElement, props?: Parameters<Clerk['mountSignUp']>[1]): void {
+    this.clerk?.mountSignUp(node, props);
+  }
+
+  unmountSignUp(node: HTMLDivElement): void {
+    this.clerk?.unmountSignUp(node);
   }
 
   mountUserButton(node: HTMLDivElement, props?: Parameters<Clerk['mountUserButton']>[1]): void {

@@ -8,6 +8,16 @@ export const routes: Routes = [
       import('./features/home/pages/home-page/home-page.component').then(m => m.HomePageComponent),
   },
   {
+    path: 'login',
+    loadComponent: () =>
+      import('./features/auth/pages/login/login.component').then(m => m.LoginComponent),
+  },
+  {
+    path: 'signup',
+    loadComponent: () =>
+      import('./features/auth/pages/signup/signup.component').then(m => m.SignupComponent),
+  },
+  {
     path: 'post',
     loadComponent: () =>
       import('./features/posts/pages/post-list/post-list.component').then(m => m.PostListComponent),

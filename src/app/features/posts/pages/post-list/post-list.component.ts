@@ -2,7 +2,7 @@ import { Component, effect, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TuiAppearance, TuiButton, TuiTextfield } from '@taiga-ui/core';
-import { TuiChip, TuiPagination } from '@taiga-ui/kit';
+import { TuiChip, TuiPagination, TuiToastService } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import {
 	Calendar01Icon,
@@ -17,6 +17,7 @@ import {
 import { PostDto, PostService } from '../../data-access/post.service';
 import { CommonModule } from '@angular/common';
 import { excerpt } from '../../../../core/util/text.util';
+import { LanguageService } from '../../../../core/i18n/language.service';
 
 @Component({
 	selector: 'app-post-list',
@@ -42,12 +43,12 @@ import { excerpt } from '../../../../core/util/text.util';
 					<div
 						class="absolute left-1/2 top-0 -translate-x-1/2 text-7xl font-serif leading-none text-muted/20"
 					>
-						“
+						"
 					</div>
 
 					<blockquote class="relative font-serif text-xl italic leading-relaxed text-foreground sm:text-2xl">
-						“Although I am ready to defend what I have said, many people expect me to defend what others
-						have attributed to me.”
+						"Although I am ready to defend what I have said, many people expect me to defend what others
+						have attributed to me."
 					</blockquote>
 
 					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">T. S.</footer>
@@ -71,7 +72,7 @@ import { excerpt } from '../../../../core/util/text.util';
 								>
 									<img
 										[src]="post.bannerUrl"
-										[alt]="post.title"
+										[alt]="postContent(post)?.title"
 										class="aspect-video object-cover border-b border-border group-hover:scale-105 transition-all"
 									/>
 								</div>
@@ -91,12 +92,12 @@ import { excerpt } from '../../../../core/util/text.util';
 								<h3
 									class="truncate w-full text-lg font-semibold leading-tight text-foreground group-hover:text-accent transition-colors"
 								>
-									{{ post.title }}
+									{{ postContent(post)?.title }}
 								</h3>
 								<p
 									class="text-sm text-muted leading-relaxed line-clamp-3 group-hover:text-muted/50 transition-all"
 								>
-									{{ excerpt(post.content) }}
+									{{ excerpt(postContent(post)?.content || '') }}
 								</p>
 							</div>
 
@@ -104,7 +105,7 @@ import { excerpt } from '../../../../core/util/text.util';
 								@for (tag of post.tags; track tag.id) {
 									<span tuiChip>
 										<hugeicons-icon [icon]="Tag01Icon" [size]="12" [strokeWidth]="1.5" />
-										{{ tag.name }}
+										{{ tagContent(tag)?.name }}
 									</span>
 								}
 							</div>
@@ -119,28 +120,41 @@ import { excerpt } from '../../../../core/util/text.util';
 })
 export class PostListComponent {
 	private readonly postService = inject(PostService);
+	private readonly languageService = inject(LanguageService);
+	private readonly toastService = inject(TuiToastService);
 
 	query = '';
 	posts = signal<PostDto[]>([]);
 	loading = signal(false);
-	error = signal<string | null>(null);
+
 	page = signal(0);
 	totalPages = signal(1);
 	totalElements = signal(0);
 
 	constructor() {
 		effect(() => {
+			this.languageService.language();
+			this.page();
 			this.load();
 		});
 	}
 
+	postContent(post: PostDto) {
+		const lang = this.languageService.language();
+		return post.translations?.[lang] ?? post.translations?.['ENGLISH'] ?? null;
+	}
+
+	tagContent(tag: { translations: Record<string, { name?: string }> }) {
+		const lang = this.languageService.language();
+		return tag.translations?.[lang] ?? tag.translations?.['ENGLISH'] ?? null;
+	}
+
 	load(): void {
 		this.loading.set(true);
-		this.error.set(null);
 		console.log('Loading page', this.page());
 		this.postService
 			.search({
-				query: { query: this.query || undefined },
+				query: { query: this.query || undefined, language: this.languageService.language() },
 				page: this.page(),
 				size: 10,
 				sort: 'createdAt',
@@ -153,10 +167,14 @@ export class PostListComponent {
 					this.totalElements.set(res.totalElements);
 					this.loading.set(false);
 				},
-				error: () => {
-					this.error.set('Failed to load posts');
-					this.loading.set(false);
-				},
+			error: () => {
+				this.loading.set(false);
+				this.toastService.open('Failed to load posts. Please try again.', {
+					appearance: 'error',
+					autoClose: 5000,
+					data: '@tui.circle-x',
+				}).subscribe();
+			},
 			});
 	}
 

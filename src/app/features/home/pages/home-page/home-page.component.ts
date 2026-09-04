@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TuiAppearance, TuiButton, TuiError, TuiInput, TuiLink, TuiTextfield } from '@taiga-ui/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
@@ -19,8 +19,9 @@ import { PostDto, PostService } from '../../../posts/data-access/post.service';
 import { RouterLink } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { TuiCardLarge, TuiForm } from '@taiga-ui/layout';
-import { TuiChip } from '@taiga-ui/kit';
+import { TuiChip, TuiToastService } from '@taiga-ui/kit';
 import { excerpt } from '../../../../core/util/text.util';
+import { LanguageService } from '../../../../core/i18n/language.service';
 
 @Component({
 	selector: 'app-home-page',
@@ -78,14 +79,14 @@ import { excerpt } from '../../../../core/util/text.util';
 						<div
 							class="absolute left-1/2 top-0 -translate-x-1/2 text-7xl font-serif leading-none text-muted/20"
 						>
-							“
+							"
 						</div>
 
 						<blockquote
 							class="relative font-serif text-xl italic leading-relaxed text-foreground sm:text-2xl"
 						>
-							“Although I am ready to defend what I have said, many people expect me to defend what others
-							have attributed to me.”
+							"Although I am ready to defend what I have said, many people expect me to defend what others
+							have attributed to me."
 						</blockquote>
 
 						<footer class="mt-6 text-sm font-medium tracking-wide text-muted">T. S.</footer>
@@ -107,7 +108,7 @@ import { excerpt } from '../../../../core/util/text.util';
 									>
 										<img
 											[src]="post.bannerUrl"
-											[alt]="post.title"
+											[alt]="postContent(post)?.title"
 											class="aspect-video object-cover border-b border-border group-hover:scale-105 transition-all"
 										/>
 									</div>
@@ -121,10 +122,10 @@ import { excerpt } from '../../../../core/util/text.util';
 										<span class="inline-flex items-center gap-1">{{ post.estimatedReading || 5 }} min</span>
 									</div>
 									<h3 class="truncate w-full text-lg font-semibold leading-tight text-foreground group-hover:text-accent transition-colors">
-										{{ post.title }}
+										{{ postContent(post)?.title }}
 									</h3>
 									<p class="text-sm text-muted leading-relaxed line-clamp-3 group-hover:text-muted/50 transition-all">
-										{{ excerpt(post.content) }}
+										{{ excerpt(postContent(post)?.content || '') }}
 									</p>
 								</div>
 
@@ -132,7 +133,7 @@ import { excerpt } from '../../../../core/util/text.util';
 									@for (tag of post.tags; track tag.id) {
 										<span tuiChip>
 											<hugeicons-icon [icon]="Tag01Icon" [size]="12" [strokeWidth]="1.5" />
-											{{ tag.name }}
+											{{ tag.translations[lang()]?.name }}
 										</span>
 									}
 								</div>
@@ -152,14 +153,14 @@ import { excerpt } from '../../../../core/util/text.util';
 						<h2 class="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Hi, I'm Vitor!</h2>
 						<div class="mt-4 space-y-4 text-muted leading-relaxed">
 							<p>
-								I’ve been messing with computers for most of my life.<br />
+								I've been messing with computers for most of my life.<br />
 								I started coding when I was 10, mostly because I wanted to understand how things worked
-								and, eventually, make them do things they weren’t supposed to do.<br />
-								Now, I’m a full-stack developer, though I’ve always found myself gravitating toward
-								backend work, AI and the kind of problems where the first solution usually isn’t the
+								and, eventually, make them do things they weren't supposed to do.<br />
+								Now, I'm a full-stack developer, though I've always found myself gravitating toward
+								backend work, AI and the kind of problems where the first solution usually isn't the
 								right one.<br />
 								<br />
-								I made this blog because I wanted a place to write about what I’m building, breaking,
+								I made this blog because I wanted a place to write about what I'm building, breaking,
 								learning, and figuring out. Some of it will probably be useful. Some of it might just be
 								me going down a rabbit hole for a few days.<br />
 								No big master plan. Just me building things, learning along the way, and writing about
@@ -208,11 +209,6 @@ import { excerpt } from '../../../../core/util/text.util';
 								</tui-textfield>
 							</label>
 
-							<!--<tui-error
-								formControlName="email"
-								[error]="['required', 'email'] | tuiError | async"
-							/>-->
-
 							<button
 								tuiButton
 								type="submit"
@@ -252,7 +248,7 @@ import { excerpt } from '../../../../core/util/text.util';
 		</div>
 	`,
 })
-export class HomePageComponent implements OnInit {
+export class HomePageComponent {
 	protected readonly newsletterForm = new FormGroup({
 		email: new FormControl('', {
 			nonNullable: true,
@@ -261,26 +257,46 @@ export class HomePageComponent implements OnInit {
 	});
 
 	private readonly postService = inject(PostService);
+	private readonly languageService = inject(LanguageService);
+	private readonly toastService = inject(TuiToastService);
 
 	posts = signal<PostDto[]>([]);
 	postsLoading = signal(true);
+	readonly lang = this.languageService.language.asReadonly();
 
-	ngOnInit(): void {
-		this.loadRecent();
+	constructor() {
+		effect(() => {
+			this.loadRecent();
+		});
+	}
+
+	postContent(post: PostDto) {
+		return post.translations?.[this.lang()] ?? null;
 	}
 
 	private loadRecent(): void {
 		this.postsLoading.set(true);
 		this.postService
-			.search({ query: { query: undefined }, page: 0, size: 5, sort: 'createdAt', direction: 'DESC' })
+			.search({
+				query: { query: undefined, language: this.lang() },
+				page: 0,
+				size: 5,
+				sort: 'createdAt',
+				direction: 'DESC',
+			})
 			.subscribe({
 				next: (r) => {
 					this.posts.set(r.content);
 					this.postsLoading.set(false);
 				},
-				error: () => {
-					this.postsLoading.set(false);
-				},
+			error: () => {
+				this.postsLoading.set(false);
+				this.toastService.open('Failed to load posts. Please try again.', {
+					appearance: 'error',
+					autoClose: 5000,
+					data: '@tui.circle-x',
+				}).subscribe();
+			},
 			});
 	}
 
