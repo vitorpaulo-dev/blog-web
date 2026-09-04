@@ -27,7 +27,7 @@ import {
 } from '@hugeicons/core-free-icons';
 
 import { TuiAppearance, TuiButton } from '@taiga-ui/core';
-import { TuiChip } from '@taiga-ui/kit';
+import { TuiChip, TuiToastService } from '@taiga-ui/kit';
 
 import { MarkdownService } from '../../data-access/markdown.service';
 import { GiscusComponent } from '../../components/giscus.component';
@@ -191,6 +191,7 @@ export class PostDetailComponent implements AfterViewInit {
 	private readonly router = inject(Router);
 	private readonly markdownService = inject(MarkdownService);
 	private readonly languageService = inject(LanguageService);
+	private readonly toastService = inject(TuiToastService);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
 
@@ -238,10 +239,15 @@ export class PostDetailComponent implements AfterViewInit {
 					void this.renderMarkdown(c.content);
 				}
 			},
-			error: () => {
-				this.loading.set(false);
-				void this.router.navigate(['']);
-			},
+		error: () => {
+			this.loading.set(false);
+			this.toastService.open('Failed to load post. Please try again.', {
+				appearance: 'error',
+				autoClose: 5000,
+				data: '@tui.circle-x',
+			}).subscribe();
+			void this.router.navigate(['']);
+		},
 		});
 	}
 
@@ -262,6 +268,11 @@ export class PostDetailComponent implements AfterViewInit {
 		} catch (error) {
 			this.loading.set(false);
 			this.error.set('Sorry, this post could not be rendered.');
+			this.toastService.open('Sorry, this post could not be rendered.', {
+				appearance: 'error',
+				autoClose: 5000,
+				data: '@tui.circle-x',
+			}).subscribe();
 		}
 	}
 

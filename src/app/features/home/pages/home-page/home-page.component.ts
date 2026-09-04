@@ -19,7 +19,7 @@ import { PostDto, PostService } from '../../../posts/data-access/post.service';
 import { RouterLink } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { TuiCardLarge, TuiForm } from '@taiga-ui/layout';
-import { TuiChip } from '@taiga-ui/kit';
+import { TuiChip, TuiToastService } from '@taiga-ui/kit';
 import { excerpt } from '../../../../core/util/text.util';
 import { LanguageService } from '../../../../core/i18n/language.service';
 
@@ -258,6 +258,7 @@ export class HomePageComponent {
 
 	private readonly postService = inject(PostService);
 	private readonly languageService = inject(LanguageService);
+	private readonly toastService = inject(TuiToastService);
 
 	posts = signal<PostDto[]>([]);
 	postsLoading = signal(true);
@@ -288,9 +289,14 @@ export class HomePageComponent {
 					this.posts.set(r.content);
 					this.postsLoading.set(false);
 				},
-				error: () => {
-					this.postsLoading.set(false);
-				},
+			error: () => {
+				this.postsLoading.set(false);
+				this.toastService.open('Failed to load posts. Please try again.', {
+					appearance: 'error',
+					autoClose: 5000,
+					data: '@tui.circle-x',
+				}).subscribe();
+			},
 			});
 	}
 

@@ -4,7 +4,16 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { TuiButton, TuiTextfield, TuiDropdown, TuiDataList, TuiInput } from '@taiga-ui/core';
-import { TuiChip, TuiInputChip, TuiMultiSelect, TuiChevron, TuiDataListWrapper, TuiComboBox, TuiToastService } from '@taiga-ui/kit';
+import {
+	TuiChip,
+	TuiInputChip,
+	TuiMultiSelect,
+	TuiChevron,
+	TuiDataListWrapper,
+	TuiComboBox,
+	TuiToastService,
+	TuiToast,
+} from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { 
   ArrowLeft01Icon, 
@@ -53,7 +62,7 @@ interface TranslationForm {
 		TuiInputChip,
 		TuiMultiSelect,
 		TuiChevron,
-		TuiDataListWrapper,
+		TuiToast,
 		TuiComboBox,
 		HugeiconsIconComponent,
 		TuiInput,
@@ -218,14 +227,11 @@ interface TranslationForm {
 					</tui-data-list>
 				</tui-textfield>
 
-				@if (error()) {
-					<p class="text-sm text-red-400" role="alert">{{ error() }}</p>
-				}
-				@if (success()) {
-					<p class="text-sm text-green-400" role="status">{{ success() }}</p>
-				}
+			@if (error()) {
+				<p class="text-sm text-red-400" role="alert">{{ error() }}</p>
+			}
 
-				<div class="flex flex-wrap gap-3">
+			<div class="flex flex-wrap gap-3">
 					@if (!isEdit()) {
 						<button
 							tuiButton
@@ -339,7 +345,6 @@ export class PostEditorComponent implements OnInit {
 	isEdit = signal(false);
 	saving = signal(false);
 	error = signal<string | null>(null);
-	success = signal<string | null>(null);
 	activeTab = signal<'edit' | 'preview'>('edit');
 	previewHtml = signal<SafeHtml | null>(null);
 	isDragging = signal(false);
@@ -358,6 +363,8 @@ export class PostEditorComponent implements OnInit {
 	]);
 
 	ngOnInit(): void {
+		if (!this.isBrowser) return;
+		
 		const id = this.route.snapshot.paramMap.get('id');
 		if (id) {
 			this.isEdit.set(true);
@@ -393,7 +400,14 @@ export class PostEditorComponent implements OnInit {
 					this.slug.set(p.slug);
 					this.currentStatus.set(p.status);
 				},
-				error: () => this.error.set('Failed to load post'),
+				error: () => {
+					this.toastService.open('Failed to load post. Redirecting to dashboard...', {
+						appearance: 'error',
+						autoClose: 5000,
+						data: '@tui.circle-x',
+					}).subscribe();
+					void this.router.navigate(['/dashboard/post']);
+				},
 			});
 		}
 	}
@@ -471,7 +485,6 @@ export class PostEditorComponent implements OnInit {
 		if (!this.isFormValid()) return;
 		this.saving.set(true);
 		this.error.set(null);
-		this.success.set(null);
 
 		const tags = this.form.controls.tags.value;
 		const projects = this.form.controls.projects.value;
@@ -511,20 +524,20 @@ export class PostEditorComponent implements OnInit {
 				? this.postService.update(this.postId, payload)
 				: this.postService.create(payload);
 
-		obs.subscribe({
-			next: (res) => {
-				this.saving.set(false);
-				this.success.set(this.isEdit() ? 'Saved!' : 'Created!');
-				this.slug.set(res.slug);
-				this.currentStatus.set(res.status);
-				this.toastService.open(this.isEdit() ? 'Post updated successfully' : 'Post created successfully', {
-					appearance: 'success',
-					autoClose: 3000,
-				});
-				if (!this.isEdit()) {
-					setTimeout(() => this.router.navigate(['/dashboard/post', res.id]), 800);
-				}
-			},
+	obs.subscribe({
+		next: (res) => {
+			this.saving.set(false);
+			this.slug.set(res.slug);
+			this.currentStatus.set(res.status);
+			this.toastService.open(this.isEdit() ? 'Post updated successfully' : 'Post created successfully', {
+				appearance: 'success',
+				autoClose: 3000,
+				data: '@tui.check',
+			}).subscribe();
+			if (!this.isEdit()) {
+				setTimeout(() => this.router.navigate(['/dashboard/post', res.id]), 800);
+			}
+		},
 			error: (err) => {
 				this.saving.set(false);
 				const msg = err?.error?.details
@@ -534,7 +547,8 @@ export class PostEditorComponent implements OnInit {
 				this.toastService.open('Failed to save post. Please try again.', {
 					appearance: 'error',
 					autoClose: 5000,
-				});
+					data: '@tui.circle-x',
+				}).subscribe();
 			},
 		});
 	}

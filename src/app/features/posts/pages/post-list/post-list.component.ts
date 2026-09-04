@@ -2,7 +2,7 @@ import { Component, effect, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TuiAppearance, TuiButton, TuiTextfield } from '@taiga-ui/core';
-import { TuiChip, TuiPagination } from '@taiga-ui/kit';
+import { TuiChip, TuiPagination, TuiToastService } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import {
 	Calendar01Icon,
@@ -121,11 +121,12 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 export class PostListComponent {
 	private readonly postService = inject(PostService);
 	private readonly languageService = inject(LanguageService);
+	private readonly toastService = inject(TuiToastService);
 
 	query = '';
 	posts = signal<PostDto[]>([]);
 	loading = signal(false);
-	error = signal<string | null>(null);
+
 	page = signal(0);
 	totalPages = signal(1);
 	totalElements = signal(0);
@@ -150,7 +151,6 @@ export class PostListComponent {
 
 	load(): void {
 		this.loading.set(true);
-		this.error.set(null);
 		console.log('Loading page', this.page());
 		this.postService
 			.search({
@@ -167,10 +167,14 @@ export class PostListComponent {
 					this.totalElements.set(res.totalElements);
 					this.loading.set(false);
 				},
-				error: () => {
-					this.error.set('Failed to load posts');
-					this.loading.set(false);
-				},
+			error: () => {
+				this.loading.set(false);
+				this.toastService.open('Failed to load posts. Please try again.', {
+					appearance: 'error',
+					autoClose: 5000,
+					data: '@tui.circle-x',
+				}).subscribe();
+			},
 			});
 	}
 

@@ -3,9 +3,9 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { debounceTime, distinctUntilChanged, filter } from 'rxjs';
 
-import { TuiAppearance, TuiButton, TuiInput, TuiTextfield } from '@taiga-ui/core';
+import { TuiAppearance, TuiButton, TuiDialogService, TuiInput, TuiTextfield } from '@taiga-ui/core';
 
 import { TuiSortChange, TuiSortDirection, TuiTable, TuiTablePagination } from '@taiga-ui/addon-table';
 
@@ -21,7 +21,7 @@ import {
 
 import { PostDto, PostService } from '../../../posts/data-access/post.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
-import { TuiToastService } from '@taiga-ui/kit';
+import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 
 @Component({
 	selector: 'app-dashboard-post-list',
@@ -194,54 +194,6 @@ import { TuiToastService } from '@taiga-ui/kit';
 				</div>
 			}
 		</div>
-
-		@if (showDeleteDialog()) {
-			<div
-				class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-				(click)="showDeleteDialog.set(false)"
-			>
-				<div
-					class="flex w-full max-w-md flex-col gap-4 rounded-xl border border-border bg-surface p-6"
-					(click)="$event.stopPropagation()"
-				>
-					<h2 class="text-lg font-semibold">Delete post?</h2>
-
-					<p class="text-sm text-muted">This action cannot be undone.</p>
-
-					<div class="flex justify-end gap-3">
-						<button tuiButton tuiAppearance="outline" size="m" (click)="showDeleteDialog.set(false)">
-							Cancel
-						</button>
-
-						<button tuiButton tuiAppearance="accent" size="m" (click)="confirmDeleteOne()">Delete</button>
-					</div>
-				</div>
-			</div>
-		}
-
-		@if (showMassDeleteDialog()) {
-			<div
-				class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-				(click)="showMassDeleteDialog.set(false)"
-			>
-				<div
-					class="flex w-full max-w-md flex-col gap-4 rounded-xl border border-border bg-surface p-6"
-					(click)="$event.stopPropagation()"
-				>
-					<h2 class="text-lg font-semibold">Delete {{ pendingMassIds().length }} posts?</h2>
-
-					<p class="text-sm text-muted">This is atomic — if any fails, none are deleted.</p>
-
-					<div class="flex justify-end gap-3">
-						<button tuiButton tuiAppearance="outline" size="m" (click)="showMassDeleteDialog.set(false)">
-							Cancel
-						</button>
-
-						<button tuiButton tuiAppearance="accent" size="m" (click)="confirmMassDelete()">Delete</button>
-					</div>
-				</div>
-			</div>
-		}
 	`,
 })
 export class DashboardPostListComponent {
@@ -250,6 +202,7 @@ export class DashboardPostListComponent {
 	private readonly destroyRef = inject(DestroyRef);
 	private readonly languageService = inject(LanguageService);
 	private readonly toastService = inject(TuiToastService);
+	private readonly dialogs = inject(TuiDialogService);
 
 	readonly Search01Icon = Search01Icon;
 	readonly PlusSignIcon = PlusSignIcon;
@@ -285,12 +238,6 @@ export class DashboardPostListComponent {
 
 	readonly selected = signal<Set<string>>(new Set());
 
-	readonly showDeleteDialog = signal(false);
-	readonly pendingDeleteId = signal<string | null>(null);
-
-	readonly showMassDeleteDialog = signal(false);
-	readonly pendingMassIds = signal<string[]>([]);
-
 	constructor() {
 		this.searchControl.valueChanges
 			.pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
@@ -316,6 +263,8 @@ export class DashboardPostListComponent {
 	}
 
 	load(): void {
+		if (!isPlatformBrowser(this.platformId)) return;
+		
 		this.loading.set(true);
 		this.error.set(null);
 
@@ -391,36 +340,36 @@ export class DashboardPostListComponent {
 	}
 
 	askDeleteOne(id: string): void {
-		this.pendingDeleteId.set(id);
-		this.showDeleteDialog.set(true);
-	}
-
-	confirmDeleteOne(): void {
-		const id = this.pendingDeleteId();
-
-		if (!id) {
-			return;
-		}
-
-		this.showDeleteDialog.set(false);
-		this.pendingDeleteId.set(null);
-
-		this.postService.delete([id]).subscribe({
-			next: () => {
-				this.toastService.open('Post deleted successfully', {
-					appearance: 'success',
-					autoClose: 3000,
+		this.dialogs
+			.open<boolean>(TUI_CONFIRM, {
+				label: 'Delete post?',
+				size: 's',
+				data: {
+					content: 'This action cannot be undone.',
+					yes: 'Delete',
+					no: 'Cancel',
+				},
+			})
+			.pipe(filter(Boolean))
+			.subscribe(() => {
+				this.postService.delete([id]).subscribe({
+					next: () => {
+						this.toastService.open('Post deleted successfully', {
+							appearance: 'success',
+							autoClose: 3000,
+							data: '@tui.check',
+						}).subscribe();
+						this.load();
+					},
+					error: () => {
+						this.toastService.open('Failed to delete post. Please try again.', {
+							appearance: 'error',
+							autoClose: 5000,
+							data: '@tui.circle-x',
+						}).subscribe();
+					},
 				});
-				this.load();
-			},
-
-			error: () => {
-				this.toastService.open('Failed to delete post. Please try again.', {
-					appearance: 'error',
-					autoClose: 5000,
-				});
-			},
-		});
+			});
 	}
 
 	massDelete(): void {
@@ -430,37 +379,37 @@ export class DashboardPostListComponent {
 			return;
 		}
 
-		this.pendingMassIds.set(ids);
-		this.showMassDeleteDialog.set(true);
-	}
-
-	confirmMassDelete(): void {
-		const ids = this.pendingMassIds();
-
-		if (!ids.length) {
-			return;
-		}
-
-		this.showMassDeleteDialog.set(false);
-		this.pendingMassIds.set([]);
-
-		this.postService.delete(ids).subscribe({
-			next: () => {
-				this.selected.set(new Set());
-				this.toastService.open(`${ids.length} posts deleted successfully`, {
-					appearance: 'success',
-					autoClose: 3000,
+		this.dialogs
+			.open<boolean>(TUI_CONFIRM, {
+				label: `Delete ${ids.length} posts?`,
+				size: 's',
+				data: {
+					content: 'This is atomic — if any fails, none are deleted.',
+					yes: 'Delete',
+					no: 'Cancel',
+				},
+			})
+			.pipe(filter(Boolean))
+			.subscribe(() => {
+				this.postService.delete(ids).subscribe({
+					next: () => {
+						this.selected.set(new Set());
+						this.toastService.open(`${ids.length} posts deleted successfully`, {
+							appearance: 'success',
+							autoClose: 3000,
+							data: '@tui.check',
+						}).subscribe();
+						this.load();
+					},
+					error: () => {
+						this.toastService.open('Failed to delete posts. Please try again.', {
+							appearance: 'error',
+							autoClose: 5000,
+							data: '@tui.circle-x',
+						}).subscribe();
+					},
 				});
-				this.load();
-			},
-
-			error: () => {
-				this.toastService.open('Failed to delete posts. Please try again.', {
-					appearance: 'error',
-					autoClose: 5000,
-				});
-			},
-		});
+			});
 	}
 
 	protected readonly Loading03Icon = Loading03Icon;
