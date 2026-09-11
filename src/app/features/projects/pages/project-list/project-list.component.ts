@@ -1,21 +1,17 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { TuiPagination, TuiToastService } from '@taiga-ui/kit';
+import { TuiChip, TuiPagination, TuiToastService } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import {
-	Loading03Icon,
-	Tag01Icon,
-	Timer02Icon,
-} from '@hugeicons/core-free-icons';
-import { PostDto, PostService } from '../../data-access/post.service';
+import { EyeIcon, Loading03Icon, SourceCodeIcon } from '@hugeicons/core-free-icons';
 import { CommonModule } from '@angular/common';
-import { excerpt, firstTranslation } from '../../../../core/util/text.util';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { excerpt, firstTranslation } from '../../../../core/util/text.util';
+import { ProjectDto, ProjectService } from '../../data-access/project.service';
 import { ContentCardComponent, ContentCardItem } from '../../../../shared/components/content-card/content-card.component';
 
 @Component({
-	selector: 'app-post-list',
+	selector: 'app-project-list',
 	standalone: true,
 	imports: [
 		CommonModule,
@@ -23,17 +19,18 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 		RouterLink,
 		HugeiconsIconComponent,
 		TuiPagination,
+		TuiChip,
 		ContentCardComponent,
 	],
 	template: `
 		<div class="py-2">
-			<h1 class="text-3xl font-bold tracking-tight">Posts</h1>
+			<h1 class="text-3xl font-bold tracking-tight">Projects</h1>
 
 			@if (loading()) {
 				<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
 					<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="1.5" />
 				</div>
-			} @else if (posts().length === 0) {
+			} @else if (projects().length === 0) {
 				<div class="relative rounded-xl border border-border bg-surface px-8 pt-10 pb-3 text-center shadow-sm">
 					<div
 						class="absolute left-1/2 top-0 -translate-x-1/2 text-7xl font-serif leading-none text-muted/20"
@@ -42,11 +39,10 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 					</div>
 
 					<blockquote class="relative font-serif text-xl italic leading-relaxed text-foreground sm:text-2xl">
-						"Although I am ready to defend what I have said, many people expect me to defend what others
-						have attributed to me."
+						"No project is too small to teach you something valuable."
 					</blockquote>
 
-					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">T. S.</footer>
+					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">Dev Wisdom</footer>
 				</div>
 			} @else {
 				<div class="w-full">
@@ -54,19 +50,18 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 						<app-content-card [item]="card" [showDivider]="index > 0" />
 					}
 				</div>
-				
+
 				<tui-pagination [activePadding]="1" [index]="page()" [length]="totalPages()" (indexChange)="page.set($event)"/>
 			}
 		</div>
 	`,
 })
-export class PostListComponent {
-	private readonly postService = inject(PostService);
+export class ProjectListComponent {
+	private readonly projectService = inject(ProjectService);
 	private readonly languageService = inject(LanguageService);
 	private readonly toastService = inject(TuiToastService);
 
-	query = '';
-	posts = signal<PostDto[]>([]);
+	projects = signal<ProjectDto[]>([]);
 	loading = signal(false);
 
 	page = signal(0);
@@ -74,19 +69,22 @@ export class PostListComponent {
 	totalElements = signal(0);
 
 	cardItems = computed<ContentCardItem[]>(() =>
-		this.posts().map(post => ({
-			slug: post.slug,
-			title: firstTranslation(post.translations)?.title ?? '',
-			excerpt: excerpt(firstTranslation(post.translations)?.content ?? ''),
-			imageUrl: post.bannerUrl ?? null,
-			date: post.createdAt,
-			routePrefix: '/post',
-			metaIcon: Timer02Icon,
-			metaText: `${post.estimatedReading || 5} min`,
-			chips: post.tags.map(tag => ({
-				icon: Tag01Icon,
-				label: firstTranslation(tag.translations)?.name ?? '',
-			})),
+		this.projects().map(project => ({
+			slug: project.slug,
+			title: firstTranslation(project.translations)?.title ?? '',
+			excerpt: excerpt(firstTranslation(project.translations)?.description ?? ''),
+			imageUrl: project.logoUrl || project.bannerUrl,
+			date: project.createdAt,
+			routePrefix: '/project',
+			metaIcon: EyeIcon,
+			metaText: `${project.viewCount} views`,
+			chips: (project.programmingLanguage || '')
+				.split(',')
+				.filter(Boolean)
+				.map(lang => ({
+					icon: SourceCodeIcon,
+					label: lang.trim(),
+				})),
 		}))
 	);
 
@@ -100,10 +98,9 @@ export class PostListComponent {
 
 	load(): void {
 		this.loading.set(true);
-		console.log('Loading page', this.page());
-		this.postService
+		this.projectService
 			.search({
-				query: { query: this.query || undefined, language: this.languageService.language() },
+				query: { language: this.languageService.language() },
 				page: this.page(),
 				size: 10,
 				sort: 'createdAt',
@@ -111,19 +108,19 @@ export class PostListComponent {
 			})
 			.subscribe({
 				next: (res) => {
-					this.posts.set(res.content);
+					this.projects.set(res.content);
 					this.totalPages.set(res.totalPages);
 					this.totalElements.set(res.totalElements);
 					this.loading.set(false);
 				},
-			error: () => {
-				this.loading.set(false);
-				this.toastService.open('Failed to load posts. Please try again.', {
-					appearance: 'error',
-					autoClose: 5000,
-					data: '@tui.circle-x',
-				}).subscribe();
-			},
+				error: () => {
+					this.loading.set(false);
+					this.toastService.open('Failed to load projects. Please try again.', {
+						appearance: 'error',
+						autoClose: 5000,
+						data: '@tui.circle-x',
+					}).subscribe();
+				},
 			});
 	}
 

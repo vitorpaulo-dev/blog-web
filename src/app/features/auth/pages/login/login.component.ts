@@ -6,7 +6,6 @@ import {
   ViewChild,
   inject,
   PLATFORM_ID,
-  effect,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
@@ -30,22 +29,18 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
   private readonly platformId = inject(PLATFORM_ID);
   private mounted = false;
 
-  constructor() {
-    // Watch for when Clerk is loaded and mount the sign-in component
-    if (isPlatformBrowser(this.platformId)) {
-      effect(() => {
-        if (this.clerkService.isLoaded() && this.signInContainer && !this.mounted) {
-          this.mountSignIn();
-        }
-      });
-    }
-  }
-
   async ngAfterViewInit(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
 
-    // Ensure Clerk is initialized
+    // Ensure Clerk is initialized, then mount
     await this.clerkService.init();
+    this.tryMount();
+  }
+
+  private tryMount(): void {
+    if (this.clerkService.isLoaded() && this.signInContainer && !this.mounted) {
+      this.mountSignIn();
+    }
   }
 
   private mountSignIn(): void {
@@ -55,6 +50,11 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
     this.clerkService.mountSignIn(this.signInContainer.nativeElement, {
       forceRedirectUrl: redirectUrl,
       signUpUrl: '/signup',
+      appearance: {
+        layout: {
+          safeArea: true,
+        },
+      },
     });
     this.mounted = true;
   }

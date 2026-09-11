@@ -1,11 +1,9 @@
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TuiAppearance, TuiButton, TuiError, TuiInput, TuiLink, TuiTextfield } from '@taiga-ui/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import {
 	ArrowRight01Icon,
-	Calendar01Icon,
-	Clock01Icon,
 	Database01Icon,
 	GithubIcon,
 	Loading03Icon,
@@ -20,8 +18,9 @@ import { RouterLink } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { TuiCardLarge, TuiForm } from '@taiga-ui/layout';
 import { TuiChip, TuiToastService } from '@taiga-ui/kit';
-import { excerpt } from '../../../../core/util/text.util';
+import { excerpt, firstTranslation } from '../../../../core/util/text.util';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { ContentCardComponent, ContentCardItem } from '../../../../shared/components/content-card/content-card.component';
 
 @Component({
 	selector: 'app-home-page',
@@ -38,6 +37,7 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 		TuiInput,
 		TuiAppearance,
 		TuiChip,
+		ContentCardComponent,
 	],
 	template: `
 		<div class="min-h-dvh bg-background text-foreground">
@@ -93,51 +93,8 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 					</div>
 				} @else {
 					<div class="w-full">
-						@for (post of posts(); track post.id; let index = $index) {
-							@if (index > 0) {
-								<div class="py-4"><hr /></div>
-							}
-
-							<a
-								[routerLink]="['/post', post.slug]"
-								class="flex flex-col md:flex-row items-center w-full hover:bg-surface transition-all p-2 md:px-4 rounded-lg group"
-							>
-								@if (post.bannerUrl) {
-									<div
-										class="md:mr-5 aspect-video w-80 rounded-xl border border-border bg-surface overflow-hidden"
-									>
-										<img
-											[src]="post.bannerUrl"
-											[alt]="postContent(post)?.title"
-											class="aspect-video object-cover border-b border-border group-hover:scale-105 transition-all"
-										/>
-									</div>
-								}
-								<div class="py-2 md:py-5 flex flex-col gap-3 w-full">
-									<div class="flex items-center gap-2 text-xs text-muted font-mono group-hover:text-muted/50 transition-all">
-										<hugeicons-icon [icon]="Calendar01Icon" [size]="14" [strokeWidth]="1.5" />
-										<span>{{ post.createdAt | date: 'dd MMM yyyy' }}</span>
-										<span aria-hidden="true">·</span>
-										<hugeicons-icon [icon]="Timer02Icon" [size]="16" [strokeWidth]="1.5" />
-										<span class="inline-flex items-center gap-1">{{ post.estimatedReading || 5 }} min</span>
-									</div>
-									<h3 class="truncate w-full text-lg font-semibold leading-tight text-foreground group-hover:text-accent transition-colors">
-										{{ postContent(post)?.title }}
-									</h3>
-									<p class="text-sm text-muted leading-relaxed line-clamp-3 group-hover:text-muted/50 transition-all">
-										{{ excerpt(postContent(post)?.content || '') }}
-									</p>
-								</div>
-
-								<div class="flex flex-wrap gap-1.5 h-full items-center justify-end">
-									@for (tag of post.tags; track tag.id) {
-										<span tuiChip>
-											<hugeicons-icon [icon]="Tag01Icon" [size]="12" [strokeWidth]="1.5" />
-											{{ tag.translations[lang()]?.name }}
-										</span>
-									}
-								</div>
-							</a>
+						@for (card of cardItems(); track card.slug; let index = $index) {
+							<app-content-card [item]="card" [showDivider]="index > 0" />
 						}
 					</div>
 				}
@@ -264,14 +221,27 @@ export class HomePageComponent {
 	postsLoading = signal(true);
 	readonly lang = this.languageService.language.asReadonly();
 
+	cardItems = computed<ContentCardItem[]>(() =>
+		this.posts().map(post => ({
+			slug: post.slug,
+			title: firstTranslation(post.translations)?.title ?? '',
+			excerpt: excerpt(firstTranslation(post.translations)?.content ?? ''),
+			imageUrl: post.bannerUrl ?? null,
+			date: post.createdAt,
+			routePrefix: '/post',
+			metaIcon: Timer02Icon,
+			metaText: `${post.estimatedReading || 5} min`,
+			chips: post.tags.map(tag => ({
+				icon: Tag01Icon,
+				label: firstTranslation(tag.translations)?.name ?? '',
+			})),
+		}))
+	);
+
 	constructor() {
 		effect(() => {
 			this.loadRecent();
 		});
-	}
-
-	postContent(post: PostDto) {
-		return post.translations?.[this.lang()] ?? null;
 	}
 
 	private loadRecent(): void {
@@ -313,14 +283,9 @@ export class HomePageComponent {
 
 	protected readonly RssConnected01Icon = RssConnected01Icon;
 	protected readonly ArrowRight01Icon = ArrowRight01Icon;
-	protected readonly Calendar01Icon = Calendar01Icon;
-	protected readonly Clock01Icon = Clock01Icon;
 	protected readonly Database01Icon = Database01Icon;
 	protected readonly Mail01Icon = Mail01Icon;
-	protected readonly Tag01Icon = Tag01Icon;
 	protected readonly Loading03Icon = Loading03Icon;
 	protected readonly SparklesIcon = SparklesIcon;
 	protected readonly GithubIcon = GithubIcon;
-	protected readonly Timer02Icon = Timer02Icon;
-	protected readonly excerpt = excerpt;
 }

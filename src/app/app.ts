@@ -51,8 +51,8 @@ export class App {
 	open = signal(false);
 	langDropdownOpen = false;
 	postService = inject(PostService);
-	languageService = inject(LanguageService);
 	clerkService = inject(ClerkService);
+	languageService = inject(LanguageService);
 
 	protected readonly popular = [];
 
@@ -80,12 +80,10 @@ export class App {
 			Posts: response.content ?? [],
 		}))
 	);
-	protected readonly Linkedin01Icon = Linkedin01Icon;
-	protected readonly GithubIcon = GithubIcon;
 	protected readonly Search01Icon = Search01Icon;
 	protected readonly Github01Icon = Github01Icon;
+	protected readonly Linkedin01Icon = Linkedin01Icon;
 	protected readonly StickyNote01Icon = StickyNote01Icon;
-	protected readonly ChevronRight = ChevronRight;
 
 	protected setLanguage(lang: 'ENGLISH' | 'PORTUGUESE'): void {
 		this.languageService.setLanguage(lang);

@@ -30,7 +30,7 @@ export interface TagContentDto {
 
 export interface ProjectContentDto {
 	title: string;
-	description?: string;
+	description: string;
 }
 
 export interface AuthorContentDto {
@@ -55,8 +55,21 @@ export interface TagDto {
 export interface ProjectDto {
 	id: string;
 	slug: string;
-	logoUrl?: string;
-	programmingLanguage?: string;
+	logoUrl: string | null;
+	bannerUrl: string | null;
+	githubUrl: string | null;
+	websiteUrl: string | null;
+	programmingLanguage: string | null;
+	status: 'DRAFT' | 'PUBLISHED';
+	createdAt: string;
+	updatedAt: string;
+	authors: AuthorDto[];
+	viewCount: number;
+	loveCount: number;
+	celebrateCount: number;
+	geniusCount: number;
+	helpCount: number;
+	reactionCount: number;
 	translations: Record<Language, ProjectContentDto>;
 }
 
@@ -70,7 +83,7 @@ export interface PostDto {
 	updatedAt: string;
 	authors: AuthorDto[];
 	tags: TagDto[];
-	projects: ProjectDto[];
+	projectIds: string[];
 	reactionCount: number;
 	viewCount: number;
 	loveCount: number;

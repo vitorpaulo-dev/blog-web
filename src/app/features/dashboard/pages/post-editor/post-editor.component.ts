@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, PLATFORM_ID } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -30,6 +30,8 @@ import {
 } from '@hugeicons/core-free-icons';
 import { PostService, Language } from '../../../posts/data-access/post.service';
 import { MarkdownService } from '../../../posts/data-access/markdown.service';
+import { ProjectService } from '../../../projects/data-access/project.service';
+import { UploadService } from '../../../../core/upload/upload.service';
 import { SafeHtml } from '@angular/platform-browser';
 
 interface ProjectOption {
@@ -182,14 +184,18 @@ interface TranslationForm {
 				<div class="flex flex-col gap-2">
 					<label class="text-sm font-medium flex items-center gap-1.5">
 						<hugeicons-icon [icon]="bannerIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-						<span>Banner Image</span>
+						<span>Banner</span>
 					</label>
 					<input 
 						type="file" 
 						accept="image/*" 
 						(change)="onBannerFileSelected($event)"
-						class="w-full rounded-xl border border-border bg-surface p-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent-secondary file:cursor-pointer cursor-pointer"
+						[disabled]="uploading()"
+						class="w-full rounded-xl border border-border bg-surface p-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent-secondary file:cursor-pointer cursor-pointer disabled:opacity-50"
 					/>
+					@if (uploading()) {
+						<p class="text-xs text-muted">Uploading...</p>
+					}
 					@if (form.controls.bannerUrl.value) {
 						<img
 							[src]="form.controls.bannerUrl.value"
@@ -218,10 +224,10 @@ interface TranslationForm {
 						<hugeicons-icon [icon]="projectsIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
 						<span>Projects</span>
 					</label>
-					<input tuiInputChip formControlName="projects" placeholder="Select projects" />
+					<input tuiInputChip formControlName="projects" placeholder="Select projects" (input)="onProjectSearchInput($event)" />
 					<tui-input-chip *tuiItem />
 					<tui-data-list *tuiDropdown tuiMultiSelectGroup>
-						@for (project of availableProjects(); track project.id) {
+						@for (project of filteredProjects(); track project.id) {
 							<button tuiOption [value]="project">{{ project.title }}</button>
 						}
 					</tui-data-list>
@@ -235,10 +241,10 @@ interface TranslationForm {
 					@if (!isEdit()) {
 						<button
 							tuiButton
-							appearance="outline"
+							tuiAppearance="outline"
 							type="button"
 							(click)="save('DRAFT')"
-							[disabled]="!isFormValid() || saving()"
+							[disabled]="!isFormValid() || saving() || uploading()"
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
@@ -246,10 +252,10 @@ interface TranslationForm {
 						</button>
 						<button
 							tuiButton
-							appearance="primary"
+							tuiAppearance="primary"
 							type="button"
 							(click)="save('PUBLISHED')"
-							[disabled]="!isFormValid() || saving()"
+							[disabled]="!isFormValid() || saving() || uploading()"
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="publishIcon" [size]="16" [strokeWidth]="2.5" />
@@ -258,10 +264,10 @@ interface TranslationForm {
 					} @else {
 						<button
 							tuiButton
-							appearance="primary"
+							tuiAppearance="primary"
 							type="button"
 							(click)="save(currentStatus() === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT')"
-							[disabled]="!isFormValid() || saving()"
+							[disabled]="!isFormValid() || saving() || uploading()"
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
@@ -270,10 +276,10 @@ interface TranslationForm {
 						@if (currentStatus() === 'PUBLISHED') {
 							<button
 								tuiButton
-								appearance="outline"
+								tuiAppearance="outline"
 								type="button"
 								(click)="save('DRAFT')"
-								[disabled]="saving()"
+								[disabled]="saving() || uploading()"
 								class="gap-1"
 							>
 								<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
@@ -282,10 +288,10 @@ interface TranslationForm {
 						} @else {
 							<button
 								tuiButton
-								appearance="primary"
+								tuiAppearance="primary"
 								type="button"
 								(click)="save('PUBLISHED')"
-								[disabled]="saving()"
+								[disabled]="saving() || uploading()"
 								class="gap-1"
 							>
 								<hugeicons-icon [icon]="publishIcon" [size]="16" [strokeWidth]="2.5" />
@@ -302,7 +308,9 @@ export class PostEditorComponent implements OnInit {
 	private readonly route = inject(ActivatedRoute);
 	private readonly router = inject(Router);
 	private readonly postService = inject(PostService);
+	private readonly projectService = inject(ProjectService);
 	private readonly markdownService = inject(MarkdownService);
+	private readonly uploadService = inject(UploadService);
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly toastService = inject(TuiToastService);
 
@@ -348,6 +356,7 @@ export class PostEditorComponent implements OnInit {
 	activeTab = signal<'edit' | 'preview'>('edit');
 	previewHtml = signal<SafeHtml | null>(null);
 	isDragging = signal(false);
+	uploading = signal(false);
 	private postId: string | null = null;
 
 	availableTags: TagOption[] = [
@@ -356,15 +365,36 @@ export class PostEditorComponent implements OnInit {
 		{ id: 'tag-3', name: 'Spring Boot' },
 	];
 
-	availableProjects = signal<ProjectOption[]>([
-		{ id: '00000000-0000-0000-0000-000000000001', title: 'Demo Project Alpha' },
-		{ id: '00000000-0000-0000-0000-000000000002', title: 'Demo Project Beta' },
-		{ id: '00000000-0000-0000-0000-000000000003', title: 'Infrastructure' },
-	]);
+	availableProjects = signal<ProjectOption[]>([]);
+	projectSearchText = signal<string>('');
+
+	filteredProjects = computed(() => {
+		const search = this.projectSearchText().toLowerCase().trim();
+		const all = this.availableProjects();
+		if (!search) return all;
+		return all.filter(p => p.title.toLowerCase().includes(search));
+	});
 
 	ngOnInit(): void {
 		if (!this.isBrowser) return;
-		
+
+		// Load available projects
+		this.projectService.search({
+			query: { language: 'ENGLISH' },
+			page: 0,
+			size: 5,
+			sort: 'createdAt',
+			direction: 'DESC',
+		}).subscribe({
+			next: (res) => {
+				const options = res.content.map((p) => ({
+					id: p.id,
+					title: p.translations?.['ENGLISH']?.title || p.id,
+				}));
+				this.availableProjects.set(options);
+			},
+		});
+
 		const id = this.route.snapshot.paramMap.get('id');
 		if (id) {
 			this.isEdit.set(true);
@@ -391,11 +421,20 @@ export class PostEditorComponent implements OnInit {
 					});
 					this.form.patchValue({ tags });
 
-					const projects = p.projects.map((pr) => {
-						const title = pr.translations?.['ENGLISH']?.title || pr.id;
-						return { id: pr.id, title };
-					});
-					this.form.patchValue({ projects });
+					if (p.projectIds && p.projectIds.length > 0) {
+						this.projectService.getByIds(p.projectIds, 'ENGLISH').subscribe({
+							next: (projects) => {
+								const projectOptions = projects.map((pr) => ({
+									id: pr.id,
+									title: pr.translations?.['ENGLISH']?.title || pr.id,
+								}));
+								this.form.patchValue({ projects: projectOptions });
+							},
+							error: () => this.form.patchValue({ projects: [] }),
+						});
+					} else {
+						this.form.patchValue({ projects: [] });
+					}
 
 					this.slug.set(p.slug);
 					this.currentStatus.set(p.status);
@@ -422,6 +461,11 @@ export class PostEditorComponent implements OnInit {
 	stringifyTag = (tag: TagOption): string => tag.name;
 	stringifyProject = (project: ProjectOption): string => project.title;
 
+	onProjectSearchInput(event: Event): void {
+		const input = event.target as HTMLInputElement;
+		this.projectSearchText.set(input.value);
+	}
+
 	async switchToPreview(): Promise<void> {
 		this.activeTab.set('preview');
 		const lang = this.activeLang();
@@ -438,7 +482,21 @@ export class PostEditorComponent implements OnInit {
 		const input = event.target as HTMLInputElement;
 		const file = input.files?.[0];
 		if (!file) return;
-		this.handleImageFile(file);
+		this.uploading.set(true);
+		this.uploadService.upload(file).subscribe({
+			next: (res) => {
+				this.form.patchValue({ bannerUrl: res.url });
+				this.uploading.set(false);
+			},
+			error: () => {
+				this.uploading.set(false);
+				this.toastService.open('Failed to upload banner image', {
+					appearance: 'error',
+					autoClose: 5000,
+					data: '@tui-circle-x',
+				}).subscribe();
+			},
+		});
 	}
 
 	onDragOver(event: DragEvent): void {
@@ -465,20 +523,25 @@ export class PostEditorComponent implements OnInit {
 
 		const file = files[0];
 		if (file.type.startsWith('image/')) {
-			this.handleImageFile(file);
+			this.uploading.set(true);
+			this.uploadService.upload(file).subscribe({
+				next: (res) => {
+					const markdown = `\n![${file.name}](${res.url})\n`;
+					const lang = this.activeLang();
+					const currentContent = this.translationForms()[lang].content.value;
+					this.translationForms()[lang].content.setValue(currentContent + markdown);
+					this.uploading.set(false);
+				},
+				error: () => {
+					this.uploading.set(false);
+					this.toastService.open('Failed to upload image', {
+						appearance: 'error',
+						autoClose: 5000,
+						data: '@tui-circle-x',
+					}).subscribe();
+				},
+			});
 		}
-	}
-
-	private handleImageFile(file: File): void {
-		const reader = new FileReader();
-		reader.onload = () => {
-			const base64 = reader.result as string;
-			const markdown = `\n![${file.name}](${base64})\n`;
-			const lang = this.activeLang();
-			const currentContent = this.translationForms()[lang].content.value;
-			this.translationForms()[lang].content.setValue(currentContent + markdown);
-		};
-		reader.readAsDataURL(file);
 	}
 
 	save(status: string): void {

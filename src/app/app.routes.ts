@@ -45,4 +45,32 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/dashboard/pages/post-editor/post-editor.component').then(m => m.PostEditorComponent),
   },
+  {
+    path: 'project',
+    loadComponent: () =>
+      import('./features/projects/pages/project-list/project-list.component').then(m => m.ProjectListComponent),
+  },
+  {
+    path: 'project/:slug',
+    loadComponent: () =>
+      import('./features/projects/pages/project-detail/project-detail.component').then(m => m.ProjectDetailComponent),
+  },
+  {
+    path: 'dashboard/project',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/dashboard/pages/dashboard-project-list/dashboard-project-list.component').then(m => m.DashboardProjectListComponent),
+  },
+  {
+    path: 'dashboard/project/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/dashboard/pages/project-editor/project-editor.component').then(m => m.ProjectEditorComponent),
+  },
+  {
+    path: 'dashboard/project/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/dashboard/pages/project-editor/project-editor.component').then(m => m.ProjectEditorComponent),
+  },
 ];
