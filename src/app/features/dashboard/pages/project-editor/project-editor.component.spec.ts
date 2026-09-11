@@ -320,7 +320,10 @@ describe('ProjectEditorComponent', () => {
       bannerUrl: 'https://example.com/banner.png',
       githubUrl: 'https://github.com/test',
       websiteUrl: 'https://test.com',
-      programmingLanguage: 'TypeScript,Angular',
+      tags: [
+        { id: 'tag-1', slug: 'typescript', translations: { ENGLISH: { name: 'TypeScript' } } },
+        { id: 'tag-2', slug: 'angular', translations: { ENGLISH: { name: 'Angular' } } },
+      ],
       status: 'DRAFT',
       translations: {
         ENGLISH: { title: 'Existing Title', description: 'Existing Desc' },
@@ -339,7 +342,10 @@ describe('ProjectEditorComponent', () => {
     expect(editComponent.currentStatus()).toBe('DRAFT');
     expect(editComponent.form.controls.logoUrl.value).toBe('https://example.com/logo.png');
     expect(editComponent.form.controls.githubUrl.value).toBe('https://github.com/test');
-    expect(editComponent.form.controls.programmingLanguages.value).toEqual(['TypeScript', 'Angular']);
+    expect(editComponent.form.controls.tagIds.value).toEqual([
+      { id: 'tag-1', slug: 'typescript', translations: { ENGLISH: { name: 'TypeScript' } } },
+      { id: 'tag-2', slug: 'angular', translations: { ENGLISH: { name: 'Angular' } } },
+    ]);
 
     const forms = editComponent.translationForms();
     expect(forms.ENGLISH.title.value).toBe('Existing Title');

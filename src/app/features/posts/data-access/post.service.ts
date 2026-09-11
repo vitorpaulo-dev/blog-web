@@ -25,7 +25,6 @@ export interface PostContentDto {
 
 export interface TagContentDto {
 	name: string;
-	description?: string;
 }
 
 export interface ProjectContentDto {
@@ -59,7 +58,7 @@ export interface ProjectDto {
 	bannerUrl: string | null;
 	githubUrl: string | null;
 	websiteUrl: string | null;
-	programmingLanguage: string | null;
+	tags: TagDto[];
 	status: 'DRAFT' | 'PUBLISHED';
 	createdAt: string;
 	updatedAt: string;

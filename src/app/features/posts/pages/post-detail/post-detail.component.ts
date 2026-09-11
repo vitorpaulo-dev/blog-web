@@ -124,13 +124,13 @@ import {
 						</a>
 					}
 
-					@for (tag of p.tags; track tag.id) {
-						<a tuiChip [href]="'/tag/' + tag.slug">
-							<hugeicons-icon [icon]="Tag01Icon" [size]="12" [strokeWidth]="1.5" />
+			@for (tag of p.tags; track tag.id) {
+				<span tuiChip>
+					<hugeicons-icon [icon]="Tag01Icon" [size]="12" [strokeWidth]="1.5" />
 
-							{{ getFirstTranslation(tag.translations)?.name }}
-						</a>
-					}
+					{{ getFirstTranslation(tag.translations)?.name }}
+				</span>
+			}
 				</div>
 
 				<article
@@ -238,13 +238,10 @@ export class PostDetailComponent implements AfterViewInit {
 			routePrefix: '/project',
 			metaIcon: EyeIcon,
 			metaText: `${project.viewCount} views`,
-			chips: (project.programmingLanguage || '')
-				.split(',')
-				.filter(Boolean)
-				.map(lang => ({
-					icon: SourceCodeIcon,
-					label: lang.trim(),
-				})),
+			chips: (project.tags || []).map(tag => ({
+				icon: SourceCodeIcon,
+				label: firstTranslation(tag.translations)?.name ?? '',
+			})),
 		}))
 	);
 

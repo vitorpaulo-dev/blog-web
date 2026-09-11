@@ -3,7 +3,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
-import { TuiButton, TuiTextfield, TuiDropdown, TuiDataList, TuiInput } from '@taiga-ui/core';
+import { TuiButton, TuiTextfield, TuiDropdown, TuiDataList, TuiInput, TuiFilterByInputPipe } from '@taiga-ui/core';
 import {
 	TuiChip,
 	TuiInputChip,
@@ -31,6 +31,7 @@ import {
 import { PostService, Language } from '../../../posts/data-access/post.service';
 import { MarkdownService } from '../../../posts/data-access/markdown.service';
 import { ProjectService } from '../../../projects/data-access/project.service';
+import { TagService } from '../../../tags/data-access/tag.service';
 import { UploadService } from '../../../../core/upload/upload.service';
 import { SafeHtml } from '@angular/platform-browser';
 
@@ -68,6 +69,8 @@ interface TranslationForm {
 		TuiComboBox,
 		HugeiconsIconComponent,
 		TuiInput,
+		TuiDataListWrapper,
+		TuiFilterByInputPipe,
 	],
 	template: `
 		<div class="mx-auto max-w-3xl px-6 py-8">
@@ -212,12 +215,9 @@ interface TranslationForm {
 					</label>
 					<input tuiInputChip formControlName="tags" placeholder="Select tags" />
 					<tui-input-chip *tuiItem />
-					<tui-data-list *tuiDropdown tuiMultiSelectGroup>
-						@for (tag of availableTags; track tag.id) {
-							<button tuiOption [value]="tag">{{ tag.name }}</button>
-						}
-					</tui-data-list>
+					<tui-data-list-wrapper *tuiDropdown tuiMultiSelectGroup [items]="availableTags() | tuiFilterByInput" [itemContent]="tagTemplate" />
 				</tui-textfield>
+				<ng-template #tagTemplate let-tag>{{ tag.name }}</ng-template>
 
 				<tui-textfield multi tuiChevron [stringify]="stringifyProject">
 					<label tuiLabel class="flex items-center gap-1.5">
@@ -226,12 +226,9 @@ interface TranslationForm {
 					</label>
 					<input tuiInputChip formControlName="projects" placeholder="Select projects" (input)="onProjectSearchInput($event)" />
 					<tui-input-chip *tuiItem />
-					<tui-data-list *tuiDropdown tuiMultiSelectGroup>
-						@for (project of filteredProjects(); track project.id) {
-							<button tuiOption [value]="project">{{ project.title }}</button>
-						}
-					</tui-data-list>
+					<tui-data-list-wrapper *tuiDropdown tuiMultiSelectGroup [items]="filteredProjects()" [itemContent]="projectTemplate" />
 				</tui-textfield>
+				<ng-template #projectTemplate let-project>{{ project.title }}</ng-template>
 
 			@if (error()) {
 				<p class="text-sm text-red-400" role="alert">{{ error() }}</p>
@@ -309,6 +306,7 @@ export class PostEditorComponent implements OnInit {
 	private readonly router = inject(Router);
 	private readonly postService = inject(PostService);
 	private readonly projectService = inject(ProjectService);
+	private readonly tagService = inject(TagService);
 	private readonly markdownService = inject(MarkdownService);
 	private readonly uploadService = inject(UploadService);
 	private readonly platformId = inject(PLATFORM_ID);
@@ -359,11 +357,7 @@ export class PostEditorComponent implements OnInit {
 	uploading = signal(false);
 	private postId: string | null = null;
 
-	availableTags: TagOption[] = [
-		{ id: 'tag-1', name: 'Angular' },
-		{ id: 'tag-2', name: 'TypeScript' },
-		{ id: 'tag-3', name: 'Spring Boot' },
-	];
+	availableTags = signal<TagOption[]>([]);
 
 	availableProjects = signal<ProjectOption[]>([]);
 	projectSearchText = signal<string>('');
@@ -377,6 +371,23 @@ export class PostEditorComponent implements OnInit {
 
 	ngOnInit(): void {
 		if (!this.isBrowser) return;
+
+		// Load available tags
+		this.tagService.search({
+			query: {},
+			page: 0,
+			size: 5,
+			sort: 'name',
+			direction: 'ASC',
+		}).subscribe({
+			next: (res) => {
+				const options = res.content.map((t) => ({
+					id: t.id,
+					name: t.translations?.['ENGLISH']?.name || t.id,
+				}));
+				this.availableTags.set(options);
+			},
+		});
 
 		// Load available projects
 		this.projectService.search({

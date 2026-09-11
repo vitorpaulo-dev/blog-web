@@ -82,6 +82,7 @@ describe('HomePageComponent', () => {
         {
           id: '1',
           slug: 'test-post',
+          tags: [],
           translations: {
             ENGLISH: { title: 'Test Post', content: 'Content' },
           },

@@ -18,7 +18,7 @@ export interface CreateProjectPayload {
 	bannerUrl?: string;
 	githubUrl?: string;
 	websiteUrl?: string;
-	programmingLanguage?: string;
+	tagIds?: string[];
 	translations: Record<Language, ProjectContentDto>;
 	status?: string;
 }
@@ -28,7 +28,7 @@ export interface UpdateProjectPayload {
 	bannerUrl?: string;
 	githubUrl?: string;
 	websiteUrl?: string;
-	programmingLanguage?: string;
+	tagIds?: string[];
 	translations: Record<Language, ProjectContentDto>;
 	status: 'DRAFT' | 'PUBLISHED';
 }

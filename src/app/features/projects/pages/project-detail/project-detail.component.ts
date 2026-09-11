@@ -118,13 +118,13 @@ import { ProjectDto, ProjectService } from '../../data-access/project.service';
 						</a>
 					}
 					
-					@for (language of p.programmingLanguage?.split(',') ?? []; track language) {
-						<p tuiChip>
-							<hugeicons-icon [icon]="SourceCodeIcon" [size]="12" [strokeWidth]="1.5" />
+				@for (tag of p.tags; track tag.id) {
+					<p tuiChip>
+						<hugeicons-icon [icon]="SourceCodeIcon" [size]="12" [strokeWidth]="1.5" />
 
-							{{ language }}
-						</p>
-					}
+						{{ getFirstTranslation(tag.translations)?.name }}
+					</p>
+				}
 				</div>
 
 				<article class="prose prose-invert max-w-none mt-8 break-words">
@@ -194,6 +194,10 @@ export class ProjectDetailComponent {
 
 	content() {
 		return firstTranslation(this.project()?.translations);
+	}
+
+	getFirstTranslation(translations?: Record<string, { name?: string }>) {
+		return translations ? (Object.values(translations)[0] ?? null) : null;
 	}
 
 	constructor() {

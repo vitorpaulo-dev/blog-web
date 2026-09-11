@@ -78,13 +78,10 @@ export class ProjectListComponent {
 			routePrefix: '/project',
 			metaIcon: EyeIcon,
 			metaText: `${project.viewCount} views`,
-			chips: (project.programmingLanguage || '')
-				.split(',')
-				.filter(Boolean)
-				.map(lang => ({
-					icon: SourceCodeIcon,
-					label: lang.trim(),
-				})),
+			chips: (project.tags || []).map(tag => ({
+				icon: SourceCodeIcon,
+				label: firstTranslation(tag.translations)?.name ?? '',
+			})),
 		}))
 	);
 

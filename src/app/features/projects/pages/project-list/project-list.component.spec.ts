@@ -71,7 +71,7 @@ describe('ProjectListComponent', () => {
           slug: 'test-project',
           logoUrl: null,
           bannerUrl: null,
-          programmingLanguage: 'TypeScript',
+          tags: [{ id: '1', slug: 'typescript', translations: { ENGLISH: { name: 'TypeScript' } } }],
           viewCount: 10,
           createdAt: '2025-01-01T00:00:00Z',
           translations: {
@@ -150,7 +150,10 @@ describe('ProjectListComponent', () => {
           slug: 'proj-1',
           logoUrl: 'https://example.com/logo.png',
           bannerUrl: null,
-          programmingLanguage: 'TypeScript,Angular',
+          tags: [
+            { id: '1', slug: 'typescript', translations: { ENGLISH: { name: 'TypeScript' } } },
+            { id: '2', slug: 'angular', translations: { ENGLISH: { name: 'Angular' } } },
+          ],
           viewCount: 25,
           createdAt: '2025-03-01T00:00:00Z',
           translations: {
