@@ -17,6 +17,9 @@ import {
 } from '@hugeicons/core-free-icons';
 
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../../core/i18n/translation.service';
+import { LocalizedDatePipe } from '../../../../core/i18n/localized-date.pipe';
 import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 import { ProjectDto, ProjectService } from '../../../projects/data-access/project.service';
 
@@ -34,22 +37,24 @@ import { ProjectDto, ProjectService } from '../../../projects/data-access/projec
 		TuiAppearance,
 		TuiTextfield,
 		TuiInput,
+		TranslatePipe,
+		LocalizedDatePipe,
 	],
 	template: `
 		<div class="mx-auto max-w-5xl px-6 py-8">
 
 			<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-				<h1 class="text-2xl font-bold">Projects</h1>
+				<h1 class="text-2xl font-bold">{{ 'dashboard.projects.list.title' | translate }}</h1>
 
 				<a routerLink="/dashboard/project/new" tuiButton tuiAppearance="primary" size="m" class="gap-1">
 					<hugeicons-icon [icon]="PlusSignIcon" [size]="22" [strokeWidth]="1.5" />
-					New Project
+					{{ 'dashboard.projects.list.new' | translate }}
 				</a>
 			</div>
 
 			<tui-textfield class="mb-4">
-				<label tuiLabel>Search</label>
-				<input tuiInput [formControl]="searchControl" placeholder="Search projects..." />
+				<label tuiLabel>{{ 'dashboard.projects.list.searchLabel' | translate }}</label>
+				<input tuiInput [formControl]="searchControl" [placeholder]="'dashboard.projects.list.searchPlaceholder' | translate" />
 			</tui-textfield>
 
 			@if (loading()) {
@@ -65,10 +70,10 @@ import { ProjectDto, ProjectService } from '../../../projects/data-access/projec
 					</div>
 
 					<blockquote class="relative font-serif text-xl italic leading-relaxed text-foreground sm:text-2xl">
-						"No project is too small to teach you something valuable."
+						"{{ 'projects.emptyQuote' | translate }}"
 					</blockquote>
 
-					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">Dev Wisdom</footer>
+					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">{{ 'projects.emptyAttribution' | translate }}</footer>
 				</div>
 			} @else {
 				<table
@@ -81,13 +86,13 @@ import { ProjectDto, ProjectService } from '../../../projects/data-access/projec
 				>
 					<thead>
 						<tr tuiThGroup>
-							<th *tuiHead="'title'" tuiTh tuiSortable [requiredSort]="true">Title</th>
-							<th *tuiHead="'status'" tuiTh>Status</th>
-							<th *tuiHead="'createdAt'" tuiTh tuiSortable>Created</th>
-							<th *tuiHead="'viewCount'" tuiTh tuiSortable>Views</th>
-							<th *tuiHead="'reactionCount'" tuiTh tuiSortable>Reactions</th>
-							<th *tuiHead="'authors'" tuiTh>Authors</th>
-							<th *tuiHead="'actions'" tuiTh>Actions</th>
+							<th *tuiHead="'title'" tuiTh tuiSortable [requiredSort]="true">{{ 'dashboard.projects.list.colTitle' | translate }}</th>
+							<th *tuiHead="'status'" tuiTh>{{ 'dashboard.projects.list.colStatus' | translate }}</th>
+							<th *tuiHead="'createdAt'" tuiTh tuiSortable>{{ 'dashboard.projects.list.colCreated' | translate }}</th>
+							<th *tuiHead="'viewCount'" tuiTh tuiSortable>{{ 'dashboard.projects.list.colViews' | translate }}</th>
+							<th *tuiHead="'reactionCount'" tuiTh tuiSortable>{{ 'dashboard.projects.list.colReactions' | translate }}</th>
+							<th *tuiHead="'authors'" tuiTh>{{ 'dashboard.projects.list.colAuthors' | translate }}</th>
+							<th *tuiHead="'actions'" tuiTh>{{ 'dashboard.projects.list.colActions' | translate }}</th>
 						</tr>
 					</thead>
 
@@ -111,7 +116,7 @@ import { ProjectDto, ProjectService } from '../../../projects/data-access/projec
 								<td *tuiCell="'createdAt'" tuiTd>
 									<span class="inline-flex items-center gap-1 text-xs">
 										<hugeicons-icon [icon]="Calendar01Icon" [size]="12" [strokeWidth]="1.5" />
-										{{ project.createdAt | date: 'dd MMM yyyy' }}
+										{{ project.createdAt | localizedDate: 'dd MMM yyyy' }}
 									</span>
 								</td>
 
@@ -140,7 +145,7 @@ import { ProjectDto, ProjectService } from '../../../projects/data-access/projec
 											tuiButton
 											tuiAppearance="outline"
 											size="s"
-											aria-label="Edit project"
+											[attr.aria-label]="'dashboard.projects.list.editAria' | translate"
 										>
 											<hugeicons-icon [icon]="Edit01Icon" [size]="16" [strokeWidth]="1.5" />
 										</a>
@@ -149,7 +154,7 @@ import { ProjectDto, ProjectService } from '../../../projects/data-access/projec
 											tuiButton
 											tuiAppearance="accent"
 											size="s"
-											aria-label="Delete project"
+											[attr.aria-label]="'dashboard.projects.list.deleteAria' | translate"
 											(click)="askDeleteOne(project.id)"
 										>
 											<hugeicons-icon [icon]="Delete01Icon" [size]="16" [strokeWidth]="1.5" />
@@ -173,6 +178,7 @@ export class DashboardProjectListComponent {
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly destroyRef = inject(DestroyRef);
 	private readonly languageService = inject(LanguageService);
+	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 	private readonly dialogs = inject(TuiDialogService);
 
@@ -255,7 +261,7 @@ export class DashboardProjectListComponent {
 					this.loading.set(false);
 				},
 				error: () => {
-					this.error.set('Failed to load projects.');
+					this.error.set(this.translationService.translate('dashboard.projects.list.failedToLoad'));
 					this.loading.set(false);
 				},
 			});
@@ -291,19 +297,19 @@ export class DashboardProjectListComponent {
 	askDeleteOne(id: string): void {
 		this.dialogs
 			.open<boolean>(TUI_CONFIRM, {
-				label: 'Delete project?',
+				label: this.translationService.translate('dashboard.projects.list.deleteConfirm'),
 				size: 's',
 				data: {
-					content: 'This action cannot be undone.',
-					yes: 'Delete',
-					no: 'Cancel',
+					content: this.translationService.translate('common.cannotUndo'),
+					yes: this.translationService.translate('common.delete'),
+					no: this.translationService.translate('common.cancel'),
 				},
 			})
 			.pipe(filter(Boolean))
 			.subscribe(() => {
 				this.projectService.delete([id]).subscribe({
 					next: () => {
-						this.toastService.open('Project deleted successfully', {
+						this.toastService.open(this.translationService.translate('dashboard.projects.list.deleted'), {
 							appearance: 'success',
 							autoClose: 3000,
 							data: '@tui.check',
@@ -311,7 +317,7 @@ export class DashboardProjectListComponent {
 						this.load();
 					},
 					error: () => {
-						this.toastService.open('Failed to delete project. Please try again.', {
+						this.toastService.open(this.translationService.translate('dashboard.projects.list.deleteFailed'), {
 							appearance: 'error',
 							autoClose: 5000,
 							data: '@tui.circle-x',

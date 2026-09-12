@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { translationProvider } from '../../../../core/i18n/testing';
 import { ProjectEditorComponent } from './project-editor.component';
 import { provideTaiga } from '@taiga-ui/core';
 import { provideRouter, Router, ActivatedRoute } from '@angular/router';
@@ -59,6 +60,7 @@ describe('ProjectEditorComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ProjectEditorComponent],
       providers: [
+        translationProvider(),
         provideTaiga(),
         provideRouter([]),
         { provide: ProjectService, useValue: projectServiceMock },
@@ -92,6 +94,7 @@ describe('ProjectEditorComponent', () => {
     TestBed.configureTestingModule({
       imports: [ProjectEditorComponent],
       providers: [
+        translationProvider(),
         provideTaiga(),
         provideRouter([]),
         { provide: ProjectService, useValue: projectServiceMock },
@@ -125,6 +128,7 @@ describe('ProjectEditorComponent', () => {
     TestBed.configureTestingModule({
       imports: [ProjectEditorComponent],
       providers: [
+        translationProvider(),
         provideTaiga(),
         provideRouter([]),
         { provide: ProjectService, useValue: projectServiceMock },
@@ -197,6 +201,7 @@ describe('ProjectEditorComponent', () => {
     TestBed.configureTestingModule({
       imports: [ProjectEditorComponent],
       providers: [
+        translationProvider(),
         provideTaiga(),
         provideRouter([]),
         { provide: ProjectService, useValue: projectServiceMock },
@@ -299,6 +304,7 @@ describe('ProjectEditorComponent', () => {
     TestBed.configureTestingModule({
       imports: [ProjectEditorComponent],
       providers: [
+        translationProvider(),
         provideTaiga(),
         provideRouter([]),
         { provide: ProjectService, useValue: projectServiceMock },

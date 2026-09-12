@@ -22,6 +22,9 @@ import {
 import { PostDto, PostService } from '../../../posts/data-access/post.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../../core/i18n/translation.service';
+import { LocalizedDatePipe } from '../../../../core/i18n/localized-date.pipe';
 import { buildTagMap, collectTagIds, tagName as tagNameOfUtil } from '../../../../core/util/tag.util';
 import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 
@@ -39,24 +42,26 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 		TuiAppearance,
 		TuiTextfield,
 		TuiInput,
+		TranslatePipe,
+		LocalizedDatePipe,
 	],
 	template: `
 		<div class="mx-auto max-w-5xl px-6 py-8">
 			
 			<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-				<h1 class="text-2xl font-bold">Posts</h1>
+				<h1 class="text-2xl font-bold">{{ 'dashboard.posts.list.title' | translate }}</h1>
 
 				<a routerLink="/dashboard/post/new" tuiButton tuiAppearance="primary" size="m" class="gap-1">
 					<hugeicons-icon [icon]="PlusSignIcon" [size]="22" [strokeWidth]="1.5" />
-					New Post
+					{{ 'dashboard.posts.list.new' | translate }}
 				</a>
 			</div>
 
-			
-			<tui-textfield class="mb-4">
-				<label tuiLabel>Search</label>
 
-				<input tuiInput [formControl]="searchControl" placeholder="Search posts..." />
+			<tui-textfield class="mb-4">
+				<label tuiLabel>{{ 'dashboard.posts.list.searchLabel' | translate }}</label>
+
+				<input tuiInput [formControl]="searchControl" [placeholder]="'dashboard.posts.list.searchPlaceholder' | translate" />
 			</tui-textfield>
 			
 			@if (loading()) {
@@ -72,11 +77,10 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 					</div>
 
 					<blockquote class="relative font-serif text-xl italic leading-relaxed text-foreground sm:text-2xl">
-						"Although I am ready to defend what I have said, many people expect me to defend what others
-						have attributed to me."
+						"{{ 'posts.emptyQuote' | translate }}"
 					</blockquote>
 
-					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">T. S.</footer>
+					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">{{ 'posts.emptyAttribution' | translate }}</footer>
 				</div>
 			} @else {
 				<table
@@ -89,21 +93,21 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 				>
 					<thead>
 						<tr tuiThGroup>
-							<th *tuiHead="'title'" tuiTh tuiSortable [requiredSort]="true">Title</th>
+							<th *tuiHead="'title'" tuiTh tuiSortable [requiredSort]="true">{{ 'dashboard.posts.list.colTitle' | translate }}</th>
 
-							<th *tuiHead="'status'" tuiTh>Status</th>
+							<th *tuiHead="'status'" tuiTh>{{ 'dashboard.posts.list.colStatus' | translate }}</th>
 
-							<th *tuiHead="'createdAt'" tuiTh tuiSortable>Created</th>
+							<th *tuiHead="'createdAt'" tuiTh tuiSortable>{{ 'dashboard.posts.list.colCreated' | translate }}</th>
 
-							<th *tuiHead="'viewCount'" tuiTh tuiSortable>Views</th>
-							
-							<th *tuiHead="'reactionCount'" tuiTh tuiSortable>Reactions</th>
+							<th *tuiHead="'viewCount'" tuiTh tuiSortable>{{ 'dashboard.posts.list.colViews' | translate }}</th>
 
-							<th *tuiHead="'authors'" tuiTh>Authors</th>
+							<th *tuiHead="'reactionCount'" tuiTh tuiSortable>{{ 'dashboard.posts.list.colReactions' | translate }}</th>
 
-							<th *tuiHead="'tags'" tuiTh>Tags</th>
+							<th *tuiHead="'authors'" tuiTh>{{ 'dashboard.posts.list.colAuthors' | translate }}</th>
 
-							<th *tuiHead="'actions'" tuiTh>Actions</th>
+							<th *tuiHead="'tags'" tuiTh>{{ 'dashboard.posts.list.colTags' | translate }}</th>
+
+							<th *tuiHead="'actions'" tuiTh>{{ 'dashboard.posts.list.colActions' | translate }}</th>
 						</tr>
 					</thead>
 
@@ -131,7 +135,7 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 									<span class="inline-flex items-center gap-1 text-xs">
 										<hugeicons-icon [icon]="Calendar01Icon" [size]="12" [strokeWidth]="1.5" />
 
-										{{ post.createdAt | date: 'dd MMM yyyy' }}
+										{{ post.createdAt | localizedDate: 'dd MMM yyyy' }}
 									</span>
 								</td>
 								
@@ -170,7 +174,7 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 											tuiButton
 											tuiAppearance="outline"
 											size="s"
-											aria-label="Edit post"
+											[attr.aria-label]="'dashboard.posts.list.editAria' | translate"
 										>
 											<hugeicons-icon [icon]="Edit01Icon" [size]="16" [strokeWidth]="1.5" />
 										</a>
@@ -179,7 +183,7 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 											tuiButton
 											tuiAppearance="accent"
 											size="s"
-											aria-label="Delete post"
+											[attr.aria-label]="'dashboard.posts.list.deleteAria' | translate"
 											(click)="askDeleteOne(post.id)"
 										>
 											<hugeicons-icon [icon]="Delete01Icon" [size]="16" [strokeWidth]="1.5" />
@@ -204,6 +208,7 @@ export class DashboardPostListComponent {
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly destroyRef = inject(DestroyRef);
 	private readonly languageService = inject(LanguageService);
+	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 	private readonly dialogs = inject(TuiDialogService);
 
@@ -302,7 +307,7 @@ export class DashboardPostListComponent {
 				},
 
 				error: () => {
-					this.error.set('Failed to load posts.');
+					this.error.set(this.translationService.translate('dashboard.posts.list.failedToLoad'));
 					this.loading.set(false);
 				},
 			});
@@ -363,19 +368,19 @@ export class DashboardPostListComponent {
 	askDeleteOne(id: string): void {
 		this.dialogs
 			.open<boolean>(TUI_CONFIRM, {
-				label: 'Delete post?',
+				label: this.translationService.translate('dashboard.posts.list.deleteConfirm'),
 				size: 's',
 				data: {
-					content: 'This action cannot be undone.',
-					yes: 'Delete',
-					no: 'Cancel',
+					content: this.translationService.translate('common.cannotUndo'),
+					yes: this.translationService.translate('common.delete'),
+					no: this.translationService.translate('common.cancel'),
 				},
 			})
 			.pipe(filter(Boolean))
 			.subscribe(() => {
 				this.postService.delete([id]).subscribe({
 					next: () => {
-						this.toastService.open('Post deleted successfully', {
+						this.toastService.open(this.translationService.translate('dashboard.posts.list.deleted'), {
 							appearance: 'success',
 							autoClose: 3000,
 							data: '@tui.check',
@@ -383,7 +388,7 @@ export class DashboardPostListComponent {
 						this.load();
 					},
 					error: () => {
-						this.toastService.open('Failed to delete post. Please try again.', {
+						this.toastService.open(this.translationService.translate('dashboard.posts.list.deleteFailed'), {
 							appearance: 'error',
 							autoClose: 5000,
 							data: '@tui.circle-x',
@@ -402,12 +407,12 @@ export class DashboardPostListComponent {
 
 		this.dialogs
 			.open<boolean>(TUI_CONFIRM, {
-				label: `Delete ${ids.length} posts?`,
+				label: this.translationService.translate('dashboard.posts.list.deleteMultiple', { count: ids.length }),
 				size: 's',
 				data: {
-					content: 'This is atomic — if any fails, none are deleted.',
-					yes: 'Delete',
-					no: 'Cancel',
+					content: this.translationService.translate('dashboard.posts.list.deleteMultipleBody'),
+					yes: this.translationService.translate('common.delete'),
+					no: this.translationService.translate('common.cancel'),
 				},
 			})
 			.pipe(filter(Boolean))
@@ -415,7 +420,7 @@ export class DashboardPostListComponent {
 				this.postService.delete(ids).subscribe({
 					next: () => {
 						this.selected.set(new Set());
-						this.toastService.open(`${ids.length} posts deleted successfully`, {
+						this.toastService.open(this.translationService.translate('dashboard.posts.list.deletedMultiple', { count: ids.length }), {
 							appearance: 'success',
 							autoClose: 3000,
 							data: '@tui.check',
@@ -423,7 +428,7 @@ export class DashboardPostListComponent {
 						this.load();
 					},
 					error: () => {
-						this.toastService.open('Failed to delete posts. Please try again.', {
+						this.toastService.open(this.translationService.translate('dashboard.posts.list.deleteMultipleFailed'), {
 							appearance: 'error',
 							autoClose: 5000,
 							data: '@tui.circle-x',

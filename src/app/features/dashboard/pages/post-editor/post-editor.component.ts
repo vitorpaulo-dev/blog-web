@@ -54,6 +54,8 @@ import { MarkdownService } from '../../../posts/data-access/markdown.service';
 import { ProjectService } from '../../../projects/data-access/project.service';
 import { TagService } from '../../../tags/data-access/tag.service';
 import { UploadService } from '../../../../core/upload/upload.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 
 interface ProjectOption {
 	id: string;
@@ -96,13 +98,14 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 		TuiChevron,
 		TuiInputChipComponent,
 		TuiInputChipDirective,
+		TranslatePipe,
 	],
 	template: `
 		<div class="mx-auto max-w-3xl px-6 py-8">
 			<div class="mb-6 flex items-center justify-between">
 				<a (click)="goBack()" class="inline-flex cursor-pointer items-center gap-1 text-sm text-accent">
 					<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" />
-					Back to dashboard
+					{{ 'common.backToDashboard' | translate }}
 				</a>
 
 				@if (isEdit() && slug()) {
@@ -112,13 +115,13 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 						class="inline-flex cursor-pointer items-center gap-1 text-sm text-accent"
 					>
 						<hugeicons-icon [icon]="viewPostIcon" [size]="16" [strokeWidth]="2.5" />
-						View Post
+						{{ 'dashboard.posts.editor.viewPost' | translate }}
 					</a>
 				}
 			</div>
 
 			<h1 class="mb-2 text-2xl font-bold">
-				{{ isEdit() ? 'Edit Post' : 'New Post' }}
+				{{ (isEdit() ? 'dashboard.posts.editor.editHeading' : 'dashboard.posts.editor.newHeading') | translate }}
 			</h1>
 
 			<form [formGroup]="form" class="flex flex-col gap-5" (ngSubmit)="onSave()">
@@ -134,7 +137,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 							[class.hover:text-foreground]="activeLang() !== lang"
 							(click)="changeLanguage(lang)"
 						>
-							{{ languageLabel(lang) }}
+							{{ languageLabel(lang) | translate }}
 						</button>
 					}
 				</div>
@@ -146,13 +149,13 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 							<tui-textfield>
 								<label tuiLabel class="flex items-center gap-1.5">
 									<hugeicons-icon [icon]="titleIcon" [size]="16" [strokeWidth]="2.5" />
-									<span>Title *</span>
+									<span>{{ 'dashboard.posts.editor.titleLabel' | translate }}</span>
 								</label>
 
 								<input
 									tuiInput
 									[formControl]="translationForms()[lang].title"
-									placeholder="Post title"
+									[placeholder]="'dashboard.posts.editor.titlePlaceholder' | translate"
 								/>
 							</tui-textfield>
 
@@ -174,7 +177,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 											[strokeWidth]="2.5"
 											class="mr-1 inline"
 										/>
-										Edit
+										{{ 'dashboard.posts.editor.editTab' | translate }}
 									</button>
 
 									<button
@@ -192,7 +195,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 											[strokeWidth]="2.5"
 											class="mr-1 inline"
 										/>
-										Preview
+										{{ 'dashboard.posts.editor.previewTab' | translate }}
 									</button>
 								</div>
 
@@ -207,7 +210,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 											[formControl]="translationForms()[lang].content"
 											rows="20"
 											class="w-full resize-none rounded-xl border border-border bg-surface p-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-											placeholder="Write markdown... (drag & drop images here)"
+											[placeholder]="'dashboard.posts.editor.contentPlaceholder' | translate"
 										></textarea>
 
 										@if (isDragging()) {
@@ -221,7 +224,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 														[strokeWidth]="1.5"
 														class="mx-auto mb-2 text-accent"
 													/>
-													<p class="text-sm font-medium text-accent">Drop image here</p>
+													<p class="text-sm font-medium text-accent">{{ 'dashboard.posts.editor.dropImage' | translate }}</p>
 												</div>
 											</div>
 										}
@@ -232,8 +235,8 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 									>
 										@if (previewHtml()) {
 											<div [innerHTML]="previewHtml()"></div>
-										} @else {
-											<p class="text-sm text-muted">Nothing to preview</p>
+											} @else {
+											<p class="text-sm text-muted">{{ 'dashboard.posts.editor.nothingToPreview' | translate }}</p>
 										}
 									</div>
 								}
@@ -246,7 +249,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 				<div class="flex flex-col gap-2">
 					<label class="flex items-center gap-1.5 text-sm font-medium">
 						<hugeicons-icon [icon]="bannerIcon" [size]="16" [strokeWidth]="2.5" />
-						<span>Banner</span>
+						<span>{{ 'dashboard.posts.editor.bannerLabel' | translate }}</span>
 					</label>
 
 					<input
@@ -258,7 +261,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 					/>
 
 					@if (uploading()) {
-						<p class="text-xs text-muted">Uploading...</p>
+						<p class="text-xs text-muted">{{ 'dashboard.posts.editor.uploading' | translate }}</p>
 					}
 
 					@if (bannerUrl()) {
@@ -274,10 +277,10 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 				<tui-textfield multi tuiChevron [stringify]="stringifyTag">
 					<label tuiLabel class="flex items-center gap-1.5">
 						<hugeicons-icon [icon]="tagsIcon" [size]="16" [strokeWidth]="2.5" />
-						<span>Tags</span>
+						<span>{{ 'dashboard.posts.editor.tagsLabel' | translate }}</span>
 					</label>
 
-					<input tuiInputChip formControlName="tags" placeholder="Select tags" />
+					<input tuiInputChip formControlName="tags" [placeholder]="'dashboard.posts.editor.tagsPlaceholder' | translate" />
 
 					<tui-input-chip *tuiItem />
 
@@ -297,13 +300,13 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 				<tui-textfield multi tuiChevron [stringify]="stringifyProject">
 					<label tuiLabel class="flex items-center gap-1.5">
 						<hugeicons-icon [icon]="projectsIcon" [size]="16" [strokeWidth]="2.5" />
-						<span>Projects</span>
+						<span>{{ 'dashboard.posts.editor.projectsLabel' | translate }}</span>
 					</label>
 
 					<input
 						tuiInputChip
 						formControlName="projects"
-						placeholder="Select projects"
+						[placeholder]="'dashboard.posts.editor.projectsPlaceholder' | translate"
 						(input)="onProjectSearchInput($event)"
 					/>
 
@@ -339,7 +342,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
-							Save Draft
+							{{ 'dashboard.posts.editor.saveDraft' | translate }}
 						</button>
 
 						<button
@@ -351,7 +354,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="publishIcon" [size]="16" [strokeWidth]="2.5" />
-							Publish
+							{{ 'dashboard.posts.editor.publish' | translate }}
 						</button>
 					} @else {
 						<button
@@ -363,7 +366,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
-							Save
+							{{ 'dashboard.posts.editor.save' | translate }}
 						</button>
 
 						@if (currentStatus() === 'PUBLISHED') {
@@ -376,7 +379,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 								class="gap-1"
 							>
 								<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
-								Unpublish
+								{{ 'dashboard.posts.editor.unpublish' | translate }}
 							</button>
 						} @else {
 							<button
@@ -388,7 +391,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 								class="gap-1"
 							>
 								<hugeicons-icon [icon]="publishIcon" [size]="16" [strokeWidth]="2.5" />
-								Publish
+								{{ 'dashboard.posts.editor.publish' | translate }}
 							</button>
 						}
 					}
@@ -406,6 +409,7 @@ export class PostEditorComponent implements OnInit {
 	private readonly markdownService = inject(MarkdownService);
 	private readonly uploadService = inject(UploadService);
 	private readonly platformId = inject(PLATFORM_ID);
+	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
@@ -680,7 +684,7 @@ export class PostEditorComponent implements OnInit {
 	}
 
 	languageLabel(language: Language): string {
-		return language === 'ENGLISH' ? '🇺🇸 English' : '🇧🇷 Português';
+		return language === 'ENGLISH' ? 'dashboard.posts.editor.langEn' : 'dashboard.posts.editor.langPt';
 	}
 
 	stringifyTag = (tag: TagOption): string => tag.name;
@@ -764,7 +768,7 @@ export class PostEditorComponent implements OnInit {
 			error: () => {
 				this.uploading.set(false);
 
-				this.showError(insertIntoContent ? 'Failed to upload image' : 'Failed to upload banner image');
+				this.showError(this.translationService.translate('dashboard.posts.editor.uploadFailed'));
 			},
 		});
 	}
@@ -833,11 +837,14 @@ export class PostEditorComponent implements OnInit {
 		this.currentStatus.set(response.status);
 
 		this.toastService
-			.open(this.isEdit() ? 'Post updated successfully' : 'Post created successfully', {
-				appearance: 'success',
-				autoClose: 3000,
-				data: '@tui.check',
-			})
+			.open(
+				this.translationService.translate(this.isEdit() ? 'dashboard.posts.editor.updated' : 'dashboard.posts.editor.created'),
+				{
+					appearance: 'success',
+					autoClose: 3000,
+					data: '@tui.check',
+				}
+			)
 			.subscribe();
 
 		if (!this.isEdit()) {
@@ -848,18 +855,19 @@ export class PostEditorComponent implements OnInit {
 	private handleSaveError(error: any): void {
 		this.saving.set(false);
 
-		const message = error?.error?.details
-			? JSON.stringify(error.error.details)
-			: 'Save failed — check validation/permissions';
+		const message =
+			error?.error?.details
+				? JSON.stringify(error.error.details)
+				: this.translationService.translate('common.operationFailed');
 
 		this.error.set(message);
 
-		this.showError('Failed to save post. Please try again.');
+		this.showError(this.translationService.translate('dashboard.posts.editor.saveFailed'));
 	}
 
 	private handleLoadError(): void {
 		this.toastService
-			.open('Failed to load post. Redirecting to dashboard...', {
+			.open(this.translationService.translate('dashboard.posts.editor.loadFailed'), {
 				appearance: 'error',
 				autoClose: 5000,
 				data: '@tui.circle-x',

@@ -4,6 +4,7 @@ import { provideTaiga } from '@taiga-ui/core';
 import { provideRouter } from '@angular/router';
 import { TagService } from '../../../tags/data-access/tag.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { translationProvider } from '../../../../core/i18n/testing';
 import { TuiToastService } from '@taiga-ui/kit';
 import { TuiDialogService } from '@taiga-ui/core';
 import { of, throwError } from 'rxjs';
@@ -58,6 +59,7 @@ describe('DashboardTagListComponent', () => {
         provideRouter([]),
         { provide: TagService, useValue: tagServiceMock },
         { provide: LanguageService, useValue: languageServiceMock },
+        translationProvider(),
         { provide: TuiToastService, useValue: toastServiceMock },
         { provide: TuiDialogService, useValue: dialogServiceMock },
         { provide: PLATFORM_ID, useValue: 'browser' },
@@ -81,6 +83,7 @@ describe('DashboardTagListComponent', () => {
         provideRouter([]),
         { provide: TagService, useValue: tagServiceMock },
         { provide: LanguageService, useValue: languageServiceMock },
+        translationProvider(),
         { provide: TuiToastService, useValue: toastServiceMock },
         { provide: TuiDialogService, useValue: dialogServiceMock },
         { provide: PLATFORM_ID, useValue: 'server' },

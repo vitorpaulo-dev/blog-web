@@ -4,6 +4,7 @@ import { provideTaiga } from '@taiga-ui/core';
 import { provideRouter, Router, ActivatedRoute } from '@angular/router';
 import { ProjectService } from '../../data-access/project.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { translationProvider } from '../../../../core/i18n/testing';
 import { TuiToastService } from '@taiga-ui/kit';
 import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
@@ -56,6 +57,7 @@ describe('ProjectDetailComponent', () => {
         provideRouter([]),
         { provide: ProjectService, useValue: projectServiceMock },
         { provide: LanguageService, useValue: languageServiceMock },
+        translationProvider(),
         { provide: Router, useValue: routerMock },
         { provide: TuiToastService, useValue: toastServiceMock },
         { provide: PLATFORM_ID, useValue: 'browser' },
@@ -118,7 +120,7 @@ describe('ProjectDetailComponent', () => {
 
     fixture.detectChanges();
 
-    expect(toastServiceMock.open).toHaveBeenCalledWith('Failed to load project. Please try again.', {
+    expect(toastServiceMock.open).toHaveBeenCalledWith('Failed to load projects. Please try again.', {
       appearance: 'error',
       autoClose: 5000,
       data: '@tui.circle-x',
@@ -136,6 +138,7 @@ describe('ProjectDetailComponent', () => {
         provideRouter([]),
         { provide: ProjectService, useValue: projectServiceMock },
         { provide: LanguageService, useValue: languageServiceMock },
+        translationProvider(),
         { provide: Router, useValue: routerMock },
         { provide: TuiToastService, useValue: toastServiceMock },
         { provide: PLATFORM_ID, useValue: 'browser' },

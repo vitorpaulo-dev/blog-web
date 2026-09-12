@@ -14,6 +14,8 @@ import { CommonModule, isPlatformServer } from '@angular/common';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../core/util/tag.util';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { ContentCardComponent, ContentCardItem } from '../../../../shared/components/content-card/content-card.component';
 
 @Component({
@@ -26,10 +28,11 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 		HugeiconsIconComponent,
 		TuiPagination,
 		ContentCardComponent,
+		TranslatePipe,
 	],
 	template: `
 		<div class="py-2">
-			<h1 class="text-3xl font-bold tracking-tight">Posts</h1>
+			<h1 class="text-3xl font-bold tracking-tight">{{ 'posts.title' | translate }}</h1>
 
 			@if (loading()) {
 				<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
@@ -44,11 +47,10 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 					</div>
 
 					<blockquote class="relative font-serif text-xl italic leading-relaxed text-foreground sm:text-2xl">
-						"Although I am ready to defend what I have said, many people expect me to defend what others
-						have attributed to me."
+						"{{ 'posts.emptyQuote' | translate }}"
 					</blockquote>
 
-					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">T. S.</footer>
+					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">{{ 'posts.emptyAttribution' | translate }}</footer>
 				</div>
 			} @else {
 				<div class="w-full">
@@ -66,6 +68,7 @@ export class PostListComponent {
 	private readonly postService = inject(PostService);
 	private readonly tagService = inject(TagService);
 	private readonly languageService = inject(LanguageService);
+	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 	private readonly platformId = inject(PLATFORM_ID);
 
@@ -89,7 +92,7 @@ export class PostListComponent {
 			date: post.createdAt,
 			routePrefix: '/post',
 			metaIcon: Timer02Icon,
-			metaText: `${post.estimatedReading || 5} min`,
+			metaText: `${post.estimatedReading || 5} ${this.translationService.translate('common.min', undefined, lang)}`,
 			chips: (post.tagIds ?? []).map(id => ({
 				icon: Tag01Icon,
 				label: tagNameOf(tags.get(id), lang),
@@ -129,7 +132,7 @@ export class PostListComponent {
 				},
 			error: () => {
 				this.loading.set(false);
-				this.toastService.open('Failed to load posts. Please try again.', {
+				this.toastService.open(this.translationService.translate('posts.failedToLoad'), {
 					appearance: 'error',
 					autoClose: 5000,
 					data: '@tui.circle-x',

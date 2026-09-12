@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { ProjectService } from '../../data-access/project.service';
 import { TagService } from '../../../tags/data-access/tag.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { translationProvider } from '../../../../core/i18n/testing';
 import { TuiToastService } from '@taiga-ui/kit';
 import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
@@ -60,6 +61,7 @@ describe('ProjectListComponent', () => {
         { provide: ProjectService, useValue: projectServiceMock },
         { provide: TagService, useValue: tagServiceMock },
         { provide: LanguageService, useValue: languageServiceMock },
+        translationProvider(),
         { provide: TuiToastService, useValue: toastServiceMock },
       ],
     }).compileComponents();

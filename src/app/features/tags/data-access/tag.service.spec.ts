@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TagService } from './tag.service';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { signal } from '@angular/core';
 import { environment } from '../../../../environments/environment';
 
 describe('TagService', () => {
@@ -13,6 +15,7 @@ describe('TagService', () => {
     TestBed.configureTestingModule({
       providers: [
         TagService,
+        { provide: LanguageService, useValue: { language: signal('ENGLISH') } },
         provideHttpClient(withInterceptorsFromDi()),
         provideHttpClientTesting(),
       ],

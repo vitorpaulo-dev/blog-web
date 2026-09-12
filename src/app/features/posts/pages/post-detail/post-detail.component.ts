@@ -38,6 +38,9 @@ import { TuiChip, TuiToastService } from '@taiga-ui/kit';
 import { MarkdownService } from '../../data-access/markdown.service';
 import { GiscusComponent } from '../../components/giscus.component';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../../core/i18n/translation.service';
+import { LocalizedDatePipe } from '../../../../core/i18n/localized-date.pipe';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOfUtil } from '../../../../core/util/tag.util';
 import {
@@ -58,17 +61,19 @@ import {
 		TuiChip,
 		GiscusComponent,
 		ContentCardComponent,
+		TranslatePipe,
+		LocalizedDatePipe,
 	],
 	template: `
 		<div class="max-w-4xl mx-auto">
 			<a routerLink="/post" tuiButton tuiAppearance="flat" size="s" class="mb-4 gap-1">
 				<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" />
 
-				Back to posts
+				{{ 'posts.backToList' | translate }}
 			</a>
 
 			@if (loading()) {
-				<p class="text-muted">Loading...</p>
+				<p class="text-muted">{{ 'common.loading' | translate }}</p>
 			} @else if (error()) {
 				<p class="text-red-400" role="alert">
 					{{ error() }}
@@ -89,7 +94,7 @@ import {
 					<span class="inline-flex items-center gap-1">
 						<hugeicons-icon [icon]="Calendar01Icon" [size]="16" [strokeWidth]="1.5" />
 
-						{{ p.createdAt | date: 'dd MMM yyyy' }}
+						{{ p.createdAt | localizedDate: 'dd MMM yyyy' }}
 					</span>
 
 					<span>·</span>
@@ -97,7 +102,7 @@ import {
 					<span class="inline-flex items-center gap-1">
 						<hugeicons-icon [icon]="Timer02Icon" [size]="16" [strokeWidth]="1.5" />
 
-						{{ p.estimatedReading || 5 }} min
+						{{ p.estimatedReading || 5 }} {{ 'common.min' | translate }}
 					</span>
 
 					<span>·</span>
@@ -105,7 +110,7 @@ import {
 					<span class="inline-flex items-center gap-1">
 						<hugeicons-icon [icon]="EyeIcon" [size]="16" [strokeWidth]="1.5" />
 
-						{{ p.viewCount }} views
+						{{ p.viewCount }} {{ 'common.views' | translate }}
 					</span>
 
 					<span>·</span>
@@ -113,7 +118,7 @@ import {
 					<span class="inline-flex items-center gap-1">
 						<hugeicons-icon [icon]="SmilePlusIcon" [size]="16" [strokeWidth]="1.5" />
 
-						{{ p.reactionCount }} reactions
+						{{ p.reactionCount }} {{ 'common.reactions' | translate }}
 					</span>
 				</div>
 
@@ -146,7 +151,7 @@ import {
 					<section>
 						<h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
 							<hugeicons-icon [icon]="projectsIcon" [size]="20" [strokeWidth]="1.5" />
-							Related Projects
+							{{ 'posts.relatedProjects' | translate }}
 						</h3>
 						<div class="flex flex-col gap-4">
 							@for (card of cardItems(); track card.slug; let index = $index) {
@@ -161,40 +166,40 @@ import {
 				<section class="flex flex-wrap items-center justify-between gap-2">
 					<div class="flex flex-wrap gap-2">
 						<button tuiChip class="inline-flex items-center gap-2">
-							<img src="/reactions/red-heart.png" alt="Love" class="w-5" />
-							<span>Loved it</span>
+							<img src="/reactions/red-heart.png" [alt]="'common.reactionLovedIt' | translate" class="w-5" />
+							<span>{{ 'common.reactionLovedIt' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.loveCount }}</span>
 						</button>
 
 						<button tuiChip class="inline-flex items-center gap-2">
-							<img src="/reactions/party-popper.png" alt="Celebrate" class="w-5" />
-							<span>Hell yeah</span>
+							<img src="/reactions/party-popper.png" [alt]="'common.reactionHellYeah' | translate" class="w-5" />
+							<span>{{ 'common.reactionHellYeah' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.celebrateCount }}</span>
 						</button>
 
 						<button tuiChip class="inline-flex items-center gap-2">
-							<img src="/reactions/exploding-head.png" alt="Mind blown" class="w-5" />
-							<span>Mind blown</span>
+							<img src="/reactions/exploding-head.png" [alt]="'common.reactionMindBlown' | translate" class="w-5" />
+							<span>{{ 'common.reactionMindBlown' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.geniusCount }}</span>
 						</button>
 
 						<button tuiChip class="inline-flex items-center gap-2">
-							<img src="/reactions/suffering-cat.webp" alt="Suffering cat" class="w-5" />
-							<span>What?!</span>
+							<img src="/reactions/suffering-cat.webp" [alt]="'common.reactionWhat' | translate" class="w-5" />
+							<span>{{ 'common.reactionWhat' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.helpCount }}</span>
 						</button>
 					</div>
 
 					<button tuiChip class="inline-flex items-center gap-2" (click)="sharePost()">
 						<hugeicons-icon [icon]="shareIcon" [size]="16" [strokeWidth]="2.5" />
-						<span>Share</span>
+						<span>{{ 'common.share' | translate }}</span>
 					</button>
 				</section>
 
 				<hr class="my-8" />
 
 				<div>
-					<h3 class="text-lg font-semibold mb-3">Comments</h3>
+					<h3 class="text-lg font-semibold mb-3">{{ 'posts.comments' | translate }}</h3>
 
 					<app-giscus></app-giscus>
 				</div>
@@ -211,6 +216,7 @@ export class PostDetailComponent implements AfterViewInit {
 	private readonly router = inject(Router);
 	private readonly markdownService = inject(MarkdownService);
 	private readonly languageService = inject(LanguageService);
+	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
@@ -242,6 +248,7 @@ export class PostDetailComponent implements AfterViewInit {
 
 	cardItems = computed<ContentCardItem[]>(() => {
 		const tags = this.projectTagMap();
+		const lang = this.lang();
 		return this.projects().map(project => ({
 			slug: project.slug,
 			title: firstTranslation(project.translations)?.title ?? '',
@@ -250,10 +257,10 @@ export class PostDetailComponent implements AfterViewInit {
 			date: project.createdAt,
 			routePrefix: '/project',
 			metaIcon: EyeIcon,
-			metaText: `${project.viewCount} views`,
+			metaText: `${project.viewCount} ${this.translationService.translate('common.views', undefined, lang)}`,
 			chips: (project.tagIds ?? []).map(id => ({
 				icon: SourceCodeIcon,
-				label: tagNameOfUtil(tags.get(id), this.lang()),
+				label: tagNameOfUtil(tags.get(id), lang),
 			})),
 		}));
 	});
@@ -314,7 +321,7 @@ export class PostDetailComponent implements AfterViewInit {
 			error: () => {
 				this.loading.set(false);
 				this.toastService
-					.open('Failed to load post. Please try again.', {
+					.open(this.translationService.translate('posts.failedToLoad'), {
 						appearance: 'error',
 						autoClose: 5000,
 						data: '@tui.circle-x',
@@ -365,9 +372,9 @@ export class PostDetailComponent implements AfterViewInit {
 			this.loading.set(false);
 		} catch (error) {
 			this.loading.set(false);
-			this.error.set('Sorry, this post could not be rendered.');
+			this.error.set(this.translationService.translate('posts.failedToRender'));
 			this.toastService
-				.open('Sorry, this post could not be rendered.', {
+				.open(this.translationService.translate('posts.failedToRender'), {
 					appearance: 'error',
 					autoClose: 5000,
 					data: '@tui.circle-x',
@@ -400,7 +407,7 @@ export class PostDetailComponent implements AfterViewInit {
 				.writeText(text)
 				.then(() => {
 					this.toastService
-						.open('Link copied to clipboard!', {
+						.open(this.translationService.translate('common.linkCopied'), {
 							appearance: 'success',
 							autoClose: 3000,
 							data: '@tui.check',
@@ -425,7 +432,7 @@ export class PostDetailComponent implements AfterViewInit {
 		try {
 			document.execCommand('copy');
 			this.toastService
-				.open('Link copied to clipboard!', {
+				.open(this.translationService.translate('common.linkCopied'), {
 					appearance: 'success',
 					autoClose: 3000,
 					data: '@tui.check',
@@ -433,7 +440,7 @@ export class PostDetailComponent implements AfterViewInit {
 				.subscribe();
 		} catch {
 			this.toastService
-				.open('Failed to copy link', {
+				.open(this.translationService.translate('common.failedToCopy'), {
 					appearance: 'error',
 					autoClose: 3000,
 					data: '@tui.circle-x',

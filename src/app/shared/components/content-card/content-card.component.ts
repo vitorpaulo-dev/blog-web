@@ -1,9 +1,9 @@
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { DatePipe } from '@angular/common';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { Calendar01Icon } from '@hugeicons/core-free-icons';
 import { TuiChip } from '@taiga-ui/kit';
+import { LocalizedDatePipe } from '../../../core/i18n/localized-date.pipe';
 
 export interface ContentCardChip {
 	icon: any;
@@ -25,7 +25,7 @@ export interface ContentCardItem {
 @Component({
 	selector: 'app-content-card',
 	standalone: true,
-	imports: [RouterLink, DatePipe, HugeiconsIconComponent, TuiChip],
+	imports: [RouterLink, LocalizedDatePipe, HugeiconsIconComponent, TuiChip],
 	template: `
 		@if (showDivider()) {
 			<div class="py-4">
@@ -51,7 +51,7 @@ export interface ContentCardItem {
 					class="flex items-center gap-2 text-xs text-muted font-mono group-hover:text-muted/50 transition-all"
 				>
 					<hugeicons-icon [icon]="Calendar01Icon" [size]="14" [strokeWidth]="1.5" />
-					<span>{{ item().date | date: 'dd MMM yyyy' }}</span>
+					<span>{{ item().date | localizedDate: 'dd MMM yyyy' }}</span>
 
 					<span aria-hidden="true">·</span>
 
