@@ -4,6 +4,7 @@ import { provideTaiga } from '@taiga-ui/core';
 import { provideRouter } from '@angular/router';
 import { PostService } from '../../data-access/post.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { translationProvider } from '../../../../core/i18n/testing';
 import { MarkdownService } from '../../data-access/markdown.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
@@ -63,6 +64,7 @@ describe('PostDetailComponent', () => {
         provideRouter([]),
         { provide: PostService, useValue: postServiceMock },
         { provide: LanguageService, useValue: languageServiceMock },
+        translationProvider(),
         { provide: MarkdownService, useValue: markdownServiceMock },
         { provide: Router, useValue: routerMock },
         { provide: TuiToastService, useValue: toastServiceMock },
@@ -92,7 +94,7 @@ describe('PostDetailComponent', () => {
 
     fixture.detectChanges();
 
-    expect(toastServiceMock.open).toHaveBeenCalledWith('Failed to load post. Please try again.', {
+    expect(toastServiceMock.open).toHaveBeenCalledWith('Failed to load posts. Please try again.', {
       appearance: 'error',
       autoClose: 5000,
       data: '@tui.circle-x',

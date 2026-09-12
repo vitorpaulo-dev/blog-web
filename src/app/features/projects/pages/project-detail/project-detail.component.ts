@@ -26,6 +26,9 @@ import { TuiAppearance, TuiButton } from '@taiga-ui/core';
 import { TuiChip, TuiToastService } from '@taiga-ui/kit';
 
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../../core/i18n/translation.service';
+import { LocalizedDatePipe } from '../../../../core/i18n/localized-date.pipe';
 import { firstTranslation } from '../../../../core/util/text.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOfUtil } from '../../../../core/util/tag.util';
 import { ProjectDto, ProjectService } from '../../data-access/project.service';
@@ -34,17 +37,17 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 @Component({
 	selector: 'app-project-detail',
 	standalone: true,
-	imports: [CommonModule, RouterLink, TuiButton, HugeiconsIconComponent, TuiAppearance, TuiChip],
+	imports: [CommonModule, RouterLink, TuiButton, HugeiconsIconComponent, TuiAppearance, TuiChip, TranslatePipe, LocalizedDatePipe],
 	template: `
 		<div class="max-w-4xl mx-auto">
 			<a routerLink="/project" tuiButton tuiAppearance="flat" size="s" class="mb-6 gap-1">
 				<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" />
 
-				Back to projects
+				{{ 'projects.backToList' | translate }}
 			</a>
 
 			@if (loading()) {
-				<p class="text-muted">Loading...</p>
+				<p class="text-muted">{{ 'common.loading' | translate }}</p>
 			} @else if (error()) {
 				<p class="text-red-400" role="alert">
 					{{ error() }}
@@ -76,13 +79,13 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 								@if (p.githubUrl) {
 									<a tuiButton tuiAppearance="outline" size="m" [href]="p.githubUrl" target="_blank" rel="noopener noreferrer" class="gap-2">
 										<hugeicons-icon [icon]="githubIcon" [size]="16" [strokeWidth]="1.5" />
-										GitHub
+										{{ 'projects.github' | translate }}
 									</a>
 								}
 								@if (p.websiteUrl) {
 									<a tuiButton tuiAppearance="outline" size="m" [href]="p.websiteUrl" target="_blank" rel="noopener noreferrer" class="gap-2">
 										<hugeicons-icon [icon]="websiteIcon" [size]="16" [strokeWidth]="1.5" />
-										Website
+										{{ 'projects.website' | translate }}
 									</a>
 								}
 							</div>
@@ -91,22 +94,22 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 						<div class="flex flex-wrap items-center gap-3 text-sm text-muted">
 							<span class="inline-flex items-center gap-1">
 								<hugeicons-icon [icon]="Calendar01Icon" [size]="16" [strokeWidth]="1.5" />
-								{{ p.createdAt | date: 'dd MMM yyyy' }}
-							</span>
+							{{ p.createdAt | localizedDate: 'dd MMM yyyy' }}
+						</span>
 
-							<span>·</span>
+						<span>·</span>
 
-							<span class="inline-flex items-center gap-1">
-								<hugeicons-icon [icon]="EyeIcon" [size]="16" [strokeWidth]="1.5" />
-								{{ p.viewCount }} views
-							</span>
+						<span class="inline-flex items-center gap-1">
+							<hugeicons-icon [icon]="EyeIcon" [size]="16" [strokeWidth]="1.5" />
+							{{ p.viewCount }} {{ 'common.views' | translate }}
+						</span>
 
-							<span>·</span>
+						<span>·</span>
 
-							<span class="inline-flex items-center gap-1">
-								<hugeicons-icon [icon]="SmilePlusIcon" [size]="16" [strokeWidth]="1.5" />
-								{{ p.reactionCount }} reactions
-							</span>
+						<span class="inline-flex items-center gap-1">
+							<hugeicons-icon [icon]="SmilePlusIcon" [size]="16" [strokeWidth]="1.5" />
+							{{ p.reactionCount }} {{ 'common.reactions' | translate }}
+						</span>
 						</div>
 					</div>
 				</div>
@@ -139,33 +142,33 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 				<section class="flex flex-wrap items-center justify-between gap-2">
 					<div class="flex flex-wrap gap-2">
 						<button tuiChip class="inline-flex items-center gap-2">
-							<img src="/reactions/red-heart.png" alt="Love" class="w-5" />
-							<span>Loved it</span>
+							<img src="/reactions/red-heart.png" [alt]="'common.reactionLovedIt' | translate" class="w-5" />
+							<span>{{ 'common.reactionLovedIt' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.loveCount }}</span>
 						</button>
 
 						<button tuiChip class="inline-flex items-center gap-2">
-							<img src="/reactions/party-popper.png" alt="Celebrate" class="w-5" />
-							<span>Hell yeah</span>
+							<img src="/reactions/party-popper.png" [alt]="'common.reactionHellYeah' | translate" class="w-5" />
+							<span>{{ 'common.reactionHellYeah' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.celebrateCount }}</span>
 						</button>
 
 						<button tuiChip class="inline-flex items-center gap-2">
-							<img src="/reactions/exploding-head.png" alt="Mind blown" class="w-5" />
-							<span>Mind blown</span>
+							<img src="/reactions/exploding-head.png" [alt]="'common.reactionMindBlown' | translate" class="w-5" />
+							<span>{{ 'common.reactionMindBlown' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.geniusCount }}</span>
 						</button>
 
 						<button tuiChip class="inline-flex items-center gap-2">
-							<img src="/reactions/suffering-cat.webp" alt="Suffering cat" class="w-5" />
-							<span>What?!</span>
+							<img src="/reactions/suffering-cat.webp" [alt]="'common.reactionWhat' | translate" class="w-5" />
+							<span>{{ 'common.reactionWhat' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.helpCount }}</span>
 						</button>
 					</div>
 
 					<button tuiChip class="inline-flex items-center gap-2" (click)="shareProject()">
 						<hugeicons-icon [icon]="shareIcon" [size]="16" [strokeWidth]="2.5" />
-						<span>Share</span>
+						<span>{{ 'common.share' | translate }}</span>
 					</button>
 				</section>
 			}
@@ -179,6 +182,7 @@ export class ProjectDetailComponent {
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly router = inject(Router);
 	private readonly languageService = inject(LanguageService);
+	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
@@ -233,7 +237,7 @@ export class ProjectDetailComponent {
 			},
 			error: () => {
 				this.loading.set(false);
-				this.toastService.open('Failed to load project. Please try again.', {
+				this.toastService.open(this.translationService.translate('projects.failedToLoad'), {
 					appearance: 'error',
 					autoClose: 5000,
 					data: '@tui.circle-x',

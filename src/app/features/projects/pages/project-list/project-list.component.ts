@@ -6,6 +6,8 @@ import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { EyeIcon, Loading03Icon, SourceCodeIcon } from '@hugeicons/core-free-icons';
 import { CommonModule, isPlatformServer } from '@angular/common';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../core/util/tag.util';
 import { ProjectDto, ProjectService } from '../../data-access/project.service';
@@ -23,10 +25,11 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 		TuiPagination,
 		TuiChip,
 		ContentCardComponent,
+		TranslatePipe,
 	],
 	template: `
 		<div class="py-2">
-			<h1 class="text-3xl font-bold tracking-tight">Projects</h1>
+			<h1 class="text-3xl font-bold tracking-tight">{{ 'projects.title' | translate }}</h1>
 
 			@if (loading()) {
 				<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
@@ -41,10 +44,10 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 					</div>
 
 					<blockquote class="relative font-serif text-xl italic leading-relaxed text-foreground sm:text-2xl">
-						"No project is too small to teach you something valuable."
+						"{{ 'projects.emptyQuote' | translate }}"
 					</blockquote>
 
-					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">Dev Wisdom</footer>
+					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">{{ 'projects.emptyAttribution' | translate }}</footer>
 				</div>
 			} @else {
 				<div class="w-full">
@@ -62,6 +65,7 @@ export class ProjectListComponent {
 	private readonly projectService = inject(ProjectService);
 	private readonly tagService = inject(TagService);
 	private readonly languageService = inject(LanguageService);
+	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 	private readonly platformId = inject(PLATFORM_ID);
 
@@ -84,7 +88,7 @@ export class ProjectListComponent {
 			date: project.createdAt,
 			routePrefix: '/project',
 			metaIcon: EyeIcon,
-			metaText: `${project.viewCount} views`,
+			metaText: `${project.viewCount} ${this.translationService.translate('common.views', undefined, lang)}`,
 			chips: (project.tagIds ?? []).map(id => ({
 				icon: SourceCodeIcon,
 				label: tagNameOf(tags.get(id), lang),
@@ -122,14 +126,14 @@ export class ProjectListComponent {
 					this.loading.set(false);
 					this.loadTags(res.content);
 				},
-				error: () => {
-					this.loading.set(false);
-					this.toastService.open('Failed to load projects. Please try again.', {
-						appearance: 'error',
-						autoClose: 5000,
-						data: '@tui.circle-x',
-					}).subscribe();
-				},
+			error: () => {
+				this.loading.set(false);
+				this.toastService.open(this.translationService.translate('projects.failedToLoad'), {
+					appearance: 'error',
+					autoClose: 5000,
+					data: '@tui.circle-x',
+				}).subscribe();
+			},
 			});
 	}
 

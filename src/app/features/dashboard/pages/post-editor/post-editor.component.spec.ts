@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { translationProvider } from '../../../../core/i18n/testing';
 import { PostEditorComponent } from './post-editor.component';
 import { provideTaiga } from '@taiga-ui/core';
 import { provideRouter, Router } from '@angular/router';
@@ -53,6 +54,7 @@ describe('PostEditorComponent', () => {
     await TestBed.configureTestingModule({
       imports: [PostEditorComponent],
       providers: [
+        translationProvider(),
         provideTaiga(),
         provideRouter([]),
         { provide: PostService, useValue: postServiceMock },
@@ -86,6 +88,7 @@ describe('PostEditorComponent', () => {
     TestBed.configureTestingModule({
       imports: [PostEditorComponent],
       providers: [
+        translationProvider(),
         provideTaiga(),
         provideRouter([]),
         { provide: PostService, useValue: postServiceMock },
@@ -119,6 +122,7 @@ describe('PostEditorComponent', () => {
     TestBed.configureTestingModule({
       imports: [PostEditorComponent],
       providers: [
+        translationProvider(),
         provideTaiga(),
         provideRouter([]),
         { provide: PostService, useValue: postServiceMock },
@@ -184,6 +188,7 @@ describe('PostEditorComponent', () => {
     TestBed.configureTestingModule({
       imports: [PostEditorComponent],
       providers: [
+        translationProvider(),
         provideTaiga(),
         provideRouter([]),
         { provide: PostService, useValue: postServiceMock },

@@ -3,12 +3,15 @@ import {
 	ChangeDetectionStrategy,
 	Component,
 	ElementRef,
-	Inject,
-	Input,
 	PLATFORM_ID,
-	ViewChild,
+	computed,
+	effect,
+	inject,
+	signal,
+	viewChild,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { LanguageService } from '../../../core/i18n/language.service';
 
 @Component({
 	selector: 'app-giscus',
@@ -17,19 +20,34 @@ import { isPlatformBrowser } from '@angular/common';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GiscusComponent implements AfterViewInit {
-	@ViewChild('giscus', { static: true })
-	private readonly giscus!: ElementRef<HTMLElement>;
+	private readonly giscusRef = viewChild.required<ElementRef<HTMLElement>>('giscus');
+	private readonly platformId = inject(PLATFORM_ID);
+	private readonly languageService = inject(LanguageService);
 
-	@Input() lang = 'en';
+	private readonly giscusLanguage = computed(() =>
+		this.languageService.language() === 'PORTUGUESE' ? 'pt' : 'en'
+	);
+	private readonly ready = signal(false);
 
-	constructor(
-		@Inject(PLATFORM_ID) private readonly platformId: object,
-	) {}
+	constructor() {
+		effect(() => {
+			const lang = this.giscusLanguage();
+			const container = this.giscusRef()?.nativeElement;
+
+			if (!this.ready() || !container || !isPlatformBrowser(this.platformId)) {
+				return;
+			}
+
+			this.appendScript(container, lang);
+		});
+	}
 
 	ngAfterViewInit(): void {
-		if (!isPlatformBrowser(this.platformId)) {
-			return;
-		}
+		this.ready.set(true);
+	}
+
+	private appendScript(container: HTMLElement, lang: string): void {
+		container.replaceChildren();
 
 		const script = document.createElement('script');
 
@@ -45,7 +63,7 @@ export class GiscusComponent implements AfterViewInit {
 			'data-emit-metadata': '0',
 			'data-input-position': 'top',
 			'data-theme': 'dark',
-			'data-lang': this.lang,
+			'data-lang': lang,
 		}).forEach(([key, value]) => {
 			script.setAttribute(key, value);
 		});
@@ -53,6 +71,6 @@ export class GiscusComponent implements AfterViewInit {
 		script.async = true;
 		script.crossOrigin = 'anonymous';
 
-		this.giscus.nativeElement.appendChild(script);
+		container.appendChild(script);
 	}
 }

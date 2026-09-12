@@ -21,6 +21,8 @@ import { ProjectService } from '../../../projects/data-access/project.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 import { UploadService } from '../../../../core/upload/upload.service';
 import { firstTranslation } from '../../../../core/util/text.util';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 
 interface TranslationForm {
 	title: FormControl<string>;
@@ -53,22 +55,23 @@ function slugify(text: string): string {
 		HugeiconsIconComponent,
 		TuiDataListWrapper,
 		TuiFilterByInputPipe,
+		TranslatePipe,
 	],
 	template: `
 		<div class="mx-auto max-w-3xl px-6 py-8">
 			<div class="flex items-center justify-between mb-6">
 				<a (click)="goBack()" class="inline-flex items-center gap-1 text-sm text-accent cursor-pointer">
-					<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" /> Back to dashboard
+					<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" /> {{ 'common.backToDashboard' | translate }}
 				</a>
 				@if (isEdit() && slug()) {
 					<a [href]="'/project/' + slug()" target="_blank" class="inline-flex items-center gap-1 text-sm text-accent cursor-pointer">
 						<hugeicons-icon [icon]="viewProjectIcon" [size]="16" [strokeWidth]="2.5" />
-						View Project
+						{{ 'dashboard.projects.editor.viewProject' | translate }}
 					</a>
 				}
 			</div>
 
-			<h1 class="text-2xl font-bold mb-2">{{ isEdit() ? 'Edit Project' : 'New Project' }}</h1>
+			<h1 class="text-2xl font-bold mb-2">{{ (isEdit() ? 'dashboard.projects.editor.editHeading' : 'dashboard.projects.editor.newHeading') | translate }}</h1>
 
 			<form [formGroup]="form" class="flex flex-col gap-5" (ngSubmit)="onSave()">
 				<!-- Language Tabs -->
@@ -83,7 +86,7 @@ function slugify(text: string): string {
 							[class.hover:text-foreground]="activeLang() !== lang"
 							(click)="activeLang.set(lang)"
 						>
-							{{ lang === 'ENGLISH' ? '🇺🇸 English' : '🇧🇷 Português' }}
+							{{ (lang === 'ENGLISH' ? 'dashboard.projects.editor.langEn' : 'dashboard.projects.editor.langPt') | translate }}
 						</button>
 					}
 				</div>
@@ -95,18 +98,18 @@ function slugify(text: string): string {
 							<tui-textfield>
 								<label tuiLabel class="flex items-center gap-1.5">
 									<hugeicons-icon [icon]="titleIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-									<span>Title *</span>
+									<span>{{ 'dashboard.projects.editor.titleLabel' | translate }}</span>
 								</label>
-								<input tuiInput [formControl]="translationForms()[lang].title" placeholder="Project title" />
+								<input tuiInput [formControl]="translationForms()[lang].title" [placeholder]="'dashboard.projects.editor.titlePlaceholder' | translate" />
 							</tui-textfield>
 
 							<div class="flex flex-col gap-2">
-								<label class="text-sm font-medium">Description</label>
+								<label class="text-sm font-medium">{{ 'dashboard.projects.editor.descriptionLabel' | translate }}</label>
 								<textarea
 									[formControl]="translationForms()[lang].description"
 									rows="6"
 									class="w-full rounded-xl border border-border bg-surface p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-accent"
-									placeholder="Project description"
+									[placeholder]="'dashboard.projects.editor.descriptionPlaceholder' | translate"
 								></textarea>
 							</div>
 						</div>
@@ -117,17 +120,17 @@ function slugify(text: string): string {
 				<div class="flex flex-col gap-2">
 					<label class="text-sm font-medium flex items-center gap-1.5">
 						<hugeicons-icon [icon]="logoIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-						<span>Logo</span>
+						<span>{{ 'dashboard.projects.editor.logoLabel' | translate }}</span>
 					</label>
-					<input 
-						type="file" 
-						accept="image/*" 
+					<input
+						type="file"
+						accept="image/*"
 						(change)="onLogoFileSelected($event)"
 						[disabled]="uploading()"
 						class="w-full rounded-xl border border-border bg-surface p-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent-secondary file:cursor-pointer cursor-pointer disabled:opacity-50"
 					/>
 					@if (uploading()) {
-						<p class="text-xs text-muted">Uploading...</p>
+						<p class="text-xs text-muted">{{ 'dashboard.projects.editor.uploading' | translate }}</p>
 					}
 					@if (form.controls.logoUrl.value) {
 						<img
@@ -141,17 +144,17 @@ function slugify(text: string): string {
 				<div class="flex flex-col gap-2">
 					<label class="text-sm font-medium flex items-center gap-1.5">
 						<hugeicons-icon [icon]="bannerIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-						<span>Banner</span>
+						<span>{{ 'dashboard.projects.editor.bannerLabel' | translate }}</span>
 					</label>
-					<input 
-						type="file" 
-						accept="image/*" 
+					<input
+						type="file"
+						accept="image/*"
 						(change)="onBannerFileSelected($event)"
 						[disabled]="uploading()"
 						class="w-full rounded-xl border border-border bg-surface p-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent-secondary file:cursor-pointer cursor-pointer disabled:opacity-50"
 					/>
 					@if (uploading()) {
-						<p class="text-xs text-muted">Uploading...</p>
+						<p class="text-xs text-muted">{{ 'dashboard.projects.editor.uploading' | translate }}</p>
 					}
 					@if (form.controls.bannerUrl.value) {
 						<img
@@ -165,25 +168,25 @@ function slugify(text: string): string {
 				<tui-textfield>
 					<label tuiLabel class="flex items-center gap-1.5">
 						<hugeicons-icon [icon]="githubIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-						<span>GitHub URL</span>
+						<span>{{ 'dashboard.projects.editor.githubUrl' | translate }}</span>
 					</label>
-					<input tuiInput formControlName="githubUrl" placeholder="https://github.com/..." />
+					<input tuiInput formControlName="githubUrl" [placeholder]="'dashboard.projects.editor.githubPlaceholder' | translate" />
 				</tui-textfield>
 
 				<tui-textfield>
 					<label tuiLabel class="flex items-center gap-1.5">
 						<hugeicons-icon [icon]="websiteIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-						<span>Website URL</span>
+						<span>{{ 'dashboard.projects.editor.websiteUrl' | translate }}</span>
 					</label>
-					<input tuiInput formControlName="websiteUrl" placeholder="https://..." />
+					<input tuiInput formControlName="websiteUrl" [placeholder]="'dashboard.projects.editor.websitePlaceholder' | translate" />
 				</tui-textfield>
 
 			<tui-textfield multi tuiChevron [stringify]="stringifyTag">
 				<label tuiLabel class="flex items-center gap-1.5">
 					<hugeicons-icon [icon]="webProgrammingIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-					<span>Programming Languages</span>
+					<span>{{ 'dashboard.projects.editor.languagesLabel' | translate }}</span>
 				</label>
-				<input tuiInputChip formControlName="tagIds" placeholder="Select languages" />
+				<input tuiInputChip formControlName="tagIds" [placeholder]="'dashboard.projects.editor.languagesPlaceholder' | translate" />
 				<tui-input-chip *tuiItem />
 				<tui-data-list-wrapper *tuiDropdown tuiMultiSelectGroup [items]="availableTags() | tuiFilterByInput" [itemContent]="tagTemplate" />
 			</tui-textfield>
@@ -204,7 +207,7 @@ function slugify(text: string): string {
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
-							Save Draft
+							{{ 'dashboard.projects.editor.saveDraft' | translate }}
 						</button>
 						<button
 							tuiButton
@@ -215,7 +218,7 @@ function slugify(text: string): string {
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="publishIcon" [size]="16" [strokeWidth]="2.5" />
-							Publish
+							{{ 'dashboard.projects.editor.publish' | translate }}
 						</button>
 					} @else {
 						<button
@@ -227,7 +230,7 @@ function slugify(text: string): string {
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
-							Save
+							{{ 'dashboard.projects.editor.save' | translate }}
 						</button>
 						@if (currentStatus() === 'PUBLISHED') {
 							<button
@@ -239,7 +242,7 @@ function slugify(text: string): string {
 								class="gap-1"
 							>
 								<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
-								Unpublish
+								{{ 'dashboard.projects.editor.unpublish' | translate }}
 							</button>
 						} @else {
 							<button
@@ -251,7 +254,7 @@ function slugify(text: string): string {
 								class="gap-1"
 							>
 								<hugeicons-icon [icon]="publishIcon" [size]="16" [strokeWidth]="2.5" />
-								Publish
+								{{ 'dashboard.projects.editor.publish' | translate }}
 							</button>
 						}
 					}
@@ -267,6 +270,7 @@ export class ProjectEditorComponent implements OnInit {
 	private readonly tagService = inject(TagService);
 	private readonly uploadService = inject(UploadService);
 	private readonly platformId = inject(PLATFORM_ID);
+	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
@@ -372,13 +376,13 @@ export class ProjectEditorComponent implements OnInit {
 					this.currentStatus.set(p.status);
 				},
 				error: () => {
-					this.toastService.open('Failed to load project. Redirecting to dashboard...', {
-						appearance: 'error',
-						autoClose: 5000,
-						data: '@tui.circle-x',
-					}).subscribe();
-					void this.router.navigate(['/dashboard/project']);
-				},
+				this.toastService.open(this.translationService.translate('dashboard.projects.editor.loadFailed'), {
+					appearance: 'error',
+					autoClose: 5000,
+					data: '@tui.circle-x',
+				}).subscribe();
+				void this.router.navigate(['/dashboard/project']);
+			},
 			});
 		}
 
@@ -416,14 +420,19 @@ export class ProjectEditorComponent implements OnInit {
 				this.form.patchValue({ [fieldName]: res.url });
 				this.uploading.set(false);
 			},
-			error: () => {
-				this.uploading.set(false);
-				this.toastService.open(`Failed to upload ${fieldName === 'logoUrl' ? 'logo' : 'banner'} image`, {
+		error: () => {
+			this.uploading.set(false);
+			this.toastService.open(
+				this.translationService.translate(
+					fieldName === 'logoUrl' ? 'dashboard.projects.editor.logoUploadFailed' : 'dashboard.projects.editor.bannerUploadFailed'
+				),
+				{
 					appearance: 'error',
 					autoClose: 5000,
 					data: '@tui.circle-x',
-				}).subscribe();
-			},
+				}
+			).subscribe();
+		},
 		});
 	}
 
@@ -467,16 +476,19 @@ export class ProjectEditorComponent implements OnInit {
 				: this.projectService.create(payload);
 
 		obs.subscribe({
-			next: (res) => {
+				next: (res) => {
 				this.saving.set(false);
 				this.slug.set(res.slug);
 				this.slugPreview.set(res.slug);
 				this.currentStatus.set(res.status);
-				this.toastService.open(this.isEdit() ? 'Project updated successfully' : 'Project created successfully', {
-					appearance: 'success',
-					autoClose: 3000,
-					data: '@tui.check',
-				}).subscribe();
+				this.toastService.open(
+					this.translationService.translate(this.isEdit() ? 'dashboard.projects.editor.updated' : 'dashboard.projects.editor.created'),
+					{
+						appearance: 'success',
+						autoClose: 3000,
+						data: '@tui.check',
+					}
+				).subscribe();
 				if (!this.isEdit()) {
 					setTimeout(() => this.router.navigate(['/dashboard/project', res.id]), 800);
 				}
@@ -485,9 +497,9 @@ export class ProjectEditorComponent implements OnInit {
 				this.saving.set(false);
 				const msg = err?.error?.details
 					? JSON.stringify(err.error.details)
-					: 'Save failed — check validation/permissions';
+					: this.translationService.translate('common.operationFailed');
 				this.error.set(msg);
-				this.toastService.open('Failed to save project. Please try again.', {
+				this.toastService.open(this.translationService.translate('dashboard.projects.editor.saveFailed'), {
 					appearance: 'error',
 					autoClose: 5000,
 					data: '@tui.circle-x',

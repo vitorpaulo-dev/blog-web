@@ -16,12 +16,14 @@ import {
 import { PostDto, PostService } from '../../../posts/data-access/post.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 import { RouterLink } from '@angular/router';
-import { CommonModule, DatePipe, isPlatformServer } from '@angular/common';
+import { CommonModule, isPlatformServer } from '@angular/common';
 import { TuiCardLarge, TuiForm } from '@taiga-ui/layout';
 import { TuiChip, TuiToastService } from '@taiga-ui/kit';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../core/util/tag.util';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { ContentCardComponent, ContentCardItem } from '../../../../shared/components/content-card/content-card.component';
 
 @Component({
@@ -38,6 +40,7 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 		TuiInput,
 		TuiAppearance,
 		ContentCardComponent,
+		TranslatePipe,
 	],
 	template: `
 		<div class="min-h-dvh bg-background text-foreground">
@@ -56,7 +59,7 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 			</section>
 			<section aria-labelledby="recent-title" class="mx-auto md:pt-6 pt-4 pb-6 md:pb-10">
 				<div class="w-full inline-flex items-end justify-between gap-4 mb-6">
-					<h2 class="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Recent posts</h2>
+					<h2 class="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{{ 'home.recentPosts' | translate }}</h2>
 					<button
 						tuiButton
 						size="s"
@@ -64,7 +67,7 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 						routerLink="/post"
 						[disabled]="postsLoading() || posts().length === 0"
 					>
-						All posts
+						{{ 'home.allPosts' | translate }}
 						<hugeicons-icon [icon]="ArrowRight01Icon" [size]="16" [strokeWidth]="1.5" />
 					</button>
 				</div>
@@ -82,14 +85,13 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 							"
 						</div>
 
-						<blockquote
-							class="relative font-serif text-xl italic leading-relaxed text-foreground sm:text-2xl"
-						>
-							"Although I am ready to defend what I have said, many people expect me to defend what others
-							have attributed to me."
-						</blockquote>
+					<blockquote
+						class="relative font-serif text-xl italic leading-relaxed text-foreground sm:text-2xl"
+					>
+						"{{ 'home.emptyQuote' | translate }}"
+					</blockquote>
 
-						<footer class="mt-6 text-sm font-medium tracking-wide text-muted">T. S.</footer>
+					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">{{ 'home.emptyAttribution' | translate }}</footer>
 					</div>
 				} @else {
 					<div class="w-full">
@@ -106,23 +108,10 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 						class="col-span-1 md:col-span-1 select-none pointer-events-none object-cover rounded-xl border border-border bg-surface overflow-hidden flex items-center justify-center text-muted"
 					/>
 					<div class="col-span-1 md:col-span-2">
-						<p class="text-xs uppercase tracking-widest text-accent font-light mb-2 font-mono">About me</p>
-						<h2 class="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Hi, I'm Vitor!</h2>
+						<p class="text-xs uppercase tracking-widest text-accent font-light mb-2 font-mono">{{ 'home.aboutEyebrow' | translate }}</p>
+						<h2 class="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{{ 'home.aboutHeading' | translate }}</h2>
 						<div class="mt-4 space-y-4 text-muted leading-relaxed">
-							<p>
-								I've been messing with computers for most of my life.<br />
-								I started coding when I was 10, mostly because I wanted to understand how things worked
-								and, eventually, make them do things they weren't supposed to do.<br />
-								Now, I'm a full-stack developer, though I've always found myself gravitating toward
-								backend work, AI and the kind of problems where the first solution usually isn't the
-								right one.<br />
-								<br />
-								I made this blog because I wanted a place to write about what I'm building, breaking,
-								learning, and figuring out. Some of it will probably be useful. Some of it might just be
-								me going down a rabbit hole for a few days.<br />
-								No big master plan. Just me building things, learning along the way, and writing about
-								it.
-							</p>
+							<p class="whitespace-pre-line">{{ 'home.aboutBody' | translate }}</p>
 						</div>
 					</div>
 				</div>
@@ -130,17 +119,14 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 			<section aria-labelledby="newsletter-title" class="py-6 md:py-10 border-t border-border">
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
 					<div class="col-span-1 md:col-span-2">
-						<p class="text-xs uppercase tracking-widest text-accent font-light mb-2 font-mono">
-							Newsletter
-						</p>
-						<h1 class="font-bold text-4xl">
-							One email<br />
-							when I publish.<br />
-							Nothing else.
+					<p class="text-xs uppercase tracking-widest text-accent font-light mb-2 font-mono">
+						{{ 'home.newsletterEyebrow' | translate }}
+					</p>
+						<h1 class="font-bold text-4xl whitespace-pre-line">
+							{{ 'home.newsletterHeading' | translate }}
 						</h1>
 						<p class="text-muted font-mono">
-							Roughly twice a month. Real post-mortems, the occasional war story, and links to the source
-							when I can share it. Unsubscribe in one click.
+							{{ 'home.newsletterDescription' | translate }}
 						</p>
 					</div>
 					<div tuiAppearance="outline" class="bg-surface border border-border p-4 rounded-xl">
@@ -148,19 +134,19 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 							tuiForm="m"
 							[formGroup]="newsletterForm"
 							(ngSubmit)="subscribe()"
-							aria-label="Newsletter subscription"
+							[attr.aria-label]="'home.newsletterEyebrow' | translate"
 						>
 							<label tuiLabel>
-								<p class="text-lg font-medium font-mono py-1.5 text-muted">
-									Subscribe to my newsletter:
-								</p>
+							<p class="text-lg font-medium font-mono py-1.5 text-muted">
+								{{ 'home.subscribeLabel' | translate }}
+							</p>
 
 								<tui-textfield>
 									<input
 										tuiInput
 										type="email"
 										formControlName="email"
-										placeholder="you@domain.dev"
+										[placeholder]="'home.emailPlaceholder' | translate"
 										autocomplete="email"
 									/>
 								</tui-textfield>
@@ -173,7 +159,7 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 								tuiAppearance="primary"
 								[disabled]="newsletterForm.invalid"
 							>
-								Subscribe
+								{{ 'home.subscribe' | translate }}
 								<hugeicons-icon [icon]="ArrowRight01Icon" [size]="22" [strokeWidth]="1.5" />
 							</button>
 						</form>
@@ -182,23 +168,21 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 			</section>
 
 			<section aria-labelledby="opensource" class="py-6 md:py-10 border-t border-border">
-				<p class="text-xs uppercase tracking-widest text-accent font-light mb-2 font-mono">BUILT IN OPEN</p>
-				<h1 class="font-bold text-2xl">
-					This blog is built by an agent squad<br />And you can read every line.
+				<p class="text-xs uppercase tracking-widest text-accent font-light mb-2 font-mono">{{ 'home.builtInOpenEyebrow' | translate }}</p>
+				<h1 class="font-bold text-2xl whitespace-pre-line">
+					{{ 'home.builtInOpenHeading' | translate }}
 				</h1>
 				<p class="text-muted font-mono">
-					The posts, the layout, and the build pipeline are written and maintained by a small squad of
-					specialized agents. The full source templates, content, and tooling lives on GitHub, so you can fork
-					it, argue with it, or just see how the sausage is made.
+					{{ 'home.builtInOpenDescription' | translate }}
 				</p>
 
 				<a tuiButton routerLink="/opensource" class="mt-4 mr-4">
-					How the agent squad works
+					{{ 'home.howItWorks' | translate }}
 					<hugeicons-icon [icon]="ArrowRight01Icon" [size]="22" [strokeWidth]="1.5" />
 				</a>
 
 				<a tuiButton href="https://github.com/vitorpaulo-dev/" class="mt-4" tuiAppearance="outline">
-					View source on GitHub
+					{{ 'home.viewSource' | translate }}
 					<hugeicons-icon [icon]="GithubIcon" [size]="22" [strokeWidth]="1.5" />
 				</a>
 			</section>
@@ -217,6 +201,7 @@ export class HomePageComponent {
 	private readonly postService = inject(PostService);
 	private readonly tagService = inject(TagService);
 	private readonly languageService = inject(LanguageService);
+	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 
 	posts = signal<PostDto[]>([]);
@@ -226,6 +211,7 @@ export class HomePageComponent {
 
 	cardItems = computed<ContentCardItem[]>(() => {
 		const tags = this.tagMap();
+		const lang = this.lang();
 		return this.posts().map(post => ({
 			slug: post.slug,
 			title: firstTranslation(post.translations)?.title ?? '',
@@ -234,10 +220,10 @@ export class HomePageComponent {
 			date: post.createdAt,
 			routePrefix: '/post',
 			metaIcon: Timer02Icon,
-			metaText: `${post.estimatedReading || 5} min`,
+			metaText: `${post.estimatedReading || 5} ${this.translationService.translate('common.min', undefined, lang)}`,
 			chips: (post.tagIds ?? []).map(id => ({
 				icon: Tag01Icon,
-				label: tagNameOf(tags.get(id), this.lang()),
+				label: tagNameOf(tags.get(id), lang),
 			})),
 		}));
 	});
@@ -268,14 +254,14 @@ export class HomePageComponent {
 					this.postsLoading.set(false);
 					this.loadTags(r.content);
 				},
-			error: () => {
-				this.postsLoading.set(false);
-				this.toastService.open('Failed to load posts. Please try again.', {
-					appearance: 'error',
-					autoClose: 5000,
-					data: '@tui.circle-x',
-				}).subscribe();
-			},
+		error: () => {
+			this.postsLoading.set(false);
+			this.toastService.open(this.translationService.translate('home.failedToLoad'), {
+				appearance: 'error',
+				autoClose: 5000,
+				data: '@tui.circle-x',
+			}).subscribe();
+		},
 			});
 	}
 

@@ -4,6 +4,7 @@ import { provideTaiga } from '@taiga-ui/core';
 import { provideRouter } from '@angular/router';
 import { PostService } from '../../data-access/post.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { translationProvider } from '../../../../core/i18n/testing';
 import { throwError } from 'rxjs';
 import { TuiToastService } from '@taiga-ui/kit';
 import { of } from 'rxjs';
@@ -51,6 +52,7 @@ describe('PostListComponent', () => {
         provideRouter([]),
         { provide: PostService, useValue: postServiceMock },
         { provide: LanguageService, useValue: languageServiceMock },
+        translationProvider(),
         { provide: TuiToastService, useValue: toastServiceMock },
       ],
     }).compileComponents();

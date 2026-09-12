@@ -17,6 +17,8 @@ import {
 
 import { TagDto, TagService } from '../../../tags/data-access/tag.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 
 @Component({
@@ -33,21 +35,22 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 		TuiAppearance,
 		TuiTextfield,
 		TuiInput,
+		TranslatePipe,
 	],
 	template: `
 		<div class="mx-auto max-w-5xl px-6 py-8">
 			<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-				<h1 class="text-2xl font-bold">Tags</h1>
+				<h1 class="text-2xl font-bold">{{ 'dashboard.tags.list.title' | translate }}</h1>
 
 				<a routerLink="/dashboard/tag/new" tuiButton tuiAppearance="primary" size="m" class="gap-1">
 					<hugeicons-icon [icon]="PlusSignIcon" [size]="22" [strokeWidth]="1.5" />
-					New Tag
+					{{ 'dashboard.tags.list.new' | translate }}
 				</a>
 			</div>
 
 			<tui-textfield class="mb-4">
-				<label tuiLabel>Search</label>
-				<input tuiInput [formControl]="searchControl" placeholder="Search tags..." />
+				<label tuiLabel>{{ 'dashboard.tags.list.searchLabel' | translate }}</label>
+				<input tuiInput [formControl]="searchControl" [placeholder]="'dashboard.tags.list.searchPlaceholder' | translate" />
 			</tui-textfield>
 
 			@if (loading()) {
@@ -63,10 +66,10 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 					</div>
 
 					<blockquote class="relative font-serif text-xl italic leading-relaxed text-foreground sm:text-2xl">
-						"No tag is too small to organize your thoughts."
+						"{{ 'dashboard.tags.list.emptyQuote' | translate }}"
 					</blockquote>
 
-					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">Dev Wisdom</footer>
+					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">{{ 'dashboard.tags.list.emptyAttribution' | translate }}</footer>
 				</div>
 			} @else {
 				<table
@@ -79,8 +82,8 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 				>
 					<thead>
 						<tr tuiThGroup>
-							<th *tuiHead="'name'" tuiTh tuiSortable [requiredSort]="true">Name</th>
-							<th *tuiHead="'actions'" tuiTh>Actions</th>
+							<th *tuiHead="'name'" tuiTh tuiSortable [requiredSort]="true">{{ 'dashboard.tags.list.colName' | translate }}</th>
+							<th *tuiHead="'actions'" tuiTh>{{ 'dashboard.tags.list.colActions' | translate }}</th>
 						</tr>
 					</thead>
 
@@ -98,7 +101,7 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 											tuiButton
 											tuiAppearance="outline"
 											size="s"
-											aria-label="Edit tag"
+											[attr.aria-label]="'dashboard.tags.list.editAria' | translate"
 										>
 											<hugeicons-icon [icon]="Edit01Icon" [size]="16" [strokeWidth]="1.5" />
 										</a>
@@ -107,7 +110,7 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 											tuiButton
 											tuiAppearance="accent"
 											size="s"
-											aria-label="Delete tag"
+											[attr.aria-label]="'dashboard.tags.list.deleteAria' | translate"
 											(click)="askDeleteOne(tag.id)"
 										>
 											<hugeicons-icon [icon]="Delete01Icon" [size]="16" [strokeWidth]="1.5" />
@@ -131,6 +134,7 @@ export class DashboardTagListComponent {
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly destroyRef = inject(DestroyRef);
 	private readonly languageService = inject(LanguageService);
+	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 	private readonly dialogs = inject(TuiDialogService);
 
@@ -204,7 +208,7 @@ export class DashboardTagListComponent {
 					this.loading.set(false);
 				},
 				error: () => {
-					this.error.set('Failed to load tags.');
+					this.error.set(this.translationService.translate('dashboard.tags.list.failedToLoad'));
 					this.loading.set(false);
 				},
 			});
@@ -240,19 +244,19 @@ export class DashboardTagListComponent {
 	askDeleteOne(id: string): void {
 		this.dialogs
 			.open<boolean>(TUI_CONFIRM, {
-				label: 'Delete tag?',
+				label: this.translationService.translate('dashboard.tags.list.deleteConfirm'),
 				size: 's',
 				data: {
-					content: 'This action cannot be undone.',
-					yes: 'Delete',
-					no: 'Cancel',
+					content: this.translationService.translate('common.cannotUndo'),
+					yes: this.translationService.translate('common.delete'),
+					no: this.translationService.translate('common.cancel'),
 				},
 			})
 			.pipe(filter(Boolean))
 			.subscribe(() => {
 				this.tagService.delete([id]).subscribe({
 					next: () => {
-						this.toastService.open('Tag deleted successfully', {
+						this.toastService.open(this.translationService.translate('dashboard.tags.list.deleted'), {
 							appearance: 'success',
 							autoClose: 3000,
 							data: '@tui.check',
@@ -260,7 +264,7 @@ export class DashboardTagListComponent {
 						this.load();
 					},
 					error: () => {
-						this.toastService.open('Failed to delete tag. Please try again.', {
+						this.toastService.open(this.translationService.translate('dashboard.tags.list.deleteFailed'), {
 							appearance: 'error',
 							autoClose: 5000,
 							data: '@tui.circle-x',

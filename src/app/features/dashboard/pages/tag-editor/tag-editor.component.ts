@@ -13,6 +13,8 @@ import {
 } from '@hugeicons/core-free-icons';
 import type { Language } from '../../../posts/data-access/post.service';
 import { TagService } from '../../../tags/data-access/tag.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 
 interface TranslationForm {
 	name: FormControl<string>;
@@ -28,16 +30,17 @@ interface TranslationForm {
 		TuiTextfield,
 		TuiInput,
 		HugeiconsIconComponent,
+		TranslatePipe,
 	],
 	template: `
 		<div class="mx-auto max-w-3xl px-6 py-8">
 			<div class="flex items-center justify-between mb-6">
 				<a (click)="goBack()" class="inline-flex items-center gap-1 text-sm text-accent cursor-pointer">
-					<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" /> Back to dashboard
+					<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" /> {{ 'common.backToDashboard' | translate }}
 				</a>
 			</div>
 
-			<h1 class="text-2xl font-bold mb-2">{{ isEdit() ? 'Edit Tag' : 'New Tag' }}</h1>
+			<h1 class="text-2xl font-bold mb-2">{{ (isEdit() ? 'dashboard.tags.editor.editHeading' : 'dashboard.tags.editor.newHeading') | translate }}</h1>
 
 			<form [formGroup]="form" class="flex flex-col gap-5" (ngSubmit)="onSave()">
 				<!-- Language Tabs -->
@@ -52,7 +55,7 @@ interface TranslationForm {
 							[class.hover:text-foreground]="activeLang() !== lang"
 							(click)="activeLang.set(lang)"
 						>
-							{{ lang === 'ENGLISH' ? '🇺🇸 English' : '🇧🇷 Português' }}
+							{{ (lang === 'ENGLISH' ? 'dashboard.tags.editor.langEn' : 'dashboard.tags.editor.langPt') | translate }}
 						</button>
 					}
 				</div>
@@ -64,9 +67,9 @@ interface TranslationForm {
 							<tui-textfield>
 								<label tuiLabel class="flex items-center gap-1.5">
 									<hugeicons-icon [icon]="tagIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-									<span>Name *</span>
+									<span>{{ 'dashboard.tags.editor.nameLabel' | translate }}</span>
 								</label>
-								<input tuiInput [formControl]="translationForms()[lang].name" placeholder="Tag name" />
+								<input tuiInput [formControl]="translationForms()[lang].name" [placeholder]="'dashboard.tags.editor.namePlaceholder' | translate" />
 							</tui-textfield>
 						</div>
 					}
@@ -86,7 +89,7 @@ interface TranslationForm {
 						class="gap-1"
 					>
 						<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
-						Save
+						{{ 'dashboard.tags.editor.save' | translate }}
 					</button>
 				</div>
 			</form>
@@ -98,6 +101,7 @@ export class TagEditorComponent implements OnInit {
 	private readonly router = inject(Router);
 	private readonly tagService = inject(TagService);
 	private readonly platformId = inject(PLATFORM_ID);
+	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
@@ -142,13 +146,13 @@ export class TagEditorComponent implements OnInit {
 					}
 				},
 				error: () => {
-					this.toastService.open('Failed to load tag. Redirecting to dashboard...', {
-						appearance: 'error',
-						autoClose: 5000,
-						data: '@tui.circle-x',
-					}).subscribe();
-					void this.router.navigate(['/dashboard/tag']);
-				},
+				this.toastService.open(this.translationService.translate('dashboard.tags.editor.loadFailed'), {
+					appearance: 'error',
+					autoClose: 5000,
+					data: '@tui.circle-x',
+				}).subscribe();
+				void this.router.navigate(['/dashboard/tag']);
+			},
 			});
 		}
 	}
@@ -186,11 +190,14 @@ export class TagEditorComponent implements OnInit {
 		obs.subscribe({
 			next: () => {
 				this.saving.set(false);
-				this.toastService.open(this.isEdit() ? 'Tag updated successfully' : 'Tag created successfully', {
-					appearance: 'success',
-					autoClose: 3000,
-					data: '@tui.check',
-				}).subscribe();
+				this.toastService.open(
+					this.translationService.translate(this.isEdit() ? 'dashboard.tags.editor.updated' : 'dashboard.tags.editor.created'),
+					{
+						appearance: 'success',
+						autoClose: 3000,
+						data: '@tui.check',
+					}
+				).subscribe();
 				if (!this.isEdit()) {
 					setTimeout(() => this.router.navigate(['/dashboard/tag']), 800);
 				}
@@ -199,9 +206,9 @@ export class TagEditorComponent implements OnInit {
 				this.saving.set(false);
 				const msg = err?.error?.details
 					? JSON.stringify(err.error.details)
-					: 'Save failed — check validation/permissions';
+					: this.translationService.translate('common.operationFailed');
 				this.error.set(msg);
-				this.toastService.open('Failed to save tag. Please try again.', {
+				this.toastService.open(this.translationService.translate('dashboard.tags.editor.saveFailed'), {
 					appearance: 'error',
 					autoClose: 5000,
 					data: '@tui.circle-x',

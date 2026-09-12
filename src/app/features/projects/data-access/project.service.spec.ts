@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ProjectService } from './project.service';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { signal } from '@angular/core';
 import { environment } from '../../../../environments/environment';
 
 describe('ProjectService', () => {
@@ -13,6 +15,7 @@ describe('ProjectService', () => {
     TestBed.configureTestingModule({
       providers: [
         ProjectService,
+        { provide: LanguageService, useValue: { language: signal('ENGLISH') } },
         provideHttpClient(withInterceptorsFromDi()),
         provideHttpClientTesting(),
       ],

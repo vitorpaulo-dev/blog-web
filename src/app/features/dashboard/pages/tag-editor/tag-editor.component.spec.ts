@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { translationProvider } from '../../../../core/i18n/testing';
 import { TagEditorComponent } from './tag-editor.component';
 import { provideTaiga } from '@taiga-ui/core';
 import { provideRouter, Router } from '@angular/router';
@@ -47,6 +48,7 @@ describe('TagEditorComponent', () => {
     await TestBed.configureTestingModule({
       imports: [TagEditorComponent],
       providers: [
+        translationProvider(),
         provideTaiga(),
         provideRouter([]),
         { provide: TagService, useValue: tagServiceMock },
@@ -83,6 +85,7 @@ describe('TagEditorComponent', () => {
     TestBed.configureTestingModule({
       imports: [TagEditorComponent],
       providers: [
+        translationProvider(),
         provideTaiga(),
         provideRouter([]),
         { provide: TagService, useValue: tagServiceMock },
@@ -115,6 +118,7 @@ describe('TagEditorComponent', () => {
     TestBed.configureTestingModule({
       imports: [TagEditorComponent],
       providers: [
+        translationProvider(),
         provideTaiga(),
         provideRouter([]),
         { provide: TagService, useValue: tagServiceMock },
@@ -159,6 +163,7 @@ describe('TagEditorComponent', () => {
     TestBed.configureTestingModule({
       imports: [TagEditorComponent],
       providers: [
+        translationProvider(),
         provideTaiga(),
         provideRouter([]),
         { provide: TagService, useValue: tagServiceMock },
@@ -222,6 +227,7 @@ describe('TagEditorComponent', () => {
     TestBed.configureTestingModule({
       imports: [TagEditorComponent],
       providers: [
+        translationProvider(),
         provideTaiga(),
         provideRouter([]),
         { provide: TagService, useValue: tagServiceMock },
