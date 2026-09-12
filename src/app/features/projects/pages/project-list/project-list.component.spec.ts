@@ -96,7 +96,7 @@ describe('ProjectListComponent', () => {
     component.load();
 
     expect(projectServiceMock.search).toHaveBeenCalledWith({
-      query: { language: 'ENGLISH' },
+      query: {},
       page: 0,
       size: 10,
       sort: 'createdAt',

@@ -105,8 +105,8 @@ describe('TagService', () => {
     req.flush({ content: [{ id: '1', slug: 'java', translations: {} }], totalPages: 1, totalElements: 1 });
   });
 
-  it('batch() should POST to /v1/tag/batch with ids and language', () => {
-    service.batch(['id1', 'id2'], 'ENGLISH').subscribe((res) => {
+  it('batch() should POST to /v1/tag/batch with ids and the current language', () => {
+    service.batch(['id1', 'id2']).subscribe((res) => {
       expect(res.length).toBe(2);
     });
 

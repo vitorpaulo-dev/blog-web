@@ -30,14 +30,13 @@ describe('PostService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('batch() should POST to /v1/post/batch with ids and language', () => {
-    service.batch(['id1', 'id2'], 'ENGLISH').subscribe((res) => {
-      expect(res.length).toBe(2);
+  it('getById() should GET /v1/post/{id}', () => {
+    service.getById('abc-123').subscribe((res) => {
+      expect(res.id).toBe('abc-123');
     });
 
-    const req = httpMock.expectOne(`${baseUrl}/batch`);
-    expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ ids: ['id1', 'id2'], language: 'ENGLISH' });
-    req.flush([{ id: 'id1' }, { id: 'id2' }]);
+    const req = httpMock.expectOne(`${baseUrl}/abc-123`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ id: 'abc-123' });
   });
 });

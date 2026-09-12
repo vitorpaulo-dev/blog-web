@@ -87,7 +87,7 @@ describe('ProjectService', () => {
   });
 
   it('getBySlug() should GET /v1/project/slug/{slug}/{language}', () => {
-    service.getBySlug('my-project', 'ENGLISH').subscribe((res) => {
+    service.getBySlug('my-project').subscribe((res) => {
       expect(res.slug).toBe('my-project');
     });
 

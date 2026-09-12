@@ -107,7 +107,7 @@ describe('ProjectDetailComponent', () => {
 
     fixture.detectChanges();
 
-    expect(projectServiceMock.getBySlug).toHaveBeenCalledWith('test-project', 'ENGLISH');
+    expect(projectServiceMock.getBySlug).toHaveBeenCalledWith('test-project');
     expect(component.project()).toBeTruthy();
     expect(component.project()!.slug).toBe('test-project');
     expect(component.loading()).toBe(false);
