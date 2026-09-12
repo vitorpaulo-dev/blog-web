@@ -15,6 +15,7 @@ import { type SafeHtml } from '@angular/platform-browser';
 
 import { PostDto, PostService, ProjectDto } from '../../data-access/post.service';
 import { ProjectService } from '../../../projects/data-access/project.service';
+import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import {
@@ -38,6 +39,7 @@ import { MarkdownService } from '../../data-access/markdown.service';
 import { GiscusComponent } from '../../components/giscus.component';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
+import { buildTagMap, collectTagIds, tagName as tagNameOfUtil } from '../../../../core/util/tag.util';
 import {
 	ContentCardComponent,
 	ContentCardItem,
@@ -124,13 +126,13 @@ import {
 						</a>
 					}
 
-			@for (tag of p.tags; track tag.id) {
-				<span tuiChip>
-					<hugeicons-icon [icon]="Tag01Icon" [size]="12" [strokeWidth]="1.5" />
-
-					{{ getFirstTranslation(tag.translations)?.name }}
-				</span>
-			}
+					@for (tag of postTags(); track tag.id) {
+						<span tuiChip>
+							<hugeicons-icon [icon]="Tag01Icon" [size]="12" [strokeWidth]="1.5" />
+		
+							{{ tagNameOf(tag, lang()) }}
+						</span>
+					}
 				</div>
 
 				<article
@@ -204,6 +206,7 @@ export class PostDetailComponent implements AfterViewInit {
 	private readonly route = inject(ActivatedRoute);
 	private readonly postService = inject(PostService);
 	private readonly projectService = inject(ProjectService);
+	private readonly tagService = inject(TagService);
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly router = inject(Router);
 	private readonly markdownService = inject(MarkdownService);
@@ -225,11 +228,21 @@ export class PostDetailComponent implements AfterViewInit {
 	readonly loading = signal(true);
 	readonly error = signal<string | null>(null);
 	readonly html = signal<string | SafeHtml>('');
+	readonly tagMap = signal<Map<string, TagDto>>(new Map());
+	readonly projectTagMap = signal<Map<string, TagDto>>(new Map());
 	readonly lang = this.languageService.language.asReadonly();
 	readonly slug = this.route.snapshot.paramMap.get('slug');
 
-	cardItems = computed<ContentCardItem[]>(() =>
-		this.projects().map(project => ({
+	readonly postTags = computed<TagDto[]>(() => {
+		const post = this.post();
+		if (!post) return [];
+		const tags = this.tagMap();
+		return (post.tagIds ?? []).map(id => tags.get(id)).filter((t): t is TagDto => !!t);
+	});
+
+	cardItems = computed<ContentCardItem[]>(() => {
+		const tags = this.projectTagMap();
+		return this.projects().map(project => ({
 			slug: project.slug,
 			title: firstTranslation(project.translations)?.title ?? '',
 			excerpt: excerpt(firstTranslation(project.translations)?.description ?? ''),
@@ -238,12 +251,12 @@ export class PostDetailComponent implements AfterViewInit {
 			routePrefix: '/project',
 			metaIcon: EyeIcon,
 			metaText: `${project.viewCount} views`,
-			chips: (project.tags || []).map(tag => ({
+			chips: (project.tagIds ?? []).map(id => ({
 				icon: SourceCodeIcon,
-				label: firstTranslation(tag.translations)?.name ?? '',
+				label: tagNameOfUtil(tags.get(id), this.lang()),
 			})),
-		}))
-	);
+		}));
+	});
 
 	@ViewChild('articleEl')
 	articleEl!: ElementRef<HTMLElement>;
@@ -263,6 +276,10 @@ export class PostDetailComponent implements AfterViewInit {
 		return translations ? (Object.values(translations)[0] ?? null) : null;
 	}
 
+	tagNameOf(tag: TagDto | undefined, lang: string): string {
+		return tagNameOfUtil(tag, lang as never);
+	}
+
 	constructor() {
 		if (!this.slug) {
 			void this.router.navigate(['']);
@@ -276,16 +293,20 @@ export class PostDetailComponent implements AfterViewInit {
 
 	private loadPost(slug: string): void {
 		this.loading.set(true);
-		this.postService.getBySlug(slug, this.lang()).subscribe({
+		this.postService.getBySlug(slug).subscribe({
 			next: (post) => {
 				this.post.set(post);
 				const c = this.content();
 				if (c) {
 					void this.renderMarkdown(c.content);
 				}
+				this.loadTags(post);
 				if (post.projectIds && post.projectIds.length > 0) {
 					this.projectService.getByIds(post.projectIds, this.lang()).subscribe({
-						next: (projects) => this.projects.set(projects),
+						next: (projects) => {
+							this.projects.set(projects);
+							this.loadProjectTags(projects);
+						},
 						error: () => this.projects.set([]),
 					});
 				}
@@ -301,6 +322,30 @@ export class PostDetailComponent implements AfterViewInit {
 					.subscribe();
 				void this.router.navigate(['']);
 			},
+		});
+	}
+
+	private loadTags(post: PostDto): void {
+		const ids = collectTagIds([post]);
+		if (ids.length === 0) {
+			this.tagMap.set(new Map());
+			return;
+		}
+		this.tagService.batch(ids).subscribe({
+			next: (tags) => this.tagMap.set(buildTagMap(tags)),
+			error: () => this.tagMap.set(new Map()),
+		});
+	}
+
+	private loadProjectTags(projects: ProjectDto[]): void {
+		const ids = collectTagIds(projects);
+		if (ids.length === 0) {
+			this.projectTagMap.set(new Map());
+			return;
+		}
+		this.tagService.batch(ids).subscribe({
+			next: (tags) => this.projectTagMap.set(buildTagMap(tags)),
+			error: () => this.projectTagMap.set(new Map()),
 		});
 	}
 

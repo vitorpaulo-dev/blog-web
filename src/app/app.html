@@ -69,10 +69,6 @@
 			<a class="text-muted hover:text-accent" target="_blank" href="https://github.com/vitorpaulo.dev">
 				<hugeicons-icon [icon]="Github01Icon" [size]="28" [strokeWidth]="1.5" />
 			</a>
-
-			@if (!clerkService.isSignedIn()) {
-				<a routerLink="/login" class="text-sm text-muted hover:text-accent">Sign In</a>
-			}
 		</section>
 	</header>
 	<main tuiNavigationMain class="md:px-16">

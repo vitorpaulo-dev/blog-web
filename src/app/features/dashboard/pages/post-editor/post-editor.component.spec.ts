@@ -9,7 +9,6 @@ import { ActivatedRoute } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { PLATFORM_ID } from '@angular/core';
 
-// Mock matchMedia for Taiga UI
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({
@@ -167,8 +166,7 @@ describe('PostEditorComponent', () => {
     };
     (postServiceMock.create as any).mockReturnValue(of(mockResponse));
 
-    // Set valid form values
-    const forms = component.translationForms();
+        const forms = component.translationForms();
     forms.ENGLISH.title.setValue('Test Title');
     forms.ENGLISH.content.setValue('Test Content');
 
@@ -214,7 +212,7 @@ describe('PostEditorComponent', () => {
       translations: {
         ENGLISH: { title: 'Test', content: 'Content' },
       },
-      tags: [],
+      tagIds: [],
       projects: [],
     };
     (postServiceMock.getById as any).mockReturnValue(of(mockPost));
@@ -231,8 +229,7 @@ describe('PostEditorComponent', () => {
 
     editComponent.ngOnInit();
     
-    // Set valid form values
-    const forms = editComponent.translationForms();
+        const forms = editComponent.translationForms();
     forms.ENGLISH.title.setValue('Updated Title');
     forms.ENGLISH.content.setValue('Updated Content');
     
@@ -248,8 +245,7 @@ describe('PostEditorComponent', () => {
   it('should show error toast when save fails', () => {
     (postServiceMock.create as any).mockReturnValue(throwError(() => new Error('Failed')));
 
-    // Set valid form values
-    const forms = component.translationForms();
+        const forms = component.translationForms();
     forms.ENGLISH.title.setValue('Test Title');
     forms.ENGLISH.content.setValue('Test Content');
 

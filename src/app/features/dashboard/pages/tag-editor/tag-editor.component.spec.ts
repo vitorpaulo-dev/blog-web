@@ -8,7 +8,6 @@ import { ActivatedRoute } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { PLATFORM_ID } from '@angular/core';
 
-// Mock matchMedia for Taiga UI
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({
@@ -195,8 +194,7 @@ describe('TagEditorComponent', () => {
   });
 
   it('should not save when form is invalid', () => {
-    // English name is empty by default -> form invalid
-    expect(component.isFormValid()).toBe(false);
+        expect(component.isFormValid()).toBe(false);
 
     component.save();
 
@@ -297,8 +295,7 @@ describe('TagEditorComponent', () => {
 
     const forms = component.translationForms();
     forms.ENGLISH.name.setValue('Java');
-    // PORTUGUESE name left empty
-
+    
     component.save();
 
     expect(tagServiceMock.create).toHaveBeenCalledWith(

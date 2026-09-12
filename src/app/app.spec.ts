@@ -7,7 +7,6 @@ import { ClerkService } from './clerk.service';
 import { of } from 'rxjs';
 import { provideRouter } from '@angular/router';
 
-// Mock matchMedia for Taiga UI
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({

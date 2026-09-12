@@ -7,6 +7,8 @@ import {
 	GenericPageableResponse,
 	Language,
 } from '../../posts/data-access/post.service';
+import { LanguageService } from '../../../core/i18n/language.service';
+
 
 export interface TagContentDto {
 	name: string;
@@ -34,6 +36,7 @@ export interface TagQueryRequest {
 @Injectable({ providedIn: 'root' })
 export class TagService {
 	private readonly http = inject(HttpClient);
+	private readonly languageService = inject(LanguageService);
 	private readonly base = `${environment.apiBaseUrl}/v1/tag`;
 
 	create(payload: CreateTagPayload): Observable<TagDto> {
@@ -53,6 +56,12 @@ export class TagService {
 	}
 
 	search(params: GenericPageableRequest<TagQueryRequest>): Observable<GenericPageableResponse<TagDto>> {
+		params.query.language = this.languageService.language();
+
 		return this.http.post<GenericPageableResponse<TagDto>>(`${this.base}/search`, params);
+	}
+
+	batch(ids: string[]): Observable<TagDto[]> {
+		return this.http.post<TagDto[]>(`${this.base}/batch`, { ids, language: this.languageService.language() });
 	}
 }

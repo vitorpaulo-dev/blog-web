@@ -47,9 +47,7 @@ function slugify(text: string): string {
 		TuiTextfield,
 		TuiInput,
 		TuiDropdown,
-		TuiDataList,
 		TuiInputChip,
-		TuiChip,
 		TuiMultiSelect,
 		TuiChevron,
 		HugeiconsIconComponent,
@@ -321,7 +319,6 @@ export class ProjectEditorComponent implements OnInit {
 	ngOnInit(): void {
 		if (!this.isBrowser) return;
 
-		// Load available tags
 		this.tagService.search({
 			query: {},
 			page: 0,
@@ -345,8 +342,21 @@ export class ProjectEditorComponent implements OnInit {
 						bannerUrl: p.bannerUrl || '',
 						githubUrl: p.githubUrl || '',
 						websiteUrl: p.websiteUrl || '',
-						tagIds: p.tags || [],
+						tagIds: [],
 					});
+
+					const tagIds = p.tagIds ?? [];
+					if (tagIds.length > 0) {
+						this.tagService.batch(tagIds).subscribe({
+							next: (tags) => {
+								const selected = tagIds.map((id) =>
+									tags.find((t) => t.id === id) ?? { id, slug: '', translations: {} as TagDto['translations'] }
+								);
+								this.form.patchValue({ tagIds: selected });
+							},
+							error: () => this.form.patchValue({ tagIds: [] }),
+						});
+					}
 
 					const forms = this.translationForms();
 					for (const lang of this.languages) {
@@ -372,8 +382,7 @@ export class ProjectEditorComponent implements OnInit {
 			});
 		}
 
-		// Update slug preview when English title changes
-		this.translationForms()['ENGLISH'].title.valueChanges.subscribe((title) => {
+				this.translationForms()['ENGLISH'].title.valueChanges.subscribe((title) => {
 			if (!this.isEdit()) {
 				this.slugPreview.set(slugify(title));
 			}

@@ -3,10 +3,6 @@ import { isPlatformBrowser } from '@angular/common';
 import { Clerk } from '@clerk/clerk-js';
 import { ui } from '@clerk/ui';
 
-// Clerk publishable key (pk_*) is PUBLIC by design — safe to commit. It only identifies the
-// Clerk application (app_3IcT5NxUR5kLQ01BGfdOuwvL4Kc) and is meant to be exposed in the browser.
-// The SECRET key (sk_*) is NEVER committed — it stays in server env / deployment secrets only.
-// Priority: 1) import.meta.env VITE_CLERK_PUBLISHABLE_KEY 2) window.__clerk_publishable_key 3) this fallback.
 const FALLBACK_PUBLISHABLE_KEY = 'pk_test_dHJ1ZS1zcGlkZXItNzQ1Ni5jbGVyay5hY2NvdW50cy5kZXYk';
 
 /**
@@ -16,18 +12,15 @@ const FALLBACK_PUBLISHABLE_KEY = 'pk_test_dHJ1ZS1zcGlkZXItNzQ1Ni5jbGVyay5hY2NvdW
  * `isPlatformBrowser` — resolve is only called from browser context.
  */
 function resolvePublishableKey(): string {
-  // 1) Vite-style env (Angular 17+ uses Vite dev server) – supports both VITE_ and CLERK_ prefixes
-  const env = (import.meta as unknown as { env?: Record<string, string> })?.env;
+    const env = (import.meta as unknown as { env?: Record<string, string> })?.env;
   const viteKey = env?.['VITE_CLERK_PUBLISHABLE_KEY'] ?? env?.['CLERK_PUBLISHABLE_KEY'] ?? env?.['NG_APP_CLERK_PUBLISHABLE_KEY'];
   if (viteKey) return viteKey;
 
-  // 2) window global set by server or index.html — guarded for SSR
-  if (typeof window !== 'undefined' && (window as unknown as { __clerk_publishable_key?: string }).__clerk_publishable_key) {
+    if (typeof window !== 'undefined' && (window as unknown as { __clerk_publishable_key?: string }).__clerk_publishable_key) {
     return (window as unknown as { __clerk_publishable_key: string }).__clerk_publishable_key;
   }
 
-  // 3) Fallback public test key — safe to commit (pk_* is not a secret)
-  return FALLBACK_PUBLISHABLE_KEY;
+    return FALLBACK_PUBLISHABLE_KEY;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -47,8 +40,7 @@ export class ClerkService {
   async init(publishableKey?: string): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
 
-    // If already initialized or currently initializing, return the existing promise
-    if (this.initPromise) {
+        if (this.initPromise) {
       return this.initPromise;
     }
 
@@ -70,8 +62,7 @@ export class ClerkService {
 
     this.syncState();
 
-    // Keep signals in sync with Clerk state
-    this.clerk.addListener(({ session, user }) => {
+        this.clerk.addListener(({ session, user }) => {
       this.isSignedIn.set(!!session);
       this.user.set(user ?? null);
     });

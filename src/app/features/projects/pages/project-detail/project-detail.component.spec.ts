@@ -9,7 +9,6 @@ import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
 
-// Mock matchMedia for Taiga UI
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({
@@ -176,7 +175,7 @@ describe('ProjectDetailComponent', () => {
       helpCount: 1,
       createdAt: '2025-01-15T00:00:00Z',
       updatedAt: '2025-01-15T00:00:00Z',
-      authors: [{ id: 'a1', slug: 'author-1', name: 'Author One', avatarUrl: null, translations: { ENGLISH: {}, PORTUGUESE: {} } }],
+      authors: [{ id: 'a1', slug: 'author-1', name: 'Author One', avatarUrl: null }],
       translations: {
         ENGLISH: { title: 'My Project', description: 'Project description' },
       },
@@ -192,8 +191,7 @@ describe('ProjectDetailComponent', () => {
   });
 
   it('should show loading state initially', () => {
-    // Before detectChanges triggers the effect, loading should be true
-    expect(component.loading()).toBe(true);
+        expect(component.loading()).toBe(true);
   });
 
   it('should return content via content() method', () => {

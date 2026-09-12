@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { LanguageService } from '../../../core/i18n/language.service';
 
 export type Language = 'ENGLISH' | 'PORTUGUESE';
 
@@ -32,17 +33,11 @@ export interface ProjectContentDto {
 	description: string;
 }
 
-export interface AuthorContentDto {
-	bio?: string;
-	jobTitle?: string;
-}
-
 export interface AuthorDto {
 	id: string;
 	slug: string;
 	name: string;
 	avatarUrl?: string;
-	translations: Record<Language, AuthorContentDto>;
 }
 
 export interface TagDto {
@@ -58,7 +53,7 @@ export interface ProjectDto {
 	bannerUrl: string | null;
 	githubUrl: string | null;
 	websiteUrl: string | null;
-	tags: TagDto[];
+	tagIds: string[];
 	status: 'DRAFT' | 'PUBLISHED';
 	createdAt: string;
 	updatedAt: string;
@@ -81,7 +76,7 @@ export interface PostDto {
 	createdAt: string;
 	updatedAt: string;
 	authors: AuthorDto[];
-	tags: TagDto[];
+	tagIds: string[];
 	projectIds: string[];
 	reactionCount: number;
 	viewCount: number;
@@ -111,6 +106,7 @@ export interface SearchParams {
 @Injectable({ providedIn: 'root' })
 export class PostService {
 	private readonly http = inject(HttpClient);
+	private readonly languageService = inject(LanguageService);
 	private readonly base = `${environment.apiBaseUrl}/v1/post`;
 
 	create(payload: CreatePostPayload): Observable<PostDto> {
@@ -129,11 +125,13 @@ export class PostService {
 		return this.http.get<PostDto>(`${this.base}/${id}`);
 	}
 
-	getBySlug(slug: string, language: Language): Observable<PostDto> {
-		return this.http.get<PostDto>(`${this.base}/slug/${slug}/${language}`);
+	getBySlug(slug: string): Observable<PostDto> {
+		return this.http.get<PostDto>(`${this.base}/slug/${slug}/${this.languageService.language()}`);
 	}
 
 	search(params: GenericPageableRequest<SearchParams>): Observable<GenericPageableResponse<PostDto>> {
+		params.query.language = this.languageService.language();
+
 		return this.http.post<GenericPageableResponse<PostDto>>(`${this.base}/search`, params);
 	}
 }

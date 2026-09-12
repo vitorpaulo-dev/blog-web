@@ -9,7 +9,6 @@ import { TuiToastService } from '@taiga-ui/kit';
 import { of } from 'rxjs';
 import { signal } from '@angular/core';
 
-// Mock matchMedia for Taiga UI
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({

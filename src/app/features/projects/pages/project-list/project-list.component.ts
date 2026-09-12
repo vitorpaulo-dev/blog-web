@@ -1,13 +1,15 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TuiChip, TuiPagination, TuiToastService } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { EyeIcon, Loading03Icon, SourceCodeIcon } from '@hugeicons/core-free-icons';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformServer } from '@angular/common';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
+import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../core/util/tag.util';
 import { ProjectDto, ProjectService } from '../../data-access/project.service';
+import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 import { ContentCardComponent, ContentCardItem } from '../../../../shared/components/content-card/content-card.component';
 
 @Component({
@@ -58,18 +60,23 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 })
 export class ProjectListComponent {
 	private readonly projectService = inject(ProjectService);
+	private readonly tagService = inject(TagService);
 	private readonly languageService = inject(LanguageService);
 	private readonly toastService = inject(TuiToastService);
+	private readonly platformId = inject(PLATFORM_ID);
 
 	projects = signal<ProjectDto[]>([]);
 	loading = signal(false);
+	tagMap = signal<Map<string, TagDto>>(new Map());
 
 	page = signal(0);
 	totalPages = signal(1);
 	totalElements = signal(0);
 
-	cardItems = computed<ContentCardItem[]>(() =>
-		this.projects().map(project => ({
+	cardItems = computed<ContentCardItem[]>(() => {
+		const tags = this.tagMap();
+		const lang = this.languageService.language();
+		return this.projects().map(project => ({
 			slug: project.slug,
 			title: firstTranslation(project.translations)?.title ?? '',
 			excerpt: excerpt(firstTranslation(project.translations)?.description ?? ''),
@@ -78,12 +85,12 @@ export class ProjectListComponent {
 			routePrefix: '/project',
 			metaIcon: EyeIcon,
 			metaText: `${project.viewCount} views`,
-			chips: (project.tags || []).map(tag => ({
+			chips: (project.tagIds ?? []).map(id => ({
 				icon: SourceCodeIcon,
-				label: firstTranslation(tag.translations)?.name ?? '',
+				label: tagNameOf(tags.get(id), lang),
 			})),
-		}))
-	);
+		}));
+	});
 
 	constructor() {
 		effect(() => {
@@ -94,10 +101,14 @@ export class ProjectListComponent {
 	}
 
 	load(): void {
+		if (isPlatformServer(this.platformId)) {
+			return;
+		}
+
 		this.loading.set(true);
 		this.projectService
 			.search({
-				query: { language: this.languageService.language() },
+				query: {},
 				page: this.page(),
 				size: 10,
 				sort: 'createdAt',
@@ -109,6 +120,7 @@ export class ProjectListComponent {
 					this.totalPages.set(res.totalPages);
 					this.totalElements.set(res.totalElements);
 					this.loading.set(false);
+					this.loadTags(res.content);
 				},
 				error: () => {
 					this.loading.set(false);
@@ -119,6 +131,18 @@ export class ProjectListComponent {
 					}).subscribe();
 				},
 			});
+	}
+
+	private loadTags(projects: ProjectDto[]): void {
+		const ids = collectTagIds(projects);
+		if (ids.length === 0) {
+			this.tagMap.set(new Map());
+			return;
+		}
+		this.tagService.batch(ids).subscribe({
+			next: (tags) => this.tagMap.set(buildTagMap(tags)),
+			error: () => this.tagMap.set(new Map()),
+		});
 	}
 
 	protected readonly Loading03Icon = Loading03Icon;

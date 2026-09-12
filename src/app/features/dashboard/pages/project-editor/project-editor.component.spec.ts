@@ -3,12 +3,12 @@ import { ProjectEditorComponent } from './project-editor.component';
 import { provideTaiga } from '@taiga-ui/core';
 import { provideRouter, Router, ActivatedRoute } from '@angular/router';
 import { ProjectService } from '../../../projects/data-access/project.service';
+import { TagService } from '../../../tags/data-access/tag.service';
 import { UploadService } from '../../../../core/upload/upload.service';
 import { TuiToastService } from '@taiga-ui/kit';
 import { of, throwError } from 'rxjs';
 import { PLATFORM_ID } from '@angular/core';
 
-// Mock matchMedia for Taiga UI
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({
@@ -27,6 +27,7 @@ describe('ProjectEditorComponent', () => {
   let component: ProjectEditorComponent;
   let fixture: ComponentFixture<ProjectEditorComponent>;
   let projectServiceMock: Partial<ProjectService>;
+  let tagServiceMock: Partial<TagService>;
   let uploadServiceMock: Partial<UploadService>;
   let toastServiceMock: Partial<TuiToastService>;
   let routerMock: Partial<Router>;
@@ -36,6 +37,11 @@ describe('ProjectEditorComponent', () => {
       getById: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+    };
+
+    tagServiceMock = {
+      batch: vi.fn().mockReturnValue(of([])),
+      search: vi.fn().mockReturnValue(of({ content: [], totalPages: 1, totalElements: 0 })),
     };
 
     uploadServiceMock = {
@@ -296,6 +302,7 @@ describe('ProjectEditorComponent', () => {
         provideTaiga(),
         provideRouter([]),
         { provide: ProjectService, useValue: projectServiceMock },
+        { provide: TagService, useValue: tagServiceMock },
         { provide: UploadService, useValue: uploadServiceMock },
         { provide: TuiToastService, useValue: toastServiceMock },
         { provide: Router, useValue: routerMock },
@@ -320,10 +327,7 @@ describe('ProjectEditorComponent', () => {
       bannerUrl: 'https://example.com/banner.png',
       githubUrl: 'https://github.com/test',
       websiteUrl: 'https://test.com',
-      tags: [
-        { id: 'tag-1', slug: 'typescript', translations: { ENGLISH: { name: 'TypeScript' } } },
-        { id: 'tag-2', slug: 'angular', translations: { ENGLISH: { name: 'Angular' } } },
-      ],
+      tagIds: ['tag-1', 'tag-2'],
       status: 'DRAFT',
       translations: {
         ENGLISH: { title: 'Existing Title', description: 'Existing Desc' },
@@ -342,10 +346,7 @@ describe('ProjectEditorComponent', () => {
     expect(editComponent.currentStatus()).toBe('DRAFT');
     expect(editComponent.form.controls.logoUrl.value).toBe('https://example.com/logo.png');
     expect(editComponent.form.controls.githubUrl.value).toBe('https://github.com/test');
-    expect(editComponent.form.controls.tagIds.value).toEqual([
-      { id: 'tag-1', slug: 'typescript', translations: { ENGLISH: { name: 'TypeScript' } } },
-      { id: 'tag-2', slug: 'angular', translations: { ENGLISH: { name: 'Angular' } } },
-    ]);
+    expect(editComponent.form.controls.tagIds.value.map((t) => t.id)).toEqual(['tag-1', 'tag-2']);
 
     const forms = editComponent.translationForms();
     expect(forms.ENGLISH.title.value).toBe('Existing Title');

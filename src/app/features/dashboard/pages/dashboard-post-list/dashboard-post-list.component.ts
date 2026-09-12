@@ -1,5 +1,5 @@
 import { Component, DestroyRef, effect, inject, PLATFORM_ID, signal } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule, isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -20,7 +20,9 @@ import {
 } from '@hugeicons/core-free-icons';
 
 import { PostDto, PostService } from '../../../posts/data-access/post.service';
+import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { buildTagMap, collectTagIds, tagName as tagNameOfUtil } from '../../../../core/util/tag.util';
 import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 
 @Component({
@@ -154,8 +156,8 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 								
 								<td *tuiCell="'tags'" tuiTd>
 									<div class="flex flex-wrap gap-1">
-										@for (tag of post.tags; track tag.id) {
-											<span class="text-xs"> #{{ tagName(tag) }} </span>
+										@for (tag of postTagsById(post); track tag.id) {
+											<span class="text-xs"> #{{ tagNameOf(tag) }} </span>
 										}
 									</div>
 								</td>
@@ -198,13 +200,13 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 })
 export class DashboardPostListComponent {
 	private readonly postService = inject(PostService);
+	private readonly tagService = inject(TagService);
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly destroyRef = inject(DestroyRef);
 	private readonly languageService = inject(LanguageService);
 	private readonly toastService = inject(TuiToastService);
 	private readonly dialogs = inject(TuiDialogService);
 
-	readonly Search01Icon = Search01Icon;
 	readonly PlusSignIcon = PlusSignIcon;
 	readonly Edit01Icon = Edit01Icon;
 	readonly Delete01Icon = Delete01Icon;
@@ -217,6 +219,7 @@ export class DashboardPostListComponent {
 	readonly posts = signal<PostDto[]>([]);
 	readonly loading = signal(true);
 	readonly error = signal<string | null>(null);
+	readonly tagMap = signal<Map<string, TagDto>>(new Map());
 
 	readonly page = signal(0);
 	readonly totalPages = signal(1);
@@ -257,14 +260,20 @@ export class DashboardPostListComponent {
 		return post.translations?.[lang]?.title || post.translations?.['ENGLISH']?.title || '';
 	}
 
-	tagName(tag: { translations: Record<string, { name?: string }> }): string {
-		const lang = this.languageService.language();
-		return tag.translations?.[lang]?.name || tag.translations?.['ENGLISH']?.name || '';
+	postTagsById(post: PostDto): TagDto[] {
+		const tags = this.tagMap();
+		return (post.tagIds ?? []).map(id => tags.get(id)).filter((t): t is TagDto => !!t);
+	}
+
+	tagNameOf(tag: TagDto): string {
+		return tagNameOfUtil(tag, this.languageService.language());
 	}
 
 	load(): void {
-		if (!isPlatformBrowser(this.platformId)) return;
-		
+		if (isPlatformServer(this.platformId)) {
+			return;
+		}
+
 		this.loading.set(true);
 		this.error.set(null);
 
@@ -275,8 +284,7 @@ export class DashboardPostListComponent {
 		this.postService
 			.search({
 				query: {
-					query: query || undefined,
-					language: this.languageService.language(),
+					query: query || undefined
 				},
 				page: this.page(),
 				size: 10,
@@ -290,6 +298,7 @@ export class DashboardPostListComponent {
 					this.totalPages.set(response.totalPages || 1);
 					this.totalElements.set(response.totalElements);
 					this.loading.set(false);
+					this.loadTags(response.content);
 				},
 
 				error: () => {
@@ -297,6 +306,18 @@ export class DashboardPostListComponent {
 					this.loading.set(false);
 				},
 			});
+	}
+
+	private loadTags(posts: PostDto[]): void {
+		const ids = collectTagIds(posts);
+		if (ids.length === 0) {
+			this.tagMap.set(new Map());
+			return;
+		}
+		this.tagService.batch(ids).subscribe({
+			next: (tags) => this.tagMap.set(buildTagMap(tags)),
+			error: () => this.tagMap.set(new Map()),
+		});
 	}
 
 	onPage(page: number): void {

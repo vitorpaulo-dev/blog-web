@@ -104,4 +104,15 @@ describe('TagService', () => {
     expect(req.request.body).toEqual(params);
     req.flush({ content: [{ id: '1', slug: 'java', translations: {} }], totalPages: 1, totalElements: 1 });
   });
+
+  it('batch() should POST to /v1/tag/batch with ids and language', () => {
+    service.batch(['id1', 'id2'], 'ENGLISH').subscribe((res) => {
+      expect(res.length).toBe(2);
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/batch`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ ids: ['id1', 'id2'], language: 'ENGLISH' });
+    req.flush([{ id: 'id1' }, { id: 'id2' }]);
+  });
 });

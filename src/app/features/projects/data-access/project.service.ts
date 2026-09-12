@@ -10,6 +10,8 @@ import {
 	ProjectContentDto,
 	ProjectDto,
 } from '../../posts/data-access/post.service';
+import { TuiToastService } from '@taiga-ui/kit';
+import { LanguageService } from '../../../core/i18n/language.service';
 
 export type { ProjectDto, ProjectContentDto };
 
@@ -42,6 +44,7 @@ export interface ProjectQueryParams {
 @Injectable({ providedIn: 'root' })
 export class ProjectService {
 	private readonly http = inject(HttpClient);
+	private readonly languageService = inject(LanguageService);
 	private readonly base = `${environment.apiBaseUrl}/v1/project`;
 
 	create(payload: CreateProjectPayload): Observable<ProjectDto> {
@@ -60,11 +63,13 @@ export class ProjectService {
 		return this.http.get<ProjectDto>(`${this.base}/${id}`);
 	}
 
-	getBySlug(slug: string, language: Language): Observable<ProjectDto> {
-		return this.http.get<ProjectDto>(`${this.base}/slug/${slug}/${language}`);
+	getBySlug(slug: string): Observable<ProjectDto> {
+		return this.http.get<ProjectDto>(`${this.base}/slug/${slug}/${this.languageService.language()}`);
 	}
 
 	search(params: GenericPageableRequest<ProjectQueryParams>): Observable<GenericPageableResponse<ProjectDto>> {
+		params.query.language = this.languageService.language();
+
 		return this.http.post<GenericPageableResponse<ProjectDto>>(`${this.base}/search`, params);
 	}
 
