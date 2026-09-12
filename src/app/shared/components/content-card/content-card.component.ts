@@ -35,7 +35,7 @@ export interface ContentCardItem {
 
 		<a
 			[routerLink]="[item().routePrefix, item().slug]"
-			class="flex flex-col md:flex-row items-center w-full hover:bg-surface transition-all p-2 md:px-4 rounded-lg group"
+			class="flex flex-col md:flex-row items-center w-full hover:bg-surface transition-all p-2 rounded-lg group"
 		>
 			@if (item().imageUrl) {
 				<div class="md:mr-5 aspect-video w-80 rounded-xl border border-border bg-surface overflow-hidden">
