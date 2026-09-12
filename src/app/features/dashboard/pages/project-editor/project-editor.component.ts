@@ -2,8 +2,8 @@ import { Component, inject, signal, OnInit, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { TuiButton, TuiTextfield, TuiInput, TuiDropdown, TuiDataList } from '@taiga-ui/core';
-import { TuiToastService, TuiInputChip, TuiChip, TuiMultiSelect, TuiChevron } from '@taiga-ui/kit';
+import { TuiButton, TuiTextfield, TuiInput, TuiDropdown, TuiDataList, TuiFilterByInputPipe } from '@taiga-ui/core';
+import { TuiToastService, TuiInputChip, TuiChip, TuiMultiSelect, TuiChevron, TuiDataListWrapper } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import {
 	ArrowLeft01Icon,
@@ -18,7 +18,9 @@ import {
 } from '@hugeicons/core-free-icons';
 import type { Language } from '../../../posts/data-access/post.service';
 import { ProjectService } from '../../../projects/data-access/project.service';
+import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 import { UploadService } from '../../../../core/upload/upload.service';
+import { firstTranslation } from '../../../../core/util/text.util';
 
 interface TranslationForm {
 	title: FormControl<string>;
@@ -45,12 +47,12 @@ function slugify(text: string): string {
 		TuiTextfield,
 		TuiInput,
 		TuiDropdown,
-		TuiDataList,
 		TuiInputChip,
-		TuiChip,
 		TuiMultiSelect,
 		TuiChevron,
 		HugeiconsIconComponent,
+		TuiDataListWrapper,
+		TuiFilterByInputPipe,
 	],
 	template: `
 		<div class="mx-auto max-w-3xl px-6 py-8">
@@ -176,19 +178,16 @@ function slugify(text: string): string {
 					<input tuiInput formControlName="websiteUrl" placeholder="https://..." />
 				</tui-textfield>
 
-				<tui-textfield multi tuiChevron [stringify]="stringifyLanguage">
-					<label tuiLabel class="flex items-center gap-1.5">
-						<hugeicons-icon [icon]="webProgrammingIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-						<span>Programming Languages</span>
-					</label>
-					<input tuiInputChip formControlName="programmingLanguages" placeholder="Select languages" />
-					<tui-input-chip *tuiItem />
-					<tui-data-list *tuiDropdown tuiMultiSelectGroup>
-						@for (lang of availableLanguages; track lang) {
-							<button tuiOption [value]="lang">{{ lang }}</button>
-						}
-					</tui-data-list>
-				</tui-textfield>
+			<tui-textfield multi tuiChevron [stringify]="stringifyTag">
+				<label tuiLabel class="flex items-center gap-1.5">
+					<hugeicons-icon [icon]="webProgrammingIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
+					<span>Programming Languages</span>
+				</label>
+				<input tuiInputChip formControlName="tagIds" placeholder="Select languages" />
+				<tui-input-chip *tuiItem />
+				<tui-data-list-wrapper *tuiDropdown tuiMultiSelectGroup [items]="availableTags() | tuiFilterByInput" [itemContent]="tagTemplate" />
+			</tui-textfield>
+			<ng-template #tagTemplate let-tag>{{ stringifyTag(tag) }}</ng-template>
 
 				@if (error()) {
 					<p class="text-sm text-red-400" role="alert">{{ error() }}</p>
@@ -265,6 +264,7 @@ export class ProjectEditorComponent implements OnInit {
 	private readonly route = inject(ActivatedRoute);
 	private readonly router = inject(Router);
 	private readonly projectService = inject(ProjectService);
+	private readonly tagService = inject(TagService);
 	private readonly uploadService = inject(UploadService);
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly toastService = inject(TuiToastService);
@@ -288,7 +288,7 @@ export class ProjectEditorComponent implements OnInit {
 		bannerUrl: new FormControl('', { nonNullable: true }),
 		githubUrl: new FormControl('', { nonNullable: true }),
 		websiteUrl: new FormControl('', { nonNullable: true }),
-		programmingLanguages: new FormControl<string[]>([], { nonNullable: true }),
+		tagIds: new FormControl<TagDto[]>([], { nonNullable: true }),
 	});
 
 	translationForms = signal<Record<Language, TranslationForm>>({
@@ -312,12 +312,24 @@ export class ProjectEditorComponent implements OnInit {
 	error = signal<string | null>(null);
 	private projectId: string | null = null;
 
-	availableLanguages = ['TypeScript', 'JavaScript', 'Java', 'Python', 'Go', 'Rust', 'C#', 'C++', 'PHP', 'Ruby', 'Swift', 'Kotlin'];
+	availableTags = signal<TagDto[]>([]);
 
-	stringifyLanguage = (lang: string): string => lang;
+	stringifyTag = (tag: TagDto): string => firstTranslation(tag.translations)?.name ?? '';
 
 	ngOnInit(): void {
 		if (!this.isBrowser) return;
+
+		this.tagService.search({
+			query: {},
+			page: 0,
+			size: 5,
+			sort: 'name',
+			direction: 'ASC',
+		}).subscribe({
+			next: (res) => {
+				this.availableTags.set(res.content);
+			},
+		});
 
 		const id = this.route.snapshot.paramMap.get('id');
 		if (id) {
@@ -330,8 +342,21 @@ export class ProjectEditorComponent implements OnInit {
 						bannerUrl: p.bannerUrl || '',
 						githubUrl: p.githubUrl || '',
 						websiteUrl: p.websiteUrl || '',
-						programmingLanguages: p.programmingLanguage ? p.programmingLanguage.split(',').map(s => s.trim()).filter(s => s) : [],
+						tagIds: [],
 					});
+
+					const tagIds = p.tagIds ?? [];
+					if (tagIds.length > 0) {
+						this.tagService.batch(tagIds).subscribe({
+							next: (tags) => {
+								const selected = tagIds.map((id) =>
+									tags.find((t) => t.id === id) ?? { id, slug: '', translations: {} as TagDto['translations'] }
+								);
+								this.form.patchValue({ tagIds: selected });
+							},
+							error: () => this.form.patchValue({ tagIds: [] }),
+						});
+					}
 
 					const forms = this.translationForms();
 					for (const lang of this.languages) {
@@ -357,8 +382,7 @@ export class ProjectEditorComponent implements OnInit {
 			});
 		}
 
-		// Update slug preview when English title changes
-		this.translationForms()['ENGLISH'].title.valueChanges.subscribe((title) => {
+				this.translationForms()['ENGLISH'].title.valueChanges.subscribe((title) => {
 			if (!this.isEdit()) {
 				this.slugPreview.set(slugify(title));
 			}
@@ -428,11 +452,11 @@ export class ProjectEditorComponent implements OnInit {
 		}
 
 		const payload = {
-			logoUrl: this.form.controls.logoUrl.value || undefined,
-			bannerUrl: this.form.controls.bannerUrl.value || undefined,
-			githubUrl: this.form.controls.githubUrl.value || undefined,
-			websiteUrl: this.form.controls.websiteUrl.value || undefined,
-			programmingLanguage: this.form.controls.programmingLanguages.value.join(',') || undefined,
+			logoUrl: this.form.controls.logoUrl.value,
+			bannerUrl: this.form.controls.bannerUrl.value,
+			githubUrl: this.form.controls.githubUrl.value,
+			websiteUrl: this.form.controls.websiteUrl.value,
+			tagIds: this.form.controls.tagIds.value?.map((tag) => tag.id),
 			translations: filteredTranslations,
 			status,
 		};

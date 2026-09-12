@@ -67,10 +67,28 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/dashboard/pages/project-editor/project-editor.component').then(m => m.ProjectEditorComponent),
   },
-  {
-    path: 'dashboard/project/:id',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/dashboard/pages/project-editor/project-editor.component').then(m => m.ProjectEditorComponent),
-  },
+	{
+		path: 'dashboard/project/:id',
+		canActivate: [authGuard],
+		loadComponent: () =>
+			import('./features/dashboard/pages/project-editor/project-editor.component').then(m => m.ProjectEditorComponent),
+	},
+	{
+		path: 'dashboard/tag',
+		canActivate: [authGuard],
+		loadComponent: () =>
+			import('./features/dashboard/pages/dashboard-tag-list/dashboard-tag-list.component').then(m => m.DashboardTagListComponent),
+	},
+	{
+		path: 'dashboard/tag/new',
+		canActivate: [authGuard],
+		loadComponent: () =>
+			import('./features/dashboard/pages/tag-editor/tag-editor.component').then(m => m.TagEditorComponent),
+	},
+	{
+		path: 'dashboard/tag/:id',
+		canActivate: [authGuard],
+		loadComponent: () =>
+			import('./features/dashboard/pages/tag-editor/tag-editor.component').then(m => m.TagEditorComponent),
+	},
 ];

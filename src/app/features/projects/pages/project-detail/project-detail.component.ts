@@ -1,5 +1,6 @@
 import {
 	Component,
+	computed,
 	effect,
 	inject,
 	signal,
@@ -26,7 +27,9 @@ import { TuiChip, TuiToastService } from '@taiga-ui/kit';
 
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { firstTranslation } from '../../../../core/util/text.util';
+import { buildTagMap, collectTagIds, tagName as tagNameOfUtil } from '../../../../core/util/tag.util';
 import { ProjectDto, ProjectService } from '../../data-access/project.service';
+import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 
 @Component({
 	selector: 'app-project-detail',
@@ -118,11 +121,11 @@ import { ProjectDto, ProjectService } from '../../data-access/project.service';
 						</a>
 					}
 					
-					@for (language of p.programmingLanguage?.split(',') ?? []; track language) {
+					@for (tag of projectTags(); track tag.id) {
 						<p tuiChip>
 							<hugeicons-icon [icon]="SourceCodeIcon" [size]="12" [strokeWidth]="1.5" />
-
-							{{ language }}
+	
+							{{ tagNameOf(tag) }}
 						</p>
 					}
 				</div>
@@ -172,6 +175,7 @@ import { ProjectDto, ProjectService } from '../../data-access/project.service';
 export class ProjectDetailComponent {
 	private readonly route = inject(ActivatedRoute);
 	private readonly projectService = inject(ProjectService);
+	private readonly tagService = inject(TagService);
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly router = inject(Router);
 	private readonly languageService = inject(LanguageService);
@@ -189,11 +193,23 @@ export class ProjectDetailComponent {
 	readonly project = signal<ProjectDto | null>(null);
 	readonly loading = signal(true);
 	readonly error = signal<string | null>(null);
+	readonly tagMap = signal<Map<string, TagDto>>(new Map());
 	readonly lang = this.languageService.language.asReadonly();
 	readonly slug = this.route.snapshot.paramMap.get('slug');
 
+	readonly projectTags = computed<TagDto[]>(() => {
+		const project = this.project();
+		if (!project) return [];
+		const tags = this.tagMap();
+		return (project.tagIds ?? []).map(id => tags.get(id)).filter((t): t is TagDto => !!t);
+	});
+
 	content() {
 		return firstTranslation(this.project()?.translations);
+	}
+
+	tagNameOf(tag: TagDto | undefined): string {
+		return tagNameOfUtil(tag, this.lang());
 	}
 
 	constructor() {
@@ -209,10 +225,11 @@ export class ProjectDetailComponent {
 
 	private loadProject(slug: string): void {
 		this.loading.set(true);
-		this.projectService.getBySlug(slug, this.lang()).subscribe({
+		this.projectService.getBySlug(slug).subscribe({
 			next: (project) => {
 				this.project.set(project);
 				this.loading.set(false);
+				this.loadTags(project);
 			},
 			error: () => {
 				this.loading.set(false);
@@ -223,6 +240,18 @@ export class ProjectDetailComponent {
 				}).subscribe();
 				void this.router.navigate(['']);
 			},
+		});
+	}
+
+	private loadTags(project: ProjectDto): void {
+		const ids = collectTagIds([project]);
+		if (ids.length === 0) {
+			this.tagMap.set(new Map());
+			return;
+		}
+		this.tagService.batch(ids).subscribe({
+			next: (tags) => this.tagMap.set(buildTagMap(tags)),
+			error: () => this.tagMap.set(new Map()),
 		});
 	}
 

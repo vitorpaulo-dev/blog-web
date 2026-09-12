@@ -48,15 +48,12 @@ const baseMockWindow: any = {
 const serverConfig: ApplicationConfig = {
   providers: [
     provideServerRendering(withRoutes(serverRoutes)),
-    // SSR — provide WA_WINDOW backed by DOCUMENT.documentElement so tuiWindowSize doesn't crash
-    // WA_WINDOW normally is DOCUMENT.defaultView; on SSR defaultView is null so Taiga falls back to undefined.
-    {
+            {
       provide: WA_WINDOW,
       useFactory: () => {
         const doc: any = inject(DOCUMENT);
         const docEl = doc?.documentElement;
-        // ensure documentElement exists even if Domino doc is minimal
-        if (doc && !docEl) {
+                if (doc && !docEl) {
           doc.documentElement = {
             clientWidth: 1280,
             clientHeight: 800,
@@ -66,8 +63,7 @@ const serverConfig: ApplicationConfig = {
         return {
           ...baseMockWindow,
           document: doc,
-          // keep defaultView link for code that checks defaultView
-          defaultView: baseMockWindow,
+                    defaultView: baseMockWindow,
           getComputedStyle: doc?.defaultView?.getComputedStyle?.bind(doc.defaultView) ?? (() => ({ getPropertyValue: () => '' }) as any),
         };
       },

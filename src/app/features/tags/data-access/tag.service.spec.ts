@@ -1,24 +1,24 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { ProjectService } from './project.service';
+import { TagService } from './tag.service';
 import { environment } from '../../../../environments/environment';
 
-describe('ProjectService', () => {
-  let service: ProjectService;
+describe('TagService', () => {
+  let service: TagService;
   let httpMock: HttpTestingController;
-  const baseUrl = `${environment.apiBaseUrl}/v1/project`;
+  const baseUrl = `${environment.apiBaseUrl}/v1/tag`;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        ProjectService,
+        TagService,
         provideHttpClient(withInterceptorsFromDi()),
         provideHttpClientTesting(),
       ],
     });
 
-    service = TestBed.inject(ProjectService);
+    service = TestBed.inject(TagService);
     httpMock = TestBed.inject(HttpTestingController);
   });
 
@@ -30,44 +30,43 @@ describe('ProjectService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('create() should POST to /v1/project', () => {
+  it('create() should POST to /v1/tag', () => {
     const payload = {
       translations: {
-        ENGLISH: { title: 'Test', description: 'Desc' },
-        PORTUGUESE: { title: 'Teste', description: 'Desc' },
+        ENGLISH: { name: 'Java' },
+        PORTUGUESE: { name: 'Java' },
       },
     };
 
-    service.create(payload as any).subscribe((res) => {
+    service.create(payload).subscribe((res) => {
       expect(res.id).toBe('new-id');
     });
 
     const req = httpMock.expectOne(baseUrl);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(payload);
-    req.flush({ id: 'new-id' });
+    req.flush({ id: 'new-id', slug: 'java', translations: {} });
   });
 
-  it('update() should PUT to /v1/project/{id}', () => {
+  it('update() should PUT to /v1/tag/{id}', () => {
     const payload = {
       translations: {
-        ENGLISH: { title: 'Updated', description: 'Desc' },
-        PORTUGUESE: { title: 'Atualizado', description: 'Desc' },
+        ENGLISH: { name: 'Updated' },
+        PORTUGUESE: { name: 'Atualizado' },
       },
-      status: 'PUBLISHED' as const,
     };
 
-    service.update('abc-123', payload as any).subscribe((res) => {
+    service.update('abc-123', payload).subscribe((res) => {
       expect(res.id).toBe('abc-123');
     });
 
     const req = httpMock.expectOne(`${baseUrl}/abc-123`);
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual(payload);
-    req.flush({ id: 'abc-123' });
+    req.flush({ id: 'abc-123', slug: 'updated', translations: {} });
   });
 
-  it('delete() should DELETE to /v1/project with body', () => {
+  it('delete() should DELETE to /v1/tag with body', () => {
     service.delete(['id1', 'id2']).subscribe();
 
     const req = httpMock.expectOne(baseUrl);
@@ -76,33 +75,23 @@ describe('ProjectService', () => {
     req.flush(null);
   });
 
-  it('getById() should GET /v1/project/{id}', () => {
+  it('getById() should GET /v1/tag/{id}', () => {
     service.getById('abc-123').subscribe((res) => {
       expect(res.id).toBe('abc-123');
     });
 
     const req = httpMock.expectOne(`${baseUrl}/abc-123`);
     expect(req.request.method).toBe('GET');
-    req.flush({ id: 'abc-123' });
+    req.flush({ id: 'abc-123', slug: 'java', translations: {} });
   });
 
-  it('getBySlug() should GET /v1/project/slug/{slug}/{language}', () => {
-    service.getBySlug('my-project').subscribe((res) => {
-      expect(res.slug).toBe('my-project');
-    });
-
-    const req = httpMock.expectOne(`${baseUrl}/slug/my-project/ENGLISH`);
-    expect(req.request.method).toBe('GET');
-    req.flush({ slug: 'my-project' });
-  });
-
-  it('search() should POST to /v1/project/search', () => {
+  it('search() should POST to /v1/tag/search', () => {
     const params = {
-      query: { language: 'ENGLISH' as const },
+      query: { name: 'java' },
       page: 0,
       size: 10,
-      sort: 'createdAt',
-      direction: 'DESC' as const,
+      sort: 'name',
+      direction: 'ASC' as const,
     };
 
     service.search(params).subscribe((res) => {
@@ -113,11 +102,11 @@ describe('ProjectService', () => {
     const req = httpMock.expectOne(`${baseUrl}/search`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(params);
-    req.flush({ content: [{ id: '1' }], totalPages: 1, totalElements: 1 });
+    req.flush({ content: [{ id: '1', slug: 'java', translations: {} }], totalPages: 1, totalElements: 1 });
   });
 
-  it('getByIds() should POST to /v1/project/batch', () => {
-    service.getByIds(['id1', 'id2'], 'ENGLISH').subscribe((res) => {
+  it('batch() should POST to /v1/tag/batch with ids and the current language', () => {
+    service.batch(['id1', 'id2']).subscribe((res) => {
       expect(res.length).toBe(2);
     });
 

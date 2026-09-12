@@ -3,12 +3,12 @@ import { ProjectListComponent } from './project-list.component';
 import { provideTaiga } from '@taiga-ui/core';
 import { provideRouter } from '@angular/router';
 import { ProjectService } from '../../data-access/project.service';
+import { TagService } from '../../../tags/data-access/tag.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TuiToastService } from '@taiga-ui/kit';
 import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 
-// Mock matchMedia for Taiga UI
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({
@@ -27,12 +27,20 @@ describe('ProjectListComponent', () => {
   let component: ProjectListComponent;
   let fixture: ComponentFixture<ProjectListComponent>;
   let projectServiceMock: Partial<ProjectService>;
+  let tagServiceMock: Partial<TagService>;
   let languageServiceMock: Partial<LanguageService>;
   let toastServiceMock: Partial<TuiToastService>;
 
   beforeEach(async () => {
     projectServiceMock = {
       search: vi.fn(),
+    };
+
+    tagServiceMock = {
+      batch: vi.fn().mockReturnValue(of([
+        { id: '1', slug: 'typescript', translations: { ENGLISH: { name: 'TypeScript' } } },
+        { id: '2', slug: 'angular', translations: { ENGLISH: { name: 'Angular' } } },
+      ])),
     };
 
     languageServiceMock = {
@@ -50,6 +58,7 @@ describe('ProjectListComponent', () => {
         provideTaiga(),
         provideRouter([]),
         { provide: ProjectService, useValue: projectServiceMock },
+        { provide: TagService, useValue: tagServiceMock },
         { provide: LanguageService, useValue: languageServiceMock },
         { provide: TuiToastService, useValue: toastServiceMock },
       ],
@@ -71,7 +80,7 @@ describe('ProjectListComponent', () => {
           slug: 'test-project',
           logoUrl: null,
           bannerUrl: null,
-          programmingLanguage: 'TypeScript',
+          tagIds: ['1'],
           viewCount: 10,
           createdAt: '2025-01-01T00:00:00Z',
           translations: {
@@ -87,7 +96,7 @@ describe('ProjectListComponent', () => {
     component.load();
 
     expect(projectServiceMock.search).toHaveBeenCalledWith({
-      query: { language: 'ENGLISH' },
+      query: {},
       page: 0,
       size: 10,
       sort: 'createdAt',
@@ -115,8 +124,7 @@ describe('ProjectListComponent', () => {
 
     component.load();
 
-    // After synchronous subscribe, loading should be false
-    expect(component.loading()).toBe(false);
+        expect(component.loading()).toBe(false);
   });
 
   it('should show empty state when no projects', () => {
@@ -150,7 +158,7 @@ describe('ProjectListComponent', () => {
           slug: 'proj-1',
           logoUrl: 'https://example.com/logo.png',
           bannerUrl: null,
-          programmingLanguage: 'TypeScript,Angular',
+          tagIds: ['1', '2'],
           viewCount: 25,
           createdAt: '2025-03-01T00:00:00Z',
           translations: {

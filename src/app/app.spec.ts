@@ -3,11 +3,9 @@ import { App } from './app';
 import { provideTaiga } from '@taiga-ui/core';
 import { PostService } from './features/posts/data-access/post.service';
 import { LanguageService } from './core/i18n/language.service';
-import { ClerkService } from './clerk.service';
 import { of } from 'rxjs';
 import { provideRouter } from '@angular/router';
 
-// Mock matchMedia for Taiga UI
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({
@@ -25,7 +23,6 @@ Object.defineProperty(window, 'matchMedia', {
 describe('App', () => {
   let postServiceMock: PostService;
   let languageServiceMock: LanguageService;
-  let clerkServiceMock: ClerkService;
 
   beforeEach(async () => {
     postServiceMock = {
@@ -37,11 +34,6 @@ describe('App', () => {
       setLanguage: vi.fn(),
     } as unknown as LanguageService;
 
-    clerkServiceMock = {
-      isSignedIn: vi.fn().mockReturnValue(false),
-      init: vi.fn(),
-    } as unknown as ClerkService;
-
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [
@@ -49,7 +41,6 @@ describe('App', () => {
         provideRouter([]),
         { provide: PostService, useValue: postServiceMock },
         { provide: LanguageService, useValue: languageServiceMock },
-        { provide: ClerkService, useValue: clerkServiceMock },
       ],
     }).compileComponents();
   });
@@ -70,12 +61,6 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     expect(app.postService).toBeTruthy();
-  });
-
-  it('should have clerk service injected', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app.clerkService).toBeTruthy();
   });
 
   it('should render header', async () => {

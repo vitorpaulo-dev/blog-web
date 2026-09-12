@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TuiAppearance, TuiButton, TuiError, TuiInput, TuiLink, TuiTextfield } from '@taiga-ui/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
@@ -14,11 +14,13 @@ import {
 	Timer02Icon,
 } from '@hugeicons/core-free-icons';
 import { PostDto, PostService } from '../../../posts/data-access/post.service';
+import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 import { RouterLink } from '@angular/router';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule, DatePipe, isPlatformServer } from '@angular/common';
 import { TuiCardLarge, TuiForm } from '@taiga-ui/layout';
 import { TuiChip, TuiToastService } from '@taiga-ui/kit';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
+import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../core/util/tag.util';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { ContentCardComponent, ContentCardItem } from '../../../../shared/components/content-card/content-card.component';
 
@@ -32,11 +34,9 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 		TuiButton,
 		TuiTextfield,
 		HugeiconsIconComponent,
-		DatePipe,
 		TuiForm,
 		TuiInput,
 		TuiAppearance,
-		TuiChip,
 		ContentCardComponent,
 	],
 	template: `
@@ -213,16 +213,20 @@ export class HomePageComponent {
 		}),
 	});
 
+	private readonly platformId = inject(PLATFORM_ID);
 	private readonly postService = inject(PostService);
+	private readonly tagService = inject(TagService);
 	private readonly languageService = inject(LanguageService);
 	private readonly toastService = inject(TuiToastService);
 
 	posts = signal<PostDto[]>([]);
 	postsLoading = signal(true);
+	tagMap = signal<Map<string, TagDto>>(new Map());
 	readonly lang = this.languageService.language.asReadonly();
 
-	cardItems = computed<ContentCardItem[]>(() =>
-		this.posts().map(post => ({
+	cardItems = computed<ContentCardItem[]>(() => {
+		const tags = this.tagMap();
+		return this.posts().map(post => ({
 			slug: post.slug,
 			title: firstTranslation(post.translations)?.title ?? '',
 			excerpt: excerpt(firstTranslation(post.translations)?.content ?? ''),
@@ -231,12 +235,12 @@ export class HomePageComponent {
 			routePrefix: '/post',
 			metaIcon: Timer02Icon,
 			metaText: `${post.estimatedReading || 5} min`,
-			chips: post.tags.map(tag => ({
+			chips: (post.tagIds ?? []).map(id => ({
 				icon: Tag01Icon,
-				label: firstTranslation(tag.translations)?.name ?? '',
+				label: tagNameOf(tags.get(id), this.lang()),
 			})),
-		}))
-	);
+		}));
+	});
 
 	constructor() {
 		effect(() => {
@@ -245,10 +249,14 @@ export class HomePageComponent {
 	}
 
 	private loadRecent(): void {
+		if (isPlatformServer(this.platformId)) {
+			return;
+		}
+
 		this.postsLoading.set(true);
 		this.postService
 			.search({
-				query: { query: undefined, language: this.lang() },
+				query: { query: undefined },
 				page: 0,
 				size: 5,
 				sort: 'createdAt',
@@ -258,6 +266,7 @@ export class HomePageComponent {
 				next: (r) => {
 					this.posts.set(r.content);
 					this.postsLoading.set(false);
+					this.loadTags(r.content);
 				},
 			error: () => {
 				this.postsLoading.set(false);
@@ -270,6 +279,18 @@ export class HomePageComponent {
 			});
 	}
 
+	private loadTags(posts: PostDto[]): void {
+		const ids = collectTagIds(posts);
+		if (ids.length === 0) {
+			this.tagMap.set(new Map());
+			return;
+		}
+		this.tagService.batch(ids).subscribe({
+			next: (tags) => this.tagMap.set(buildTagMap(tags)),
+			error: () => this.tagMap.set(new Map()),
+		});
+	}
+
 	protected subscribe(): void {
 		if (this.newsletterForm.invalid) {
 			this.newsletterForm.markAllAsTouched();
@@ -277,14 +298,9 @@ export class HomePageComponent {
 		}
 
 		const { email } = this.newsletterForm.getRawValue();
-
-		console.log('Subscribe:', email);
 	}
 
-	protected readonly RssConnected01Icon = RssConnected01Icon;
 	protected readonly ArrowRight01Icon = ArrowRight01Icon;
-	protected readonly Database01Icon = Database01Icon;
-	protected readonly Mail01Icon = Mail01Icon;
 	protected readonly Loading03Icon = Loading03Icon;
 	protected readonly SparklesIcon = SparklesIcon;
 	protected readonly GithubIcon = GithubIcon;

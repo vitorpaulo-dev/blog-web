@@ -4,7 +4,6 @@ import { provideRouter, RouterLink } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { EyeIcon, SourceCodeIcon } from '@hugeicons/core-free-icons';
 
-// Mock matchMedia for Taiga UI
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({
@@ -114,8 +113,7 @@ describe('ContentCardComponent', () => {
     fixture.detectChanges();
 
     const el: HTMLElement = fixture.nativeElement;
-    // DatePipe renders in local timezone; just verify a date pattern is present
-    expect(el.textContent).toMatch(/\d{2} Jan 2025/);
+        expect(el.textContent).toMatch(/\d{2} Jan 2025/);
   });
 
   it('should build correct router link from routePrefix and slug', () => {

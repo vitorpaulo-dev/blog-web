@@ -1,5 +1,5 @@
 import { Component, DestroyRef, effect, inject, PLATFORM_ID, signal } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule, isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -226,7 +226,9 @@ export class DashboardProjectListComponent {
 	}
 
 	load(): void {
-		if (!isPlatformBrowser(this.platformId)) return;
+		if (isPlatformServer(this.platformId)) {
+			return;
+		}
 
 		this.loading.set(true);
 		this.error.set(null);
@@ -237,8 +239,7 @@ export class DashboardProjectListComponent {
 		this.projectService
 			.search({
 				query: {
-					query: query || undefined,
-					language: this.languageService.language(),
+					query: query || undefined
 				},
 				page: this.page(),
 				size: 10,

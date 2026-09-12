@@ -46,6 +46,18 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Server
   },
   {
+    path: 'dashboard/tag',
+    renderMode: RenderMode.Server
+  },
+  {
+    path: 'dashboard/tag/new',
+    renderMode: RenderMode.Server
+  },
+  {
+    path: 'dashboard/tag/:id',
+    renderMode: RenderMode.Server
+  },
+  {
     path: '**',
     renderMode: RenderMode.Prerender
   }

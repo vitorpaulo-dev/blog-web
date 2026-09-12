@@ -18,7 +18,6 @@ import {
 	StickyNote01Icon,
 } from '@hugeicons/core-free-icons';
 import { LanguageService } from './core/i18n/language.service';
-import { ClerkService } from './clerk.service';
 
 @Component({
 	selector: 'app-root',
@@ -51,7 +50,6 @@ export class App {
 	open = signal(false);
 	langDropdownOpen = false;
 	postService = inject(PostService);
-	clerkService = inject(ClerkService);
 	languageService = inject(LanguageService);
 
 	protected readonly popular = [];
@@ -69,7 +67,7 @@ export class App {
 			}
 
 			return this.postService.search({
-				query: { query, language: this.languageService.language() },
+				query: { query },
 				page: 0,
 				size: 5,
 				sort: 'viewCount',

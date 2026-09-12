@@ -32,8 +32,7 @@ export class SignupComponent implements AfterViewInit, OnDestroy {
   async ngAfterViewInit(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
 
-    // Ensure Clerk is initialized, then mount
-    await this.clerkService.init();
+        await this.clerkService.init();
     this.tryMount();
   }
 

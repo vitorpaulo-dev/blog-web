@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TuiPagination, TuiToastService } from '@taiga-ui/kit';
@@ -9,8 +9,10 @@ import {
 	Timer02Icon,
 } from '@hugeicons/core-free-icons';
 import { PostDto, PostService } from '../../data-access/post.service';
-import { CommonModule } from '@angular/common';
+import { TagService, TagDto } from '../../../tags/data-access/tag.service';
+import { CommonModule, isPlatformServer } from '@angular/common';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
+import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../core/util/tag.util';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { ContentCardComponent, ContentCardItem } from '../../../../shared/components/content-card/content-card.component';
 
@@ -62,19 +64,24 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 })
 export class PostListComponent {
 	private readonly postService = inject(PostService);
+	private readonly tagService = inject(TagService);
 	private readonly languageService = inject(LanguageService);
 	private readonly toastService = inject(TuiToastService);
+	private readonly platformId = inject(PLATFORM_ID);
 
 	query = '';
 	posts = signal<PostDto[]>([]);
 	loading = signal(false);
+	tagMap = signal<Map<string, TagDto>>(new Map());
 
 	page = signal(0);
 	totalPages = signal(1);
 	totalElements = signal(0);
 
-	cardItems = computed<ContentCardItem[]>(() =>
-		this.posts().map(post => ({
+	cardItems = computed<ContentCardItem[]>(() => {
+		const tags = this.tagMap();
+		const lang = this.languageService.language();
+		return this.posts().map(post => ({
 			slug: post.slug,
 			title: firstTranslation(post.translations)?.title ?? '',
 			excerpt: excerpt(firstTranslation(post.translations)?.content ?? ''),
@@ -83,12 +90,12 @@ export class PostListComponent {
 			routePrefix: '/post',
 			metaIcon: Timer02Icon,
 			metaText: `${post.estimatedReading || 5} min`,
-			chips: post.tags.map(tag => ({
+			chips: (post.tagIds ?? []).map(id => ({
 				icon: Tag01Icon,
-				label: firstTranslation(tag.translations)?.name ?? '',
+				label: tagNameOf(tags.get(id), lang),
 			})),
-		}))
-	);
+		}));
+	});
 
 	constructor() {
 		effect(() => {
@@ -99,11 +106,14 @@ export class PostListComponent {
 	}
 
 	load(): void {
+		if (isPlatformServer(this.platformId)) {
+			return;
+		}
+
 		this.loading.set(true);
-		console.log('Loading page', this.page());
 		this.postService
 			.search({
-				query: { query: this.query || undefined, language: this.languageService.language() },
+				query: { query: this.query || undefined },
 				page: this.page(),
 				size: 10,
 				sort: 'createdAt',
@@ -115,6 +125,7 @@ export class PostListComponent {
 					this.totalPages.set(res.totalPages);
 					this.totalElements.set(res.totalElements);
 					this.loading.set(false);
+					this.loadTags(res.content);
 				},
 			error: () => {
 				this.loading.set(false);
@@ -125,6 +136,18 @@ export class PostListComponent {
 				}).subscribe();
 			},
 			});
+	}
+
+	private loadTags(posts: PostDto[]): void {
+		const ids = collectTagIds(posts);
+		if (ids.length === 0) {
+			this.tagMap.set(new Map());
+			return;
+		}
+		this.tagService.batch(ids).subscribe({
+			next: (tags) => this.tagMap.set(buildTagMap(tags)),
+			error: () => this.tagMap.set(new Map()),
+		});
 	}
 
 	protected readonly Loading03Icon = Loading03Icon;

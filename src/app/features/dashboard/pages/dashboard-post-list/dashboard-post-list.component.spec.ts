@@ -10,7 +10,6 @@ import { of, throwError } from 'rxjs';
 import { PLATFORM_ID } from '@angular/core';
 import { signal } from '@angular/core';
 
-// Mock matchMedia for Taiga UI
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({

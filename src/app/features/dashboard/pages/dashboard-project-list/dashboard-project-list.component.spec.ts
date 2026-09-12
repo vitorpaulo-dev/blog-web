@@ -8,7 +8,6 @@ import { TuiToastService } from '@taiga-ui/kit';
 import { of, throwError } from 'rxjs';
 import { PLATFORM_ID, signal } from '@angular/core';
 
-// Mock matchMedia for Taiga UI
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({
@@ -198,7 +197,6 @@ describe('DashboardProjectListComponent', () => {
       },
     } as any;
 
-    // Language is ENGLISH by default; PORTUGUESE title is empty → falls back to English
-    expect(component.projectTitle(project)).toBe('English Title');
+        expect(component.projectTitle(project)).toBe('English Title');
   });
 });

@@ -8,8 +8,7 @@ export const authGuard: CanActivateFn = (_route, state) => {
   const platformId = inject(PLATFORM_ID);
   const router = inject(Router);
 
-  // SSR: allow navigation to avoid blocking server render, client will redirect
-  if (!isPlatformBrowser(platformId)) {
+    if (!isPlatformBrowser(platformId)) {
     return true;
   }
 
@@ -17,8 +16,7 @@ export const authGuard: CanActivateFn = (_route, state) => {
     return true;
   }
 
-  // Redirect to login page with full URL (including query params) as redirect_url
-  return router.createUrlTree(['/login'], {
+    return router.createUrlTree(['/login'], {
     queryParams: { redirect_url: state.url },
   });
 };
