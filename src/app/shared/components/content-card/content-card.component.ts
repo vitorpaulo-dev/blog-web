@@ -35,10 +35,10 @@ export interface ContentCardItem {
 
 		<a
 			[routerLink]="[item().routePrefix, item().slug]"
-			class="flex flex-col md:flex-row items-center w-full hover:bg-surface transition-all p-2 rounded-lg group"
+			class="flex flex-col md:flex-row items-center w-full hover:bg-surface transition-all p-3 gap-3 rounded-lg group"
 		>
 			@if (item().imageUrl) {
-				<div class="md:mr-5 aspect-video w-80 rounded-xl border border-border bg-surface overflow-hidden">
+				<div class="aspect-video w-80 rounded-xl border border-border bg-surface overflow-hidden">
 					<img
 						[src]="item().imageUrl"
 						[alt]="item().title"
@@ -46,7 +46,7 @@ export interface ContentCardItem {
 					/>
 				</div>
 			}
-			<div class="py-2 md:py-5 flex flex-col gap-3 w-full">
+			<div class="flex flex-col h-full gap-1.5 w-full">
 				<div
 					class="flex items-center gap-2 text-xs text-muted font-mono group-hover:text-muted/50 transition-all"
 				>
