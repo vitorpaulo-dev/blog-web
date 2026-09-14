@@ -53,7 +53,7 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 					>
 						<div class="text-sm inline-flex items-center font-mono">
 							<hugeicons-icon [icon]="SparklesIcon" [size]="26" [strokeWidth]="1.5" />
-							<p class="ml-2 text-foreground font-bold truncate max-w-5xl">
+							<p class="ml-2 text-foreground font-bold truncate max-w-60 md:max-w-5xl">
 								{{ firstTranslation(post.translations)?.title }}
 							</p>
 						</div>
