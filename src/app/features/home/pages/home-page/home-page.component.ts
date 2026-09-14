@@ -111,6 +111,7 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
 					<img
 						src="vitor-avatar.png"
+						loading="lazy"
 						class="col-span-1 md:col-span-1 select-none pointer-events-none object-cover rounded-xl border border-border bg-surface overflow-hidden flex items-center justify-center text-muted"
 					/>
 					<div class="col-span-1 md:col-span-2">

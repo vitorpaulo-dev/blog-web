@@ -38,6 +38,8 @@ describe('TranslatePipe', () => {
 	});
 
 	it('shouldTranslateKeyForActiveLanguage', () => {
+		languageService.setLanguage('ENGLISH');
+
 		expect(pipe.transform('home.viewSource')).toBe('View source on GitHub');
 	});
 

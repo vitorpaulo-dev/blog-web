@@ -44,16 +44,15 @@ import {
 	SendIcon,
 	Tag01Icon,
 } from '@hugeicons/core-free-icons';
-import { SafeHtml } from '@angular/platform-browser';
 
 import {
 	Language,
 	PostService,
 } from '../../../posts/data-access/post.service';
-import { MarkdownService } from '../../../posts/data-access/markdown.service';
 import { ProjectService } from '../../../projects/data-access/project.service';
 import { TagService } from '../../../tags/data-access/tag.service';
-import { UploadService } from '../../../../core/upload/upload.service';
+import { MarkdownWriterComponent } from '../../../../shared/components/markdown-writer/markdown-writer.component';
+import { UploadInputComponent } from '../../../../shared/components/upload-input/upload-input.component';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 
@@ -101,6 +100,8 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 		TuiInputChipComponent,
 		TuiInputChipDirective,
 		TranslatePipe,
+		MarkdownWriterComponent,
+		UploadInputComponent,
 	],
 	template: `
 		<div class="mx-auto px-4 py-8 sm:px-6">
@@ -175,87 +176,13 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 							</div>
 
 							<div class="flex flex-col gap-2">
-								<!-- Content tabs -->
-								<div class="flex gap-1 border-b border-border">
-									<button
-										type="button"
-										class="-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors"
-										[class.border-accent]="activeTab() === 'edit'"
-										[class.text-accent]="activeTab() === 'edit'"
-										[class.text-muted]="activeTab() !== 'edit'"
-										[class.hover:text-foreground]="activeTab() !== 'edit'"
-										(click)="activeTab.set('edit')"
-									>
-										<hugeicons-icon
-											[icon]="editTabIcon"
-											[size]="14"
-											[strokeWidth]="2.5"
-											class="mr-1 inline"
-										/>
-										{{ 'dashboard.posts.editor.editTab' | translate }}
-									</button>
-
-									<button
-										type="button"
-										class="-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors"
-										[class.border-accent]="activeTab() === 'preview'"
-										[class.text-accent]="activeTab() === 'preview'"
-										[class.text-muted]="activeTab() !== 'preview'"
-										[class.hover:text-foreground]="activeTab() !== 'preview'"
-										(click)="switchToPreview()"
-									>
-										<hugeicons-icon
-											[icon]="previewTabIcon"
-											[size]="14"
-											[strokeWidth]="2.5"
-											class="mr-1 inline"
-										/>
-										{{ 'dashboard.posts.editor.previewTab' | translate }}
-									</button>
-								</div>
-
-								@if (activeTab() === 'edit') {
-									<div
-										class="relative"
-										(dragover)="onDragOver($event)"
-										(dragleave)="onDragLeave($event)"
-										(drop)="onDrop($event)"
-									>
-										<textarea
-											[formControl]="translationForms()[lang].content"
-											rows="20"
-											class="w-full resize-none rounded-xl border border-border bg-surface p-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-											[placeholder]="'dashboard.posts.editor.contentPlaceholder' | translate"
-										></textarea>
-
-										@if (isDragging()) {
-											<div
-												class="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl border-2 border-dashed border-accent bg-accent/10"
-											>
-												<div class="text-center">
-													<hugeicons-icon
-														[icon]="imageUploadIcon"
-														[size]="48"
-														[strokeWidth]="1.5"
-														class="mx-auto mb-2 text-accent"
-													/>
-													<p class="text-sm font-medium text-accent">{{ 'dashboard.posts.editor.dropImage' | translate }}</p>
-												</div>
-											</div>
-										}
+									<app-markdown-writer
+										[uploadFolder]="'post'"
+									[formControl]="translationForms()[lang].content"
+									[placeholder]="'dashboard.posts.editor.contentPlaceholder' | translate"
+									[rows]="20"
+									/>
 									</div>
-								} @else {
-									<div
-										class="prose prose-invert min-h-[500px] w-full max-w-none rounded-xl border border-border bg-surface p-4"
-									>
-										@if (previewHtml()) {
-											<div [innerHTML]="previewHtml()"></div>
-											} @else {
-											<p class="text-sm text-muted">{{ 'dashboard.posts.editor.nothingToPreview' | translate }}</p>
-										}
-									</div>
-								}
-							</div>
 						</div>
 					}
 				}
@@ -267,25 +194,12 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 						<span>{{ 'dashboard.posts.editor.bannerLabel' | translate }}</span>
 					</label>
 
-					<input
-						type="file"
-						accept="image/*"
-						(change)="onBannerFileSelected($event)"
-						[disabled]="uploading()"
-						class="w-full cursor-pointer rounded-xl border border-border bg-surface p-3 text-sm file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-accent-secondary disabled:opacity-50"
+					<app-upload-input
+						folder="post"
+						subfolder="banner"
+						[formControl]="form.controls.bannerUrl"
+						previewAlt="banner preview"
 					/>
-
-					@if (uploading()) {
-						<p class="text-xs text-muted">{{ 'dashboard.posts.editor.uploading' | translate }}</p>
-					}
-
-					@if (bannerUrl()) {
-						<img
-							[src]="bannerUrl()"
-							alt="banner preview"
-							class="aspect-video w-full rounded-xl border border-border object-cover"
-						/>
-					}
 				</div>
 
 				<!-- Tags -->
@@ -390,7 +304,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 								tuiAppearance="outline"
 								type="button"
 								(click)="save('DRAFT')"
-								[disabled]="saving() || uploading()"
+								[disabled]="saving()"
 								class="gap-1"
 							>
 								<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
@@ -402,7 +316,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 								tuiAppearance="primary"
 								type="button"
 								(click)="save('PUBLISHED')"
-								[disabled]="saving() || uploading()"
+								[disabled]="saving()"
 								class="gap-1"
 							>
 								<hugeicons-icon [icon]="publishIcon" [size]="16" [strokeWidth]="2.5" />
@@ -421,8 +335,6 @@ export class PostEditorComponent implements OnInit {
 	private readonly postService = inject(PostService);
 	private readonly projectService = inject(ProjectService);
 	private readonly tagService = inject(TagService);
-	private readonly markdownService = inject(MarkdownService);
-	private readonly uploadService = inject(UploadService);
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
@@ -436,9 +348,6 @@ export class PostEditorComponent implements OnInit {
 	readonly projectsIcon = Layers01Icon;
 	readonly saveIcon = SaveIcon;
 	readonly publishIcon = SendIcon;
-	readonly editTabIcon = Edit01Icon;
-	readonly previewTabIcon = EyeIcon;
-	readonly imageUploadIcon = Image01Icon;
 	readonly viewPostIcon = ExternalLinkIcon;
 
 	readonly languages: Language[] = ['ENGLISH', 'PORTUGUESE'];
@@ -462,10 +371,6 @@ export class PostEditorComponent implements OnInit {
 	readonly isEdit = signal(false);
 	readonly saving = signal(false);
 	readonly error = signal<string | null>(null);
-	readonly activeTab = signal<'edit' | 'preview'>('edit');
-	readonly previewHtml = signal<SafeHtml | null>(null);
-	readonly isDragging = signal(false);
-	readonly uploading = signal(false);
 
 	readonly availableTags = signal<TagOption[]>([]);
 	readonly availableProjects = signal<ProjectOption[]>([]);
@@ -696,7 +601,7 @@ export class PostEditorComponent implements OnInit {
 	}
 
 	isSaveDisabled(): boolean {
-		return !this.isFormValid() || this.saving() || this.uploading();
+		return !this.isFormValid() || this.saving();
 	}
 
 	editSaveStatus(): PostStatus {
@@ -715,91 +620,6 @@ export class PostEditorComponent implements OnInit {
 		const input = event.target as HTMLInputElement;
 
 		this.projectSearchText.set(input.value);
-	}
-
-	async switchToPreview(): Promise<void> {
-		this.activeTab.set('preview');
-
-		const content = this.translationForms()[this.activeLang()].content.value;
-
-		if (!content) {
-			this.previewHtml.set(null);
-			return;
-		}
-
-		const html = await this.markdownService.renderMarkdown(content, this.isBrowser);
-
-		this.previewHtml.set(html);
-	}
-
-	onBannerFileSelected(event: Event): void {
-		const input = event.target as HTMLInputElement;
-		const file = input.files?.[0];
-
-		if (file) {
-			this.uploadImage(file, false);
-		}
-	}
-
-	onDragOver(event: DragEvent): void {
-		event.preventDefault();
-		event.stopPropagation();
-
-		if (event.dataTransfer?.types.includes('Files')) {
-			this.isDragging.set(true);
-		}
-	}
-
-	onDragLeave(event: DragEvent): void {
-		event.preventDefault();
-		event.stopPropagation();
-
-		this.isDragging.set(false);
-	}
-
-	onDrop(event: DragEvent): void {
-		event.preventDefault();
-		event.stopPropagation();
-
-		this.isDragging.set(false);
-
-		const file = event.dataTransfer?.files?.[0];
-
-		if (!file || !file.type.startsWith('image/')) {
-			return;
-		}
-
-		this.uploadImage(file, true);
-	}
-
-	private uploadImage(file: File, insertIntoContent: boolean): void {
-		this.uploading.set(true);
-
-		this.uploadService.upload(file).subscribe({
-			next: (response) => {
-				if (insertIntoContent) {
-					this.insertImageIntoContent(file, response.url);
-				} else {
-					this.form.controls.bannerUrl.setValue(response.url);
-				}
-
-				this.uploading.set(false);
-			},
-			error: () => {
-				this.uploading.set(false);
-
-				this.showError(this.translationService.translate('dashboard.posts.editor.uploadFailed'));
-			},
-		});
-	}
-
-	private insertImageIntoContent(file: File, url: string): void {
-		const language = this.activeLang();
-		const control = this.translationForms()[language].content;
-
-		const markdown = `\n![${file.name}](${url})\n`;
-
-		control.setValue(control.value + markdown);
 	}
 
 	save(status: PostStatus): void {
@@ -918,9 +738,5 @@ export class PostEditorComponent implements OnInit {
 
 	changeLanguage(language: Language): void {
 		this.activeLang.set(language);
-
-		if (this.activeTab() === 'preview') {
-			void this.switchToPreview();
-		}
 	}
 }

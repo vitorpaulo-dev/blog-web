@@ -26,6 +26,7 @@ import { TuiAppearance, TuiButton } from '@taiga-ui/core';
 import { TuiChip, TuiToastService } from '@taiga-ui/kit';
 
 import { LanguageService } from '../../../../core/i18n/language.service';
+import { ImageSignDirective } from '../../../../shared/directives/image-sign.directive';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { LocalizedDatePipe } from '../../../../core/i18n/localized-date.pipe';
@@ -37,7 +38,7 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 @Component({
 	selector: 'app-project-detail',
 	standalone: true,
-	imports: [CommonModule, RouterLink, TuiButton, HugeiconsIconComponent, TuiAppearance, TuiChip, TranslatePipe, LocalizedDatePipe],
+	imports: [CommonModule, RouterLink, TuiButton, HugeiconsIconComponent, TuiAppearance, TuiChip, TranslatePipe, LocalizedDatePipe, ImageSignDirective],
 	template: `
 		<div class="max-w-4xl mx-auto">
 			<a routerLink="/project" tuiButton tuiAppearance="flat" size="s" class="mb-6 gap-1">
@@ -55,6 +56,7 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 			} @else if (project(); as p) {
 				@if (p.bannerUrl) {
 					<img
+						[appImageSign]="p.bannerUrl"
 						[src]="p.bannerUrl"
 						[alt]="content()?.title"
 						class="mb-6 w-full aspect-video object-cover rounded-xl border border-border"
@@ -64,18 +66,19 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 				<div class="flex items-center gap-4">
 					@if (p.logoUrl) {
 						<img
+							[appImageSign]="p.logoUrl"
 							[src]="p.logoUrl"
 							[alt]="content()?.title"
 							class="size-16 rounded-xl border border-border object-cover flex-shrink-0"
 						/>
 					}
 					<div class="w-full">
-						<div class="inline-flex justify-between items-start w-full">
+						<div class="flex flex-col gap-2 items-start w-full md:inline-flex md:flex-row md:items-start md:justify-between">
 							<h1 class="text-3xl md:text-4xl font-bold tracking-tight leading-tight break-words">
 								{{ content()?.title }}
 							</h1>
 
-							<div class="flex flex-wrap gap-2">
+							<div class="mb-6 flex flex-wrap gap-2 md:mb-0">
 								@if (p.githubUrl) {
 									<a tuiButton tuiAppearance="outline" size="m" [href]="p.githubUrl" target="_blank" rel="noopener noreferrer" class="gap-2">
 										<hugeicons-icon [icon]="githubIcon" [size]="16" [strokeWidth]="1.5" />
@@ -118,7 +121,7 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 					@for (author of p.authors; track author.id) {
 						<a tuiChip [href]="'/author/' + author.slug">
 							@if (author.avatarUrl) {
-								<img [src]="author.avatarUrl" class="rounded-xl" [alt]="author.name" />
+								<img [src]="author.avatarUrl" class="rounded-xl" [alt]="author.name" loading="lazy" />
 							}
 							{{ author.name }}
 						</a>
@@ -142,25 +145,25 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 				<section class="flex flex-wrap items-center justify-between gap-2">
 					<div class="flex flex-wrap gap-2">
 						<button tuiChip class="inline-flex items-center gap-2">
-							<img src="/reactions/red-heart.png" [alt]="'common.reactionLovedIt' | translate" class="w-5" />
+							<img loading="lazy" src="/reactions/red-heart.png" [alt]="'common.reactionLovedIt' | translate" class="w-5" />
 							<span>{{ 'common.reactionLovedIt' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.loveCount }}</span>
 						</button>
 
 						<button tuiChip class="inline-flex items-center gap-2">
-							<img src="/reactions/party-popper.png" [alt]="'common.reactionHellYeah' | translate" class="w-5" />
+							<img loading="lazy" src="/reactions/party-popper.png" [alt]="'common.reactionHellYeah' | translate" class="w-5" />
 							<span>{{ 'common.reactionHellYeah' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.celebrateCount }}</span>
 						</button>
 
 						<button tuiChip class="inline-flex items-center gap-2">
-							<img src="/reactions/exploding-head.png" [alt]="'common.reactionMindBlown' | translate" class="w-5" />
+							<img loading="lazy" src="/reactions/exploding-head.png" [alt]="'common.reactionMindBlown' | translate" class="w-5" />
 							<span>{{ 'common.reactionMindBlown' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.geniusCount }}</span>
 						</button>
 
 						<button tuiChip class="inline-flex items-center gap-2">
-							<img src="/reactions/suffering-cat.webp" [alt]="'common.reactionWhat' | translate" class="w-5" />
+							<img loading="lazy" src="/reactions/suffering-cat.webp" [alt]="'common.reactionWhat' | translate" class="w-5" />
 							<span>{{ 'common.reactionWhat' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.helpCount }}</span>
 						</button>

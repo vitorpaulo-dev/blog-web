@@ -4,6 +4,7 @@ import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { Calendar01Icon } from '@hugeicons/core-free-icons';
 import { TuiChip } from '@taiga-ui/kit';
 import { LocalizedDatePipe } from '../../../core/i18n/localized-date.pipe';
+import { ImageSignDirective } from '../../../shared/directives/image-sign.directive';
 
 export interface ContentCardChip {
 	icon: any;
@@ -25,7 +26,7 @@ export interface ContentCardItem {
 @Component({
 	selector: 'app-content-card',
 	standalone: true,
-	imports: [RouterLink, LocalizedDatePipe, HugeiconsIconComponent, TuiChip],
+	imports: [RouterLink, LocalizedDatePipe, HugeiconsIconComponent, TuiChip, ImageSignDirective],
 	template: `
 		@if (showDivider()) {
 			<div class="py-4">
@@ -41,8 +42,10 @@ export interface ContentCardItem {
 				<div
 					class="w-full md:w-56 lg:w-64 shrink-0 aspect-video rounded-xl border border-border bg-surface overflow-hidden">
 					<img
+						[appImageSign]="item().imageUrl ?? ''"
 						[src]="item().imageUrl"
 						[alt]="item().title"
+						loading="lazy"
 						class="w-full h-full object-cover group-hover:scale-105 transition-transform"
 					/>
 				</div>
