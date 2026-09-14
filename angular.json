@@ -27,26 +27,10 @@
 								"glob": "**/*",
 								"input": "node_modules/@taiga-ui/icons/src",
 								"output": "assets/taiga-ui/icons"
-							},
-							{
-								"glob": "Geist-Variable.woff2",
-								"input": "node_modules/geist/dist/fonts/geist-sans",
-								"output": "assets/fonts/geist-sans"
-							},
-							{
-								"glob": "GeistMono-Variable.woff2",
-								"input": "node_modules/geist/dist/fonts/geist-mono",
-								"output": "assets/fonts/geist-mono"
-							},
-							{
-								"glob": "**/*",
-								"input": "node_modules/@taiga-ui/icons/src",
-								"output": "assets/taiga-ui/icons"
 							}
 						],
 						"styles": [
 							"node_modules/@taiga-ui/styles/taiga-ui-theme.less",
-							"node_modules/@taiga-ui/styles/taiga-ui-fonts.less",
 							"src/styles.css"
 						],
 						"server": "src/main.server.ts",

@@ -165,7 +165,8 @@
 				"saveFailed": "Falha ao salvar projeto. Tente novamente.",
 				"loadFailed": "Falha ao carregar projeto. Redirecionando ao painel...",
 				"summaryLabel": "Resumo",
-				"summaryPlaceholder": "Descrição curta para cartões e resultados de busca"
+				"summaryPlaceholder": "Descrição curta para cartões e resultados de busca",
+				"logoUrlPlaceholder": "URL do logo"
 			}
 		},
 		"tags": {
@@ -214,6 +215,21 @@
 			"saved": "Posts em destaque atualizados",
 			"saveFailed": "Falha ao salvar posts em destaque",
 			"loadFailed": "Falha ao carregar posts em destaque"
+		}
+	},
+	"shared": {
+		"upload": {
+			"select": "Selecionar imagem",
+			"change": "Alterar imagem",
+			"uploading": "Enviando imagem...",
+			"uploadFailed": "Falha ao enviar a imagem.",
+			"previewAlt": "Pré-visualização da imagem"
+		},
+		"markdown": {
+			"editTab": "Editar",
+			"previewTab": "Visualizar",
+			"dropImage": "Solte a imagem aqui",
+			"nothingToPreview": "Nada para visualizar"
 		}
 	}
 }

@@ -3,12 +3,17 @@ import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { from, switchMap, of } from 'rxjs';
 import { ClerkService } from '../../clerk.service';
+import { environment } from '../../../environments/environment';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const clerkService = inject(ClerkService);
   const platformId = inject(PLATFORM_ID);
 
   if (!isPlatformBrowser(platformId)) {
+    return next(req);
+  }
+
+  if (!req.url.startsWith(environment.apiBaseUrl)) {
     return next(req);
   }
 

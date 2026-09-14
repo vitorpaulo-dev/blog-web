@@ -165,7 +165,8 @@
 				"saveFailed": "Failed to save project. Please try again.",
 				"loadFailed": "Failed to load project. Redirecting to dashboard...",
 				"summaryLabel": "Summary",
-				"summaryPlaceholder": "Short description for cards and search results"
+				"summaryPlaceholder": "Short description for cards and search results",
+				"logoUrlPlaceholder": "Logo URL"
 			}
 		},
 		"tags": {
@@ -214,6 +215,21 @@
 			"saved": "Featured posts updated",
 			"saveFailed": "Failed to save featured posts",
 			"loadFailed": "Failed to load featured posts"
+		}
+	},
+	"shared": {
+		"upload": {
+			"select": "Select an image",
+			"change": "Change image",
+			"uploading": "Uploading image...",
+			"uploadFailed": "Failed to upload image.",
+			"previewAlt": "Image preview"
+		},
+		"markdown": {
+			"editTab": "Edit",
+			"previewTab": "Preview",
+			"dropImage": "Drop image here",
+			"nothingToPreview": "Nothing to preview"
 		}
 	}
 }

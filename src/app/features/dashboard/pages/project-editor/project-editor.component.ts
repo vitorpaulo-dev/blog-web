@@ -19,7 +19,8 @@ import {
 import type { Language } from '../../../posts/data-access/post.service';
 import { ProjectService } from '../../../projects/data-access/project.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
-import { UploadService } from '../../../../core/upload/upload.service';
+import { MarkdownWriterComponent } from '../../../../shared/components/markdown-writer/markdown-writer.component';
+import { UploadInputComponent } from '../../../../shared/components/upload-input/upload-input.component';
 import { firstTranslation } from '../../../../core/util/text.util';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
@@ -57,6 +58,8 @@ function slugify(text: string): string {
 		TuiDataListWrapper,
 		TuiFilterByInputPipe,
 		TranslatePipe,
+		MarkdownWriterComponent,
+		UploadInputComponent,
 	],
 	template: `
 		<div class="mx-auto max-w-3xl px-6 py-8">
@@ -117,12 +120,12 @@ function slugify(text: string): string {
 
 							<div class="flex flex-col gap-2">
 								<label class="text-sm font-medium">{{ 'dashboard.projects.editor.descriptionLabel' | translate }}</label>
-								<textarea
-									[formControl]="translationForms()[lang].description"
-									rows="6"
-									class="w-full rounded-xl border border-border bg-surface p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-accent"
-									[placeholder]="'dashboard.projects.editor.descriptionPlaceholder' | translate"
-								></textarea>
+										<app-markdown-writer
+											[uploadFolder]="'project'"
+											[formControl]="translationForms()[lang].description"
+											[placeholder]="'dashboard.projects.editor.descriptionPlaceholder' | translate"
+											[rows]="6"
+										/>
 							</div>
 						</div>
 					}
@@ -134,23 +137,12 @@ function slugify(text: string): string {
 						<hugeicons-icon [icon]="logoIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
 						<span>{{ 'dashboard.projects.editor.logoLabel' | translate }}</span>
 					</label>
-					<input
-						type="file"
-						accept="image/*"
-						(change)="onLogoFileSelected($event)"
-						[disabled]="uploading()"
-						class="w-full rounded-xl border border-border bg-surface p-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent-secondary file:cursor-pointer cursor-pointer disabled:opacity-50"
-					/>
-					@if (uploading()) {
-						<p class="text-xs text-muted">{{ 'dashboard.projects.editor.uploading' | translate }}</p>
-					}
-					@if (form.controls.logoUrl.value) {
-						<img
-							[src]="form.controls.logoUrl.value"
-							alt="logo preview"
-							class="w-20 h-20 aspect-square object-cover rounded-xl border border-border"
-						/>
-					}
+				<app-upload-input
+					folder="project"
+					subfolder="logo"
+					[formControl]="form.controls.logoUrl"
+					previewAlt="logo preview"
+				/>
 				</div>
 
 				<div class="flex flex-col gap-2">
@@ -158,23 +150,12 @@ function slugify(text: string): string {
 						<hugeicons-icon [icon]="bannerIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
 						<span>{{ 'dashboard.projects.editor.bannerLabel' | translate }}</span>
 					</label>
-					<input
-						type="file"
-						accept="image/*"
-						(change)="onBannerFileSelected($event)"
-						[disabled]="uploading()"
-						class="w-full rounded-xl border border-border bg-surface p-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent-secondary file:cursor-pointer cursor-pointer disabled:opacity-50"
+					<app-upload-input
+						folder="project"
+						subfolder="banner"
+						[formControl]="form.controls.bannerUrl"
+						previewAlt="banner preview"
 					/>
-					@if (uploading()) {
-						<p class="text-xs text-muted">{{ 'dashboard.projects.editor.uploading' | translate }}</p>
-					}
-					@if (form.controls.bannerUrl.value) {
-						<img
-							[src]="form.controls.bannerUrl.value"
-							alt="banner preview"
-							class="w-full aspect-video object-cover rounded-xl border border-border"
-						/>
-					}
 				</div>
 
 				<tui-textfield>
@@ -215,7 +196,7 @@ function slugify(text: string): string {
 							tuiAppearance="outline"
 							type="button"
 							(click)="save('DRAFT')"
-							[disabled]="!isFormValid() || saving() || uploading()"
+							[disabled]="!isFormValid() || saving()"
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
@@ -226,7 +207,7 @@ function slugify(text: string): string {
 							tuiAppearance="primary"
 							type="button"
 							(click)="save('PUBLISHED')"
-							[disabled]="!isFormValid() || saving() || uploading()"
+							[disabled]="!isFormValid() || saving()"
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="publishIcon" [size]="16" [strokeWidth]="2.5" />
@@ -238,7 +219,7 @@ function slugify(text: string): string {
 							tuiAppearance="primary"
 							type="button"
 							(click)="save(currentStatus() === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT')"
-							[disabled]="!isFormValid() || saving() || uploading()"
+							[disabled]="!isFormValid() || saving()"
 							class="gap-1"
 						>
 							<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
@@ -250,7 +231,7 @@ function slugify(text: string): string {
 								tuiAppearance="outline"
 								type="button"
 								(click)="save('DRAFT')"
-								[disabled]="saving() || uploading()"
+								[disabled]="saving()"
 								class="gap-1"
 							>
 								<hugeicons-icon [icon]="saveIcon" [size]="16" [strokeWidth]="2.5" />
@@ -262,7 +243,7 @@ function slugify(text: string): string {
 								tuiAppearance="primary"
 								type="button"
 								(click)="save('PUBLISHED')"
-								[disabled]="saving() || uploading()"
+								[disabled]="saving()"
 								class="gap-1"
 							>
 								<hugeicons-icon [icon]="publishIcon" [size]="16" [strokeWidth]="2.5" />
@@ -280,7 +261,6 @@ export class ProjectEditorComponent implements OnInit {
 	private readonly router = inject(Router);
 	private readonly projectService = inject(ProjectService);
 	private readonly tagService = inject(TagService);
-	private readonly uploadService = inject(UploadService);
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
@@ -326,7 +306,6 @@ export class ProjectEditorComponent implements OnInit {
 	currentStatus = signal<string>('DRAFT');
 	isEdit = signal(false);
 	saving = signal(false);
-	uploading = signal(false);
 	error = signal<string | null>(null);
 	private projectId: string | null = null;
 
@@ -412,43 +391,6 @@ export class ProjectEditorComponent implements OnInit {
 		if (this.form.invalid) return false;
 		const forms = this.translationForms();
 		return forms['ENGLISH'].title.valid;
-	}
-
-	onLogoFileSelected(event: Event): void {
-		const input = event.target as HTMLInputElement;
-		const file = input.files?.[0];
-		if (!file) return;
-		this.uploadImage(file, 'logoUrl');
-	}
-
-	onBannerFileSelected(event: Event): void {
-		const input = event.target as HTMLInputElement;
-		const file = input.files?.[0];
-		if (!file) return;
-		this.uploadImage(file, 'bannerUrl');
-	}
-
-	private uploadImage(file: File, fieldName: 'logoUrl' | 'bannerUrl'): void {
-		this.uploading.set(true);
-		this.uploadService.upload(file).subscribe({
-			next: (res) => {
-				this.form.patchValue({ [fieldName]: res.url });
-				this.uploading.set(false);
-			},
-		error: () => {
-			this.uploading.set(false);
-			this.toastService.open(
-				this.translationService.translate(
-					fieldName === 'logoUrl' ? 'dashboard.projects.editor.logoUploadFailed' : 'dashboard.projects.editor.bannerUploadFailed'
-				),
-				{
-					appearance: 'error',
-					autoClose: 5000,
-					data: '@tui.circle-x',
-				}
-			).subscribe();
-		},
-		});
 	}
 
 	save(status: 'DRAFT' | 'PUBLISHED'): void {
