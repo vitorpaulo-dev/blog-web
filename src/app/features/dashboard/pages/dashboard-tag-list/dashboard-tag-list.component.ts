@@ -38,7 +38,7 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 		TranslatePipe,
 	],
 	template: `
-		<div class="mx-auto max-w-5xl px-6 py-8">
+		<div class="mx-auto px-4 py-8 sm:px-6">
 			<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
 				<h1 class="text-2xl font-bold">{{ 'dashboard.tags.list.title' | translate }}</h1>
 

@@ -34,6 +34,7 @@ describe('HomePageComponent', () => {
   beforeEach(async () => {
     postServiceMock = {
       search: vi.fn(),
+      getFeatured: vi.fn().mockReturnValue(of([])),
     };
 
     languageServiceMock = {
@@ -96,5 +97,32 @@ describe('HomePageComponent', () => {
 
     expect(component.posts().length).toBe(1);
     expect(component.postsLoading()).toBe(false);
+  });
+
+  it('should show all featured posts when featured list is not empty', () => {
+    (postServiceMock.search as any).mockReturnValue(of({ content: [], totalPages: 0, totalElements: 0 }));
+    (postServiceMock.getFeatured as any).mockReturnValue(of([
+      { id: 'f1', slug: 'featured-post', tagIds: [], translations: { ENGLISH: { title: 'Featured', content: '' } } },
+      { id: 'f2', slug: 'second', tagIds: [], translations: { ENGLISH: { title: 'Second', content: '' } } },
+    ]));
+
+    fixture.detectChanges();
+
+    expect(component.featured().map((post) => post.slug)).toEqual(['featured-post', 'second']);
+
+    const featuredLinks = fixture.nativeElement.querySelectorAll('section[aria-label="Featured"] a');
+
+    expect(featuredLinks.length).toBe(2);
+    expect(featuredLinks[0].getAttribute('href')).toBe('/post/featured-post');
+    expect(featuredLinks[1].getAttribute('href')).toBe('/post/second');
+  });
+
+  it('should hide featured section when featured list is empty', () => {
+    (postServiceMock.search as any).mockReturnValue(of({ content: [], totalPages: 0, totalElements: 0 }));
+    (postServiceMock.getFeatured as any).mockReturnValue(of([]));
+
+    fixture.detectChanges();
+
+    expect(component.featured()).toEqual([]);
   });
 });

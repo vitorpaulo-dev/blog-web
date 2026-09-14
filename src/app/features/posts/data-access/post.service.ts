@@ -22,6 +22,7 @@ export interface GenericPageableRequest<T> {
 export interface PostContentDto {
 	title: string;
 	content: string;
+	summary?: string;
 }
 
 export interface TagContentDto {
@@ -31,6 +32,7 @@ export interface TagContentDto {
 export interface ProjectContentDto {
 	title: string;
 	description: string;
+	summary?: string;
 }
 
 export interface AuthorDto {
@@ -84,7 +86,13 @@ export interface PostDto {
 	celebrateCount: number;
 	geniusCount: number;
 	helpCount: number;
+	weight?: number;
 	translations: Record<Language, PostContentDto>;
+}
+
+export interface FeaturePostPayload {
+	postId: string;
+	weight: number;
 }
 
 export interface CreatePostPayload {
@@ -127,6 +135,14 @@ export class PostService {
 
 	getBySlug(slug: string): Observable<PostDto> {
 		return this.http.get<PostDto>(`${this.base}/slug/${slug}/${this.languageService.language()}`);
+	}
+
+	getFeatured(language: Language): Observable<PostDto[]> {
+		return this.http.get<PostDto[]>(`${this.base}/featured/${language}`);
+	}
+
+	setFeatured(featured: FeaturePostPayload[]): Observable<void> {
+		return this.http.post<void>(`${this.base}/featured`, featured);
 	}
 
 	search(params: GenericPageableRequest<SearchParams>): Observable<GenericPageableResponse<PostDto>> {

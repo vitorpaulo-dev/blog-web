@@ -70,11 +70,13 @@ interface TagOption {
 interface TranslationForm {
 	title: FormControl<string>;
 	content: FormControl<string>;
+	summary: FormControl<string>;
 }
 
 interface TranslationValue {
 	title: string;
 	content: string;
+	summary: string;
 }
 
 type PostStatus = 'DRAFT' | 'PUBLISHED';
@@ -101,7 +103,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 		TranslatePipe,
 	],
 	template: `
-		<div class="mx-auto max-w-3xl px-6 py-8">
+		<div class="mx-auto px-4 py-8 sm:px-6">
 			<div class="mb-6 flex items-center justify-between">
 				<a (click)="goBack()" class="inline-flex cursor-pointer items-center gap-1 text-sm text-accent">
 					<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" />
@@ -158,6 +160,19 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 									[placeholder]="'dashboard.posts.editor.titlePlaceholder' | translate"
 								/>
 							</tui-textfield>
+
+							<div class="flex flex-col gap-2">
+								<label class="flex items-center gap-1.5 text-sm font-medium">
+									<span>{{ 'dashboard.posts.editor.summaryLabel' | translate }}</span>
+								</label>
+								<textarea
+									[formControl]="translationForms()[lang].summary"
+									rows="3"
+									maxLength="500"
+									class="w-full resize-none rounded-xl border border-border bg-surface p-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+									[placeholder]="'dashboard.posts.editor.summaryPlaceholder' | translate"
+								></textarea>
+							</div>
 
 							<div class="flex flex-col gap-2">
 								<!-- Content tabs -->
@@ -490,6 +505,10 @@ export class PostEditorComponent implements OnInit {
 				nonNullable: true,
 				validators: [Validators.required],
 			}),
+			summary: new FormControl('', {
+				nonNullable: true,
+				validators: [Validators.maxLength(500)],
+			}),
 		};
 	}
 
@@ -565,7 +584,7 @@ export class PostEditorComponent implements OnInit {
 	}
 
 	private populateTranslations(
-		translations: Record<Language, { title?: string; content?: string }> | undefined
+		translations: Record<Language, { title?: string; content?: string; summary?: string }> | undefined
 	): void {
 		if (!translations) {
 			return;
@@ -582,6 +601,7 @@ export class PostEditorComponent implements OnInit {
 
 			forms[language].title.setValue(translation.title ?? '');
 			forms[language].content.setValue(translation.content ?? '');
+			forms[language].summary.setValue(translation.summary ?? '');
 		}
 	}
 
@@ -813,6 +833,7 @@ export class PostEditorComponent implements OnInit {
 					{
 						title: forms[language].title.value,
 						content: forms[language].content.value,
+						summary: forms[language].summary.value,
 					},
 				])
 				.filter(([, translation]) => !!(translation.title || translation.content))

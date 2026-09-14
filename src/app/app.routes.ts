@@ -40,6 +40,12 @@ export const routes: Routes = [
       import('./features/dashboard/pages/post-editor/post-editor.component').then(m => m.PostEditorComponent),
   },
   {
+    path: 'dashboard/featured',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/dashboard/pages/featured-manager/featured-manager.component').then(m => m.FeaturedManagerComponent),
+  },
+  {
     path: 'dashboard/post/:id',
     canActivate: [authGuard],
     loadComponent: () =>

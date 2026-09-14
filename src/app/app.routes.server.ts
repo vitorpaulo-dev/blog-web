@@ -22,6 +22,10 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Server
   },
   {
+    path: 'dashboard/featured',
+    renderMode: RenderMode.Server
+  },
+  {
     path: 'dashboard/post/:id',
     renderMode: RenderMode.Server
   },

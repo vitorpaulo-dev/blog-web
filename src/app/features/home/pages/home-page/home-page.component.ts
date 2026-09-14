@@ -44,19 +44,25 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 	],
 	template: `
 		<div class="min-h-dvh bg-background text-foreground">
-			<section aria-label="Featured" class="mx-auto pt-2">
-				<a
-					routerLink="/post/das"
-					class="group rounded-xl border border-accent bg-surface transition-all hover:opacity-80 px-2 md:px-4 py-3 flex flex-row md:items-center justify-between gap-3"
-				>
-					<div class="text-sm inline-flex items-center font-mono">
-						<hugeicons-icon [icon]="SparklesIcon" [size]="26" [strokeWidth]="1.5" />
-						<p class="ml-2 text-foreground font-bold truncate max-w-80">This will be the post title.</p>
-					</div>
+		@if (featured().length > 0) {
+			<section aria-label="Featured" class="mx-auto pt-2 flex flex-col gap-2">
+				@for (post of featured(); track post.id) {
+					<a
+						[routerLink]="['/post', post.slug]"
+						class="group rounded-xl border border-accent bg-surface transition-all hover:opacity-80 px-2 md:px-4 py-3 flex flex-row md:items-center justify-between gap-3"
+					>
+						<div class="text-sm inline-flex items-center font-mono">
+							<hugeicons-icon [icon]="SparklesIcon" [size]="26" [strokeWidth]="1.5" />
+							<p class="ml-2 text-foreground font-bold truncate max-w-5xl">
+								{{ firstTranslation(post.translations)?.title }}
+							</p>
+						</div>
 
-					<hugeicons-icon [icon]="ArrowRight01Icon" [size]="22" [strokeWidth]="1.5" />
-				</a>
+						<hugeicons-icon [icon]="ArrowRight01Icon" [size]="22" [strokeWidth]="1.5" />
+					</a>
+				}
 			</section>
+		}
 			<section aria-labelledby="recent-title" class="mx-auto md:pt-6 pt-4 pb-6 md:pb-10">
 				<div class="w-full inline-flex items-end justify-between gap-4 mb-6">
 					<h2 class="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{{ 'home.recentPosts' | translate }}</h2>
@@ -206,6 +212,7 @@ export class HomePageComponent {
 
 	posts = signal<PostDto[]>([]);
 	postsLoading = signal(true);
+	featured = signal<PostDto[]>([]);
 	tagMap = signal<Map<string, TagDto>>(new Map());
 	readonly lang = this.languageService.language.asReadonly();
 
@@ -215,7 +222,7 @@ export class HomePageComponent {
 		return this.posts().map(post => ({
 			slug: post.slug,
 			title: firstTranslation(post.translations)?.title ?? '',
-			excerpt: excerpt(firstTranslation(post.translations)?.content ?? ''),
+			excerpt: firstTranslation(post.translations)?.summary ?? excerpt(firstTranslation(post.translations)?.content ?? ''),
 			imageUrl: post.bannerUrl ?? null,
 			date: post.createdAt,
 			routePrefix: '/post',
@@ -230,15 +237,25 @@ export class HomePageComponent {
 
 	constructor() {
 		effect(() => {
+			if (isPlatformServer(this.platformId)) {
+				return;
+			}
+
 			this.loadRecent();
+			this.loadFeatured();
 		});
 	}
 
-	private loadRecent(): void {
-		if (isPlatformServer(this.platformId)) {
-			return;
-		}
+	private loadFeatured(): void {
+		this.postService.getFeatured(this.languageService.language()).subscribe({
+			next: (posts) => this.featured.set(posts),
+			error: () => this.featured.set([]),
+		});
+	}
 
+	protected firstTranslation = firstTranslation;
+
+	private loadRecent(): void {
 		this.postsLoading.set(true);
 		this.postService
 			.search({

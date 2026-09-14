@@ -27,6 +27,7 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 interface TranslationForm {
 	title: FormControl<string>;
 	description: FormControl<string>;
+	summary: FormControl<string>;
 }
 
 function slugify(text: string): string {
@@ -102,6 +103,17 @@ function slugify(text: string): string {
 								</label>
 								<input tuiInput [formControl]="translationForms()[lang].title" [placeholder]="'dashboard.projects.editor.titlePlaceholder' | translate" />
 							</tui-textfield>
+
+							<div class="flex flex-col gap-2">
+								<label class="text-sm font-medium">{{ 'dashboard.projects.editor.summaryLabel' | translate }}</label>
+								<textarea
+									[formControl]="translationForms()[lang].summary"
+									rows="3"
+									maxLength="500"
+									class="w-full rounded-xl border border-border bg-surface p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-accent"
+									[placeholder]="'dashboard.projects.editor.summaryPlaceholder' | translate"
+								></textarea>
+							</div>
 
 							<div class="flex flex-col gap-2">
 								<label class="text-sm font-medium">{{ 'dashboard.projects.editor.descriptionLabel' | translate }}</label>
@@ -299,10 +311,12 @@ export class ProjectEditorComponent implements OnInit {
 		ENGLISH: {
 			title: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(500)] }),
 			description: new FormControl('', { nonNullable: true }),
+			summary: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(500)] }),
 		},
 		PORTUGUESE: {
 			title: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(500)] }),
 			description: new FormControl('', { nonNullable: true }),
+			summary: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(500)] }),
 		},
 	});
 
@@ -368,6 +382,7 @@ export class ProjectEditorComponent implements OnInit {
 						if (translation) {
 							forms[lang].title.setValue(translation.title || '');
 							forms[lang].description.setValue(translation.description || '');
+							forms[lang].summary.setValue(translation.summary || '');
 						}
 					}
 
@@ -442,18 +457,20 @@ export class ProjectEditorComponent implements OnInit {
 		this.error.set(null);
 
 		const forms = this.translationForms();
-		const translations: Record<Language, { title: string; description: string }> = {
+		const translations: Record<Language, { title: string; description: string; summary: string }> = {
 			ENGLISH: {
 				title: forms.ENGLISH.title.value,
 				description: forms.ENGLISH.description.value,
+				summary: forms.ENGLISH.summary.value,
 			},
 			PORTUGUESE: {
 				title: forms.PORTUGUESE.title.value,
 				description: forms.PORTUGUESE.description.value,
+				summary: forms.PORTUGUESE.summary.value,
 			},
 		};
 
-		const filteredTranslations = {} as Record<Language, { title: string; description: string }>;
+		const filteredTranslations = {} as Record<Language, { title: string; description: string; summary: string }>;
 		for (const lang of this.languages) {
 			if (translations[lang].title || translations[lang].description) {
 				filteredTranslations[lang] = translations[lang];

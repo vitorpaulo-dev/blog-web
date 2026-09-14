@@ -110,7 +110,9 @@
 				"updated": "Post updated successfully",
 				"created": "Post created successfully",
 				"saveFailed": "Failed to save post. Please try again.",
-				"loadFailed": "Failed to load post. Redirecting to dashboard..."
+				"loadFailed": "Failed to load post. Redirecting to dashboard...",
+				"summaryLabel": "Summary",
+				"summaryPlaceholder": "Short description for cards and search results"
 			}
 		},
 		"projects": {
@@ -161,7 +163,9 @@
 				"updated": "Project updated successfully",
 				"created": "Project created successfully",
 				"saveFailed": "Failed to save project. Please try again.",
-				"loadFailed": "Failed to load project. Redirecting to dashboard..."
+				"loadFailed": "Failed to load project. Redirecting to dashboard...",
+				"summaryLabel": "Summary",
+				"summaryPlaceholder": "Short description for cards and search results"
 			}
 		},
 		"tags": {
@@ -194,6 +198,22 @@
 				"saveFailed": "Failed to save tag. Please try again.",
 				"loadFailed": "Failed to load tag. Redirecting to dashboard..."
 			}
+		},
+		"featured": {
+			"nav": "Featured",
+			"backToPosts": "Posts",
+			"title": "Featured Posts",
+			"addLabel": "Add posts",
+			"addPlaceholder": "Search posts...",
+			"empty": "No featured posts. Search and add posts above.",
+			"postColumn": "Post",
+			"reorderAria": "Drag to reorder",
+			"deleteAria": "Remove from featured",
+			"save": "Save",
+			"saving": "Saving...",
+			"saved": "Featured posts updated",
+			"saveFailed": "Failed to save featured posts",
+			"loadFailed": "Failed to load featured posts"
 		}
 	}
 }
