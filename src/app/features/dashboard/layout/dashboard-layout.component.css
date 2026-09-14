@@ -1,0 +1,55 @@
+aside[tuiNavigationAside].app-dashboard-aside {
+	block-size: 100vh;
+	block-size: 100dvh;
+	inset-block-start: 0;
+	inset-inline-start: 0;
+	border-inline-end: 1px solid var(--color-accent-secondary);
+}
+
+@media (max-width: 767.4px) {
+	aside[tuiNavigationAside].app-dashboard-aside._expanded {
+		position: fixed;
+		z-index: 30;
+		box-shadow: 0 0 1.5rem rgb(0 0 0 / 35%);
+	}
+
+	aside[tuiNavigationAside].app-dashboard-aside._expanded + main[tuiNavigationMain],
+	main[tuiNavigationMain]:has(aside[tuiNavigationAside].app-dashboard-aside._expanded) {
+		max-inline-size: 100% !important;
+	}
+}
+
+aside[tuiNavigationAside].app-dashboard-aside header a.app-aside-logo {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+aside[tuiNavigationAside].app-dashboard-aside:not(._expanded) a.app-aside-logo img {
+	display: none;
+	inline-size: 2rem;
+	block-size: 2rem;
+	object-fit: contain;
+	object-position: center;
+}
+
+aside[tuiNavigationAside].app-dashboard-aside:not(._expanded) a.app-aside-logo img[src='favicon.png'] {
+	display: block;
+}
+
+aside[tuiNavigationAside].app-dashboard-aside:not(._expanded) footer img {
+	inline-size: 1.5rem;
+	block-size: 1.5rem;
+	object-fit: cover;
+}
+
+.app-aside-subitem {
+	padding-inline-start: 2.5rem;
+	font-size: 0.8125rem;
+	line-height: 1.25rem;
+	color: var(--color-muted);
+}
+
+.app-aside-subitem:hover {
+	color: var(--color-foreground);
+}
