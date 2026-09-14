@@ -84,7 +84,7 @@ export class ProjectListComponent {
 			excerpt: firstTranslation(project.translations)?.summary ?? excerpt(firstTranslation(project.translations)?.description ?? ''),
 			imageUrl: project.logoUrl || project.bannerUrl,
 			date: project.createdAt,
-			routePrefix: '/project',
+			routePrefix: this.languageService.prefixed('/project'),
 			metaIcon: EyeIcon,
 			metaText: `${project.viewCount} ${this.translationService.translate('common.views', undefined, lang)}`,
 			chips: (project.tagIds ?? []).map(id => ({

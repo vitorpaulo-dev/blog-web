@@ -41,7 +41,7 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 	imports: [CommonModule, RouterLink, TuiButton, HugeiconsIconComponent, TuiAppearance, TuiChip, TranslatePipe, LocalizedDatePipe, ImageSignDirective],
 	template: `
 		<div class="max-w-4xl mx-auto">
-			<a routerLink="/project" tuiButton tuiAppearance="flat" size="s" class="mb-6 gap-1">
+			<a [routerLink]="projectListLink()" tuiButton tuiAppearance="flat" size="s" class="mb-6 gap-1">
 				<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" />
 
 				{{ 'projects.backToList' | translate }}
@@ -202,6 +202,7 @@ export class ProjectDetailComponent {
 	readonly error = signal<string | null>(null);
 	readonly tagMap = signal<Map<string, TagDto>>(new Map());
 	readonly lang = this.languageService.language.asReadonly();
+	readonly projectListLink = computed(() => this.languageService.prefixed('/project'));
 	readonly slug = this.route.snapshot.paramMap.get('slug');
 
 	readonly projectTags = computed<TagDto[]>(() => {

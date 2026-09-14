@@ -48,7 +48,7 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 			<section aria-label="Featured" class="mx-auto pt-2 flex flex-col gap-2">
 				@for (post of featured(); track post.id) {
 					<a
-						[routerLink]="['/post', post.slug]"
+						[routerLink]="[postListLink(), post.slug]"
 						class="group rounded-xl border border-accent bg-surface transition-all hover:opacity-80 px-2 md:px-4 py-3 flex flex-row md:items-center justify-between gap-3"
 					>
 						<div class="text-sm inline-flex items-center font-mono">
@@ -70,7 +70,7 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 						tuiButton
 						size="s"
 						tuiAppearance="flat"
-						routerLink="/post"
+						[routerLink]="postListLink()"
 						[disabled]="postsLoading() || posts().length === 0"
 					>
 						{{ 'home.allPosts' | translate }}
@@ -216,6 +216,7 @@ export class HomePageComponent {
 	featured = signal<PostDto[]>([]);
 	tagMap = signal<Map<string, TagDto>>(new Map());
 	readonly lang = this.languageService.language.asReadonly();
+	readonly postListLink = computed(() => this.languageService.prefixed('/post'));
 
 	cardItems = computed<ContentCardItem[]>(() => {
 		const tags = this.tagMap();
@@ -226,7 +227,7 @@ export class HomePageComponent {
 			excerpt: firstTranslation(post.translations)?.summary ?? excerpt(firstTranslation(post.translations)?.content ?? ''),
 			imageUrl: post.bannerUrl ?? null,
 			date: post.createdAt,
-			routePrefix: '/post',
+			routePrefix: this.postListLink(),
 			metaIcon: Timer02Icon,
 			metaText: `${post.estimatedReading || 5} ${this.translationService.translate('common.min', undefined, lang)}`,
 			chips: (post.tagIds ?? []).map(id => ({

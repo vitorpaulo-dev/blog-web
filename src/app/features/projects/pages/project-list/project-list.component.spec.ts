@@ -47,6 +47,7 @@ describe('ProjectListComponent', () => {
     languageServiceMock = {
       language: signal('ENGLISH' as any),
       setLanguage: vi.fn(),
+      prefixed: (path: string) => path,
     };
 
     toastServiceMock = {

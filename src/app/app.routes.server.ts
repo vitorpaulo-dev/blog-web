@@ -1,6 +1,6 @@
 import { RenderMode, ServerRoute } from '@angular/ssr';
 
-export const serverRoutes: ServerRoute[] = [
+const publicServerRoutes: ServerRoute[] = [
   {
     path: '',
     renderMode: RenderMode.Server
@@ -13,6 +13,18 @@ export const serverRoutes: ServerRoute[] = [
     path: 'post/:slug',
     renderMode: RenderMode.Server
   },
+  {
+    path: 'project',
+    renderMode: RenderMode.Server
+  },
+  {
+    path: 'project/:slug',
+    renderMode: RenderMode.Server
+  },
+];
+
+export const serverRoutes: ServerRoute[] = [
+  ...publicServerRoutes,
   {
     path: 'dashboard/post',
     renderMode: RenderMode.Server
@@ -27,14 +39,6 @@ export const serverRoutes: ServerRoute[] = [
   },
   {
     path: 'dashboard/post/:id',
-    renderMode: RenderMode.Server
-  },
-  {
-    path: 'project',
-    renderMode: RenderMode.Server
-  },
-  {
-    path: 'project/:slug',
     renderMode: RenderMode.Server
   },
   {
@@ -61,6 +65,10 @@ export const serverRoutes: ServerRoute[] = [
     path: 'dashboard/tag/:id',
     renderMode: RenderMode.Server
   },
+  ...publicServerRoutes.map(route => ({
+    ...route,
+    path: route.path ? `:lang/${route.path}` : ':lang',
+  })),
   {
     path: '**',
     renderMode: RenderMode.Prerender
