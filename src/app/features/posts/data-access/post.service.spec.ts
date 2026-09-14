@@ -39,4 +39,28 @@ describe('PostService', () => {
     expect(req.request.method).toBe('GET');
     req.flush({ id: 'abc-123' });
   });
+
+  it('getFeatured() should GET /v1/post/featured/{language} with current language', () => {
+    service.getFeatured('PORTUGUESE').subscribe((res) => {
+      expect(res.length).toBe(2);
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/featured/PORTUGUESE`);
+    expect(req.request.method).toBe('GET');
+    req.flush([
+      { id: 'p1' },
+      { id: 'p2' },
+    ]);
+  });
+
+  it('setFeatured() should POST /v1/post/featured with weight payload', () => {
+    const payload = [{ postId: 'p1', weight: 1 }, { postId: 'p2', weight: 2 }];
+
+    service.setFeatured(payload).subscribe();
+
+    const req = httpMock.expectOne(`${baseUrl}/featured`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(payload);
+    req.flush(null);
+  });
 });

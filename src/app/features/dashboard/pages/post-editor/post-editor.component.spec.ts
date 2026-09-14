@@ -262,4 +262,67 @@ describe('PostEditorComponent', () => {
       data: '@tui.circle-x',
     });
   });
+
+  it('should bind summary into translations payload', () => {
+    const mockResponse = {
+      id: 'new-id',
+      slug: 'new-post',
+      status: 'DRAFT',
+    };
+    (postServiceMock.create as any).mockReturnValue(of(mockResponse));
+
+    const forms = component.translationForms();
+    forms.ENGLISH.title.setValue('Title');
+    forms.ENGLISH.content.setValue('Content');
+    forms.ENGLISH.summary.setValue('Card summary');
+
+    component.save('DRAFT');
+
+    const payload = (postServiceMock.create as any).mock.calls[0][0];
+    expect(payload.translations.ENGLISH.summary).toBe('Card summary');
+  });
+
+  it('should populate summary from loaded post', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [PostEditorComponent],
+      providers: [
+        translationProvider(),
+        provideTaiga(),
+        provideRouter([]),
+        { provide: PostService, useValue: postServiceMock },
+        { provide: MarkdownService, useValue: markdownServiceMock },
+        { provide: TuiToastService, useValue: toastServiceMock },
+        { provide: Router, useValue: routerMock },
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: {
+                get: vi.fn().mockReturnValue('test-id'),
+              },
+            },
+          },
+        },
+      ],
+    });
+
+    const mockPost = {
+      id: 'test-id',
+      slug: 'test-post',
+      status: 'DRAFT',
+      translations: {
+        ENGLISH: { title: 'Test', content: 'Content', summary: 'Loaded summary' },
+      },
+    };
+    (postServiceMock.getById as any).mockReturnValue(of(mockPost));
+
+    const editFixture = TestBed.createComponent(PostEditorComponent);
+    const editComponent = editFixture.componentInstance;
+
+    editComponent.ngOnInit();
+
+    expect(editComponent.translationForms().ENGLISH.summary.value).toBe('Loaded summary');
+  });
 });

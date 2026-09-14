@@ -31,7 +31,7 @@ export const appConfig: ApplicationConfig = {
 			}
 		}),
 		provideAppInitializer(() => {
-			inject(ClerkService).init();
+			void inject(ClerkService).init();
 			return inject(TranslationService).load();
 		}),
 	],

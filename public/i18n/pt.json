@@ -110,7 +110,9 @@
 				"updated": "Post atualizado com sucesso",
 				"created": "Post criado com sucesso",
 				"saveFailed": "Falha ao salvar post. Tente novamente.",
-				"loadFailed": "Falha ao carregar post. Redirecionando ao painel..."
+				"loadFailed": "Falha ao carregar post. Redirecionando ao painel...",
+				"summaryLabel": "Resumo",
+				"summaryPlaceholder": "Descrição curta para cartões e resultados de busca"
 			}
 		},
 		"projects": {
@@ -161,7 +163,9 @@
 				"updated": "Projeto atualizado com sucesso",
 				"created": "Projeto criado com sucesso",
 				"saveFailed": "Falha ao salvar projeto. Tente novamente.",
-				"loadFailed": "Falha ao carregar projeto. Redirecionando ao painel..."
+				"loadFailed": "Falha ao carregar projeto. Redirecionando ao painel...",
+				"summaryLabel": "Resumo",
+				"summaryPlaceholder": "Descrição curta para cartões e resultados de busca"
 			}
 		},
 		"tags": {
@@ -194,6 +198,22 @@
 				"saveFailed": "Falha ao salvar tag. Tente novamente.",
 				"loadFailed": "Falha ao carregar tag. Redirecionando ao painel..."
 			}
+		},
+		"featured": {
+			"nav": "Destaques",
+			"backToPosts": "Posts",
+			"title": "Posts em destaque",
+			"addLabel": "Adicionar posts",
+			"addPlaceholder": "Buscar posts...",
+			"empty": "Nenhum post em destaque. Busque e adicione posts acima.",
+			"postColumn": "Post",
+			"reorderAria": "Arraste para reordenar",
+			"deleteAria": "Remover dos destaques",
+			"save": "Salvar",
+			"saving": "Salvando...",
+			"saved": "Posts em destaque atualizados",
+			"saveFailed": "Falha ao salvar posts em destaque",
+			"loadFailed": "Falha ao carregar posts em destaque"
 		}
 	}
 }

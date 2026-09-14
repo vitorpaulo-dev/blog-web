@@ -1,6 +1,5 @@
 import { Component, computed, effect, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { TuiChip, TuiPagination, TuiToastService } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { EyeIcon, Loading03Icon, SourceCodeIcon } from '@hugeicons/core-free-icons';
@@ -20,7 +19,6 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 	imports: [
 		CommonModule,
 		FormsModule,
-		RouterLink,
 		HugeiconsIconComponent,
 		TuiPagination,
 		TuiChip,
@@ -83,7 +81,7 @@ export class ProjectListComponent {
 		return this.projects().map(project => ({
 			slug: project.slug,
 			title: firstTranslation(project.translations)?.title ?? '',
-			excerpt: excerpt(firstTranslation(project.translations)?.description ?? ''),
+			excerpt: firstTranslation(project.translations)?.summary ?? excerpt(firstTranslation(project.translations)?.description ?? ''),
 			imageUrl: project.logoUrl || project.bannerUrl,
 			date: project.createdAt,
 			routePrefix: '/project',

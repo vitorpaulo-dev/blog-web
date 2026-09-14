@@ -17,6 +17,7 @@ import {
 	Loading03Icon,
 	PlusSignIcon,
 	Search01Icon,
+	SparklesIcon,
 } from '@hugeicons/core-free-icons';
 
 import { PostDto, PostService } from '../../../posts/data-access/post.service';
@@ -46,15 +47,21 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 		LocalizedDatePipe,
 	],
 	template: `
-		<div class="mx-auto max-w-5xl px-6 py-8">
-			
+		<div class="mx-auto px-4 py-8 sm:px-6">
 			<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
 				<h1 class="text-2xl font-bold">{{ 'dashboard.posts.list.title' | translate }}</h1>
 
-				<a routerLink="/dashboard/post/new" tuiButton tuiAppearance="primary" size="m" class="gap-1">
-					<hugeicons-icon [icon]="PlusSignIcon" [size]="22" [strokeWidth]="1.5" />
-					{{ 'dashboard.posts.list.new' | translate }}
-				</a>
+				<div class="flex items-center gap-3">
+					<a routerLink="/dashboard/featured" class="inline-flex items-center gap-1 text-sm text-accent">
+						<hugeicons-icon [icon]="SparklesIcon" [size]="16" [strokeWidth]="1.5" />
+						{{ 'dashboard.featured.nav' | translate }}
+					</a>
+
+					<a routerLink="/dashboard/post/new" tuiButton tuiAppearance="primary" size="m" class="gap-1">
+						<hugeicons-icon [icon]="PlusSignIcon" [size]="22" [strokeWidth]="1.5" />
+						{{ 'dashboard.posts.list.new' | translate }}
+					</a>
+				</div>
 			</div>
 
 
@@ -439,4 +446,5 @@ export class DashboardPostListComponent {
 	}
 
 	protected readonly Loading03Icon = Loading03Icon;
+	protected readonly SparklesIcon = SparklesIcon;
 }

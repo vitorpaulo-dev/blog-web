@@ -1,6 +1,6 @@
 import { TuiButton, TuiCell, TuiDataList, TuiDropdown, TuiRoot, TuiTextfield, TuiTitle } from '@taiga-ui/core';
 import { Component, inject, signal } from '@angular/core';
-import { RouterOutlet, RouterLink } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 import { TuiChevron } from '@taiga-ui/kit';
 import { TuiInputSearch, TuiNavigation } from '@taiga-ui/layout';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -23,7 +23,6 @@ import { LanguageService } from './core/i18n/language.service';
 	selector: 'app-root',
 	imports: [
 		RouterOutlet,
-		RouterLink,
 		AsyncPipe,
 		FormsModule,
 		ReactiveFormsModule,

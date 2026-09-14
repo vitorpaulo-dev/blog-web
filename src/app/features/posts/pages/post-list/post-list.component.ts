@@ -1,6 +1,5 @@
 import { Component, computed, effect, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { TuiPagination, TuiToastService } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import {
@@ -24,7 +23,6 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 	imports: [
 		CommonModule,
 		FormsModule,
-		RouterLink,
 		HugeiconsIconComponent,
 		TuiPagination,
 		ContentCardComponent,
@@ -87,7 +85,7 @@ export class PostListComponent {
 		return this.posts().map(post => ({
 			slug: post.slug,
 			title: firstTranslation(post.translations)?.title ?? '',
-			excerpt: excerpt(firstTranslation(post.translations)?.content ?? ''),
+			excerpt: firstTranslation(post.translations)?.summary ?? excerpt(firstTranslation(post.translations)?.content ?? ''),
 			imageUrl: post.bannerUrl ?? null,
 			date: post.createdAt,
 			routePrefix: '/post',
