@@ -1,0 +1,77 @@
+<header tuiNavigationHeader class="flex items-center justify-between w-full h-full border-b border-border">
+	<a [href]="logoHref()" class="pl-4 md:pl-18 flex h-full items-center" aria-label="vitorpaulo.dev">
+		<img src="logo.svg" alt="vitorpaulo.dev" class="hidden h-7 w-auto md:block" />
+		<img src="favicon.png" alt="vitorpaulo.dev" class="h-7 w-auto md:hidden" />
+	</a>
+
+	<section class="hidden md:block">
+		<tui-textfield
+			class="border-accent md:min-w-lg">
+			<input
+				tuiSearchHotkey
+				[formControl]="control"
+				[tuiInputSearch]="search"
+				[(tuiInputSearchOpen)]="open"
+			/>
+			<ng-template #search>
+				<tui-search-results [results]="results$ | async">
+					<tui-search-history [popular]="popular" />
+					<ng-template let-item>
+ 						<a tuiCell [href]="languageService.prefixed('/post/' + item.slug)">
+							<hugeicons-icon [icon]="StickyNote01Icon" [size]="28" [strokeWidth]="1.5" />
+							<span tuiTitle>
+								{{ item.translations[languageService.language()]?.title }}
+								<span tuiSubtitle>{{ item.translations[languageService.language()]?.content }}</span>
+							</span>
+						</a>
+					</ng-template>
+				</tui-search-results>
+			</ng-template>
+		</tui-textfield>
+	</section>
+
+	<section class="pr-4 pt-1.5 md:pr-16 inline-flex items-center gap-4">
+		<a class="p-1 block md:hidden text-muted hover:text-accent h-full" (click)="open.set(true)">
+			<hugeicons-icon [icon]="Search01Icon" [size]="28" [strokeWidth]="1.5" />
+		</a>
+
+	<button
+		tuiButton
+		tuiAppearance="flat"
+		tuiChevron
+		type="button"
+		class="text-muted hover:text-accent text-sm !p-0"
+		[tuiDropdown]="langDropdown"
+		[(tuiDropdownOpen)]="langDropdownOpen"
+	>
+		{{ languageService.language() === 'ENGLISH' ? '🇺🇸 EN' : '🇧🇷 PT' }}
+	</button>
+	<ng-template #langDropdown>
+		<tui-data-list>
+			<button tuiOption type="button" (click)="switchLanguage('ENGLISH')">
+				🇺🇸 English
+				@if (languageService.language() === 'ENGLISH') {
+					<span class="ml-auto text-accent">✓</span>
+				}
+			</button>
+			<button tuiOption type="button" (click)="switchLanguage('PORTUGUESE')">
+				🇧🇷 Português
+				@if (languageService.language() === 'PORTUGUESE') {
+					<span class="ml-auto text-accent">✓</span>
+				}
+			</button>
+		</tui-data-list>
+	</ng-template>
+
+		<a class="text-muted hover:text-accent h-full" target="_blank" href="https://www.linkedin.com/in/vitor-paulo-910186164/">
+			<hugeicons-icon [icon]="Linkedin01Icon" [size]="28" [strokeWidth]="1.5" />
+		</a>
+
+		<a class="text-muted hover:text-accent" target="_blank" href="https://github.com/vitorpaulo.dev">
+			<hugeicons-icon [icon]="Github01Icon" [size]="28" [strokeWidth]="1.5" />
+		</a>
+	</section>
+</header>
+<main tuiNavigationMain class="md:px-16">
+	<router-outlet />
+</main>
