@@ -1,6 +1,6 @@
 import { TuiButton, TuiCell, TuiDataList, TuiDropdown, TuiRoot, TuiTextfield, TuiTitle } from '@taiga-ui/core';
-import { Component, inject, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
+import { Router, RouterOutlet } from '@angular/router';
 import { TuiChevron } from '@taiga-ui/kit';
 import { TuiInputSearch, TuiNavigation } from '@taiga-ui/layout';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -17,7 +17,7 @@ import {
 	Search01Icon,
 	StickyNote01Icon,
 } from '@hugeicons/core-free-icons';
-import { LanguageService } from './core/i18n/language.service';
+import { LanguageService, type Language } from './core/i18n/language.service';
 
 @Component({
 	selector: 'app-root',
@@ -50,6 +50,9 @@ export class App {
 	langDropdownOpen = false;
 	postService = inject(PostService);
 	languageService = inject(LanguageService);
+	router = inject(Router);
+
+	protected readonly logoHref = computed(() => this.languageService.language() === 'PORTUGUESE' ? '/pt' : '/');
 
 	protected readonly popular = [];
 
@@ -82,8 +85,32 @@ export class App {
 	protected readonly Linkedin01Icon = Linkedin01Icon;
 	protected readonly StickyNote01Icon = StickyNote01Icon;
 
-	protected setLanguage(lang: 'ENGLISH' | 'PORTUGUESE'): void {
-		this.languageService.setLanguage(lang);
+	protected switchLanguage(target: Language): void {
 		this.langDropdownOpen = false;
+
+		const current = this.languageService.language();
+		if (target === current) {
+			return;
+		}
+
+		const url = this.router.url;
+		const [pathAndQuery, ...fragmentParts] = url.split('#');
+		const fragment = fragmentParts.length > 0 ? `#${fragmentParts.join('#')}` : '';
+		const [path, ...queryParts] = pathAndQuery.split('?');
+		const query = queryParts.length > 0 ? `?${queryParts.join('?')}` : '';
+		const suffix = query + fragment;
+
+		const segments = path.split('/').filter(Boolean);
+		const route = segments[0] === 'pt' || segments[0] === 'en' ? segments.slice(1) : segments;
+
+		if (route.length > 0 && route[0] !== 'post' && route[0] !== 'project') {
+			this.languageService.setLanguage(target);
+			return;
+		}
+
+		const barePath = route.length > 0 ? `/${route.join('/')}` : '/';
+		const swapped = target === 'PORTUGUESE' ? (barePath === '/' ? '/pt' : `/pt${barePath}`) : barePath;
+
+		void this.router.navigateByUrl(swapped + suffix);
 	}
 }

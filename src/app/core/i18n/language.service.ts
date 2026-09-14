@@ -5,6 +5,7 @@ export type Language = 'ENGLISH' | 'PORTUGUESE';
 
 const LANGUAGE_KEY = makeStateKey<Language>('language');
 const STORAGE_KEY = 'blog-language';
+const PATH_PREFIX: Record<Language, string> = { ENGLISH: '', PORTUGUESE: '/pt' };
 
 @Injectable({ providedIn: 'root' })
 export class LanguageService {
@@ -51,5 +52,9 @@ export class LanguageService {
         this.document.defaultView?.localStorage?.setItem(STORAGE_KEY, language);
       } catch {}
     }
+  }
+
+  prefixed(path: string): string {
+    return PATH_PREFIX[this.language()] + path;
   }
 }

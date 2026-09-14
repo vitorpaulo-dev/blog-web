@@ -88,7 +88,7 @@ export class PostListComponent {
 			excerpt: firstTranslation(post.translations)?.summary ?? excerpt(firstTranslation(post.translations)?.content ?? ''),
 			imageUrl: post.bannerUrl ?? null,
 			date: post.createdAt,
-			routePrefix: '/post',
+			routePrefix: this.languageService.prefixed('/post'),
 			metaIcon: Timer02Icon,
 			metaText: `${post.estimatedReading || 5} ${this.translationService.translate('common.min', undefined, lang)}`,
 			chips: (post.tagIds ?? []).map(id => ({

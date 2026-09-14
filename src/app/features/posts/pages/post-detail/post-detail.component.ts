@@ -69,7 +69,7 @@ import {
 	],
 	template: `
 		<div class="max-w-4xl mx-auto">
-			<a routerLink="/post" tuiButton tuiAppearance="flat" size="s" class="mb-4 gap-1">
+			<a [routerLink]="postListLink()" tuiButton tuiAppearance="flat" size="s" class="mb-4 gap-1">
 				<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" />
 
 				{{ 'posts.backToList' | translate }}
@@ -241,6 +241,8 @@ export class PostDetailComponent implements AfterViewInit {
 	readonly tagMap = signal<Map<string, TagDto>>(new Map());
 	readonly projectTagMap = signal<Map<string, TagDto>>(new Map());
 	readonly lang = this.languageService.language.asReadonly();
+	readonly postListLink = computed(() => this.languageService.prefixed('/post'));
+	readonly projectListLink = computed(() => this.languageService.prefixed('/project'));
 	readonly slug = this.route.snapshot.paramMap.get('slug');
 
 	readonly postTags = computed<TagDto[]>(() => {
@@ -259,7 +261,7 @@ export class PostDetailComponent implements AfterViewInit {
 			excerpt: excerpt(firstTranslation(project.translations)?.description ?? ''),
 			imageUrl: project.logoUrl || project.bannerUrl,
 			date: project.createdAt,
-			routePrefix: '/project',
+			routePrefix: this.projectListLink(),
 			metaIcon: EyeIcon,
 			metaText: `${project.viewCount} ${this.translationService.translate('common.views', undefined, lang)}`,
 			chips: (project.tagIds ?? []).map(id => ({

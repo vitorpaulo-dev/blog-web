@@ -1,12 +1,42 @@
-import { Routes } from '@angular/router';
+import { Route, Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
+import { langGuard } from './core/i18n/lang.guard';
 
-export const routes: Routes = [
+const publicRoutes: Route[] = [
   {
     path: '',
+    canActivate: [langGuard],
     loadComponent: () =>
       import('./features/home/pages/home-page/home-page.component').then(m => m.HomePageComponent),
   },
+  {
+    path: 'post',
+    canActivate: [langGuard],
+    loadComponent: () =>
+      import('./features/posts/pages/post-list/post-list.component').then(m => m.PostListComponent),
+  },
+  {
+    path: 'post/:slug',
+    canActivate: [langGuard],
+    loadComponent: () =>
+      import('./features/posts/pages/post-detail/post-detail.component').then(m => m.PostDetailComponent),
+  },
+  {
+    path: 'project',
+    canActivate: [langGuard],
+    loadComponent: () =>
+      import('./features/projects/pages/project-list/project-list.component').then(m => m.ProjectListComponent),
+  },
+  {
+    path: 'project/:slug',
+    canActivate: [langGuard],
+    loadComponent: () =>
+      import('./features/projects/pages/project-detail/project-detail.component').then(m => m.ProjectDetailComponent),
+  },
+];
+
+export const routes: Routes = [
+  ...publicRoutes,
   {
     path: 'login',
     loadComponent: () =>
@@ -16,16 +46,6 @@ export const routes: Routes = [
     path: 'signup',
     loadComponent: () =>
       import('./features/auth/pages/signup/signup.component').then(m => m.SignupComponent),
-  },
-  {
-    path: 'post',
-    loadComponent: () =>
-      import('./features/posts/pages/post-list/post-list.component').then(m => m.PostListComponent),
-  },
-  {
-    path: 'post/:slug',
-    loadComponent: () =>
-      import('./features/posts/pages/post-detail/post-detail.component').then(m => m.PostDetailComponent),
   },
   {
     path: 'dashboard/post',
@@ -50,16 +70,6 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () =>
       import('./features/dashboard/pages/post-editor/post-editor.component').then(m => m.PostEditorComponent),
-  },
-  {
-    path: 'project',
-    loadComponent: () =>
-      import('./features/projects/pages/project-list/project-list.component').then(m => m.ProjectListComponent),
-  },
-  {
-    path: 'project/:slug',
-    loadComponent: () =>
-      import('./features/projects/pages/project-detail/project-detail.component').then(m => m.ProjectDetailComponent),
   },
   {
     path: 'dashboard/project',
@@ -97,4 +107,8 @@ export const routes: Routes = [
 		loadComponent: () =>
 			import('./features/dashboard/pages/tag-editor/tag-editor.component').then(m => m.TagEditorComponent),
 	},
+	...publicRoutes.map(route => ({
+		...route,
+		path: route.path ? `:lang/${route.path}` : ':lang',
+	})),
 ];

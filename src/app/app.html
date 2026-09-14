@@ -1,6 +1,6 @@
 <tui-root tuiTheme="dark">
 	<header tuiNavigationHeader class="flex items-center justify-between w-full h-full border-b border-border">
-		<a href="/" class="pl-4 md:pl-18 font-semibold tracking-tight text-foreground text-xl">vitorpaulo<span
+		<a [href]="logoHref()" class="pl-4 md:pl-18 font-semibold tracking-tight text-foreground text-xl">vitorpaulo<span
 			class="text-accent">.</span><span class="underline decoration-accent underline-offset-4">dev</span></a>
 
 		<section class="hidden md:block">
@@ -16,7 +16,7 @@
 					<tui-search-results [results]="results$ | async">
 						<tui-search-history [popular]="popular" />
 						<ng-template let-item>
-							<a tuiCell [href]="'/post/' + item.slug">
+ 							<a tuiCell [href]="languageService.prefixed('/post/' + item.slug)">
 								<hugeicons-icon [icon]="StickyNote01Icon" [size]="28" [strokeWidth]="1.5" />
 								<span tuiTitle>
 									{{ item.translations[languageService.language()]?.title }}
@@ -47,13 +47,13 @@
 		</button>
 		<ng-template #langDropdown>
 			<tui-data-list>
-				<button tuiOption type="button" (click)="setLanguage('ENGLISH')">
+				<button tuiOption type="button" (click)="switchLanguage('ENGLISH')">
 					🇺🇸 English
 					@if (languageService.language() === 'ENGLISH') {
 						<span class="ml-auto text-accent">✓</span>
 					}
 				</button>
-				<button tuiOption type="button" (click)="setLanguage('PORTUGUESE')">
+				<button tuiOption type="button" (click)="switchLanguage('PORTUGUESE')">
 					🇧🇷 Português
 					@if (languageService.language() === 'PORTUGUESE') {
 						<span class="ml-auto text-accent">✓</span>
