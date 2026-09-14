@@ -35,80 +35,92 @@ const publicRoutes: Route[] = [
   },
 ];
 
+// Lang-prefixed mirrors rely on the ':lang' parent for the lang param, so
+// per-child langGuard (which reads route.paramMap only) must not be on children.
+const langPrefixedRoutes: Route[] = publicRoutes.map(({ canActivate, ...route }) => route);
+
 export const routes: Routes = [
-  ...publicRoutes,
   {
-    path: 'login',
+    path: '',
     loadComponent: () =>
-      import('./features/auth/pages/login/login.component').then(m => m.LoginComponent),
+      import('./features/layout/public-layout/public-layout.component').then(m => m.PublicLayoutComponent),
+    children: [
+      ...publicRoutes,
+      {
+        path: 'login',
+        loadComponent: () =>
+          import('./features/auth/pages/login/login.component').then(m => m.LoginComponent),
+      },
+      {
+        path: 'signup',
+        loadComponent: () =>
+          import('./features/auth/pages/signup/signup.component').then(m => m.SignupComponent),
+      },
+    ],
   },
   {
-    path: 'signup',
-    loadComponent: () =>
-      import('./features/auth/pages/signup/signup.component').then(m => m.SignupComponent),
-  },
-  {
-    path: 'dashboard/post',
+    path: 'dashboard',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/dashboard/pages/dashboard-post-list/dashboard-post-list.component').then(m => m.DashboardPostListComponent),
+      import('./features/dashboard/layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    children: [
+      {
+        path: 'post',
+        loadComponent: () =>
+          import('./features/dashboard/pages/dashboard-post-list/dashboard-post-list.component').then(m => m.DashboardPostListComponent),
+      },
+      {
+        path: 'post/new',
+        loadComponent: () =>
+          import('./features/dashboard/pages/post-editor/post-editor.component').then(m => m.PostEditorComponent),
+      },
+      {
+        path: 'post/:id',
+        loadComponent: () =>
+          import('./features/dashboard/pages/post-editor/post-editor.component').then(m => m.PostEditorComponent),
+      },
+      {
+        path: 'featured',
+        loadComponent: () =>
+          import('./features/dashboard/pages/featured-manager/featured-manager.component').then(m => m.FeaturedManagerComponent),
+      },
+      {
+        path: 'project',
+        loadComponent: () =>
+          import('./features/dashboard/pages/dashboard-project-list/dashboard-project-list.component').then(m => m.DashboardProjectListComponent),
+      },
+      {
+        path: 'project/new',
+        loadComponent: () =>
+          import('./features/dashboard/pages/project-editor/project-editor.component').then(m => m.ProjectEditorComponent),
+      },
+      {
+        path: 'project/:id',
+        loadComponent: () =>
+          import('./features/dashboard/pages/project-editor/project-editor.component').then(m => m.ProjectEditorComponent),
+      },
+      {
+        path: 'tag',
+        loadComponent: () =>
+          import('./features/dashboard/pages/dashboard-tag-list/dashboard-tag-list.component').then(m => m.DashboardTagListComponent),
+      },
+      {
+        path: 'tag/new',
+        loadComponent: () =>
+          import('./features/dashboard/pages/tag-editor/tag-editor.component').then(m => m.TagEditorComponent),
+      },
+      {
+        path: 'tag/:id',
+        loadComponent: () =>
+          import('./features/dashboard/pages/tag-editor/tag-editor.component').then(m => m.TagEditorComponent),
+      },
+    ],
   },
   {
-    path: 'dashboard/post/new',
-    canActivate: [authGuard],
+    path: ':lang',
+    canActivate: [langGuard],
     loadComponent: () =>
-      import('./features/dashboard/pages/post-editor/post-editor.component').then(m => m.PostEditorComponent),
+      import('./features/layout/public-layout/public-layout.component').then(m => m.PublicLayoutComponent),
+    children: langPrefixedRoutes,
   },
-  {
-    path: 'dashboard/featured',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/dashboard/pages/featured-manager/featured-manager.component').then(m => m.FeaturedManagerComponent),
-  },
-  {
-    path: 'dashboard/post/:id',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/dashboard/pages/post-editor/post-editor.component').then(m => m.PostEditorComponent),
-  },
-  {
-    path: 'dashboard/project',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/dashboard/pages/dashboard-project-list/dashboard-project-list.component').then(m => m.DashboardProjectListComponent),
-  },
-  {
-    path: 'dashboard/project/new',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/dashboard/pages/project-editor/project-editor.component').then(m => m.ProjectEditorComponent),
-  },
-	{
-		path: 'dashboard/project/:id',
-		canActivate: [authGuard],
-		loadComponent: () =>
-			import('./features/dashboard/pages/project-editor/project-editor.component').then(m => m.ProjectEditorComponent),
-	},
-	{
-		path: 'dashboard/tag',
-		canActivate: [authGuard],
-		loadComponent: () =>
-			import('./features/dashboard/pages/dashboard-tag-list/dashboard-tag-list.component').then(m => m.DashboardTagListComponent),
-	},
-	{
-		path: 'dashboard/tag/new',
-		canActivate: [authGuard],
-		loadComponent: () =>
-			import('./features/dashboard/pages/tag-editor/tag-editor.component').then(m => m.TagEditorComponent),
-	},
-	{
-		path: 'dashboard/tag/:id',
-		canActivate: [authGuard],
-		loadComponent: () =>
-			import('./features/dashboard/pages/tag-editor/tag-editor.component').then(m => m.TagEditorComponent),
-	},
-	...publicRoutes.map(route => ({
-		...route,
-		path: route.path ? `:lang/${route.path}` : ':lang',
-	})),
 ];

@@ -1,0 +1,4 @@
+tui-input-search-content > tui-textfield {
+	max-width: 0.5rem !important;
+	width: 0.5rem !important;
+}

@@ -92,31 +92,33 @@ describe('langGuard', () => {
 
 describe('langGuard wiring on public routes', () => {
   const barePublicPaths = ['', 'post', 'post/:slug', 'project', 'project/:slug'];
+  const publicParent = routes.find((route: Route) => route.path === '' && !!route.children)!;
+  const langParent = routes.find((route: Route) => route.path === ':lang')!;
+  const dashboardParent = routes.find((route: Route) => route.path === 'dashboard')!;
 
   it('guards every no-prefix public route', () => {
-    const bareRoutes = routes.filter((route: Route) => barePublicPaths.includes(route.path!));
-
-    expect(bareRoutes).toHaveLength(barePublicPaths.length);
-    for (const route of bareRoutes) {
-      expect(route.canActivate).toContain(langGuard);
+    expect(publicParent.children).toBeDefined();
+    for (const path of barePublicPaths) {
+      const child = publicParent.children!.find((child: Route) => child.path === path);
+      expect(child?.canActivate).toContain(langGuard);
     }
   });
 
-  it('guards every lang-prefixed public route', () => {
-    const prefixedRoutes = routes.filter((route: Route) => route.path!.split('/')[0] === ':lang');
-
-    expect(prefixedRoutes).toHaveLength(barePublicPaths.length);
-    for (const route of prefixedRoutes) {
-      expect(route.canActivate).toContain(langGuard);
-    }
+  it('guards the lang-prefixed parent which mirrors public routes', () => {
+    expect(langParent.canActivate).toContain(langGuard);
+    expect(langParent.children!.map((child: Route) => child.path)).toEqual(barePublicPaths);
   });
 
-  it('does not guard auth or dashboard routes', () => {
-    const unguardedPaths = ['login', 'signup', 'dashboard/post', 'dashboard/featured'];
+  it('does not guard login, signup or dashboard children with langGuard', () => {
+    for (const path of ['login', 'signup']) {
+      const child = publicParent.children!.find((candidate: Route) => candidate.path === path);
+      expect(child?.canActivate).not.toContain(langGuard);
+    }
 
-    for (const path of unguardedPaths) {
-      const route = routes.find((candidate: Route) => candidate.path === path);
-      expect(route?.canActivate).not.toContain(langGuard);
+    expect(dashboardParent.canActivate).not.toContain(langGuard);
+    expect(dashboardParent.children?.length).toBe(10);
+    for (const child of dashboardParent.children!) {
+      expect(child.canActivate).not.toContain(langGuard);
     }
   });
 });

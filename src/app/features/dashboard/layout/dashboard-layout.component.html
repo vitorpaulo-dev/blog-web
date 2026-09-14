@@ -1,0 +1,104 @@
+<div class="flex min-h-[100dvh]">
+	<aside
+		tuiTheme="dark"
+		[tuiNavigationAside]="expanded()"
+		[class._expanded]="expanded()"
+		class="app-dashboard-aside"
+	>
+		<header>
+			<a href="/dashboard" tuiAsideItem aria-label="vitorpaulo.dev" class="app-aside-logo">
+				<img src="logo.svg" alt="vitorpaulo.dev" class="h-10 max-w-40 w-full object-contain" />
+				<img src="favicon.png" alt="vitorpaulo.dev" class="h-8 w-8 shrink-0 object-contain hidden" />
+			</a>
+		</header>
+
+		<tui-aside-group>
+			<button tuiAsideItem tuiChevron iconStart="@tui.files" type="button" class="font-medium">
+				{{ 'dashboard.posts.list.title' | translate }}
+				<ng-template>
+					<a tuiAsideItem routerLink="/dashboard/post" class="app-aside-subitem" iconStart="@tui.list">
+						{{ 'dashboard.nav.allPosts' | translate }}
+					</a>
+					<a tuiAsideItem routerLink="/dashboard/post/new" class="app-aside-subitem" iconStart="@tui.plus">
+						{{ 'dashboard.nav.createPost' | translate }}
+					</a>
+					<a tuiAsideItem routerLink="/dashboard/featured" class="app-aside-subitem" iconStart="@tui.sparkles">
+						{{ 'dashboard.nav.featuredPosts' | translate }}
+					</a>
+				</ng-template>
+			</button>
+		</tui-aside-group>
+
+		<tui-aside-group>
+			<button tuiAsideItem tuiChevron iconStart="@tui.folder" type="button" class="font-medium">
+				{{ 'dashboard.projects.list.title' | translate }}
+				<ng-template>
+					<a tuiAsideItem routerLink="/dashboard/project" class="app-aside-subitem" iconStart="@tui.list">
+						{{ 'dashboard.nav.allProjects' | translate }}
+					</a>
+					<a tuiAsideItem routerLink="/dashboard/project/new" class="app-aside-subitem" iconStart="@tui.plus">
+						{{ 'dashboard.nav.createProject' | translate }}
+					</a>
+				</ng-template>
+			</button>
+		</tui-aside-group>
+
+		<tui-aside-group>
+			<button tuiAsideItem tuiChevron iconStart="@tui.tag" type="button" class="font-medium">
+				{{ 'dashboard.tags.list.title' | translate }}
+				<ng-template>
+					<a tuiAsideItem routerLink="/dashboard/tag" class="app-aside-subitem" iconStart="@tui.list">
+						{{ 'dashboard.nav.allTags' | translate }}
+					</a>
+					<a tuiAsideItem routerLink="/dashboard/tag/new" class="app-aside-subitem" iconStart="@tui.plus">
+						{{ 'dashboard.nav.createTag' | translate }}
+					</a>
+				</ng-template>
+			</button>
+		</tui-aside-group>
+
+		<footer>
+			<div class="flex w-full items-center gap-1">
+				<button
+					tuiAsideItem
+					type="button"
+					class="app-aside-footer-user min-w-0 flex-1"
+					(click)="openProfile()"
+				>
+					<img
+						class="h-6 w-6 shrink-0 rounded-full object-cover"
+						[src]="userAvatar()"
+						[alt]="userName()"
+					/>
+					<span tuiFade class="min-w-0">{{ userName() }}</span>
+				</button>
+
+				@if (expanded()) {
+					<button
+						tuiIconButton
+						size="s"
+						appearance="flat"
+						iconStart="@tui.log-out"
+						type="button"
+						[title]="('dashboard.nav.logout' | translate)"
+						[aria-label]="('dashboard.nav.logout' | translate)"
+						(click)="logout()"
+					></button>
+				}
+			</div>
+
+			<button
+				tuiAsideItem
+				type="button"
+				[iconStart]="expanded() ? '@tui.chevron-left' : '@tui.chevron-right'"
+				(click)="expanded.set(!expanded())"
+			>
+				{{ (expanded() ? 'dashboard.nav.collapse' : 'dashboard.nav.expand') | translate }}
+			</button>
+		</footer>
+	</aside>
+
+	<main tuiNavigationMain>
+		<router-outlet />
+	</main>
+</div>

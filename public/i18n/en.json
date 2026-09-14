@@ -58,6 +58,19 @@
 		"website": "Website"
 	},
 	"dashboard": {
+		"nav": {
+			"allPosts": "All Posts",
+			"createPost": "Create Post",
+			"allProjects": "All Projects",
+			"createProject": "Create Project",
+			"allTags": "All Tags",
+			"createTag": "Create Tag",
+			"featuredPosts": "Featured Posts",
+			"logout": "Logout",
+			"userFallback": "Admin",
+			"expand": "Expand",
+			"collapse": "Collapse"
+		},
 		"posts": {
 			"list": {
 				"title": "Posts",
