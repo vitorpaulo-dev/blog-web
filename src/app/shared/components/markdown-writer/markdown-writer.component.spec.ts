@@ -17,7 +17,7 @@ describe('MarkdownWriterComponent', () => {
 	function setup() {
 		const upload$ = new Subject<string>();
 		const upload = vi.fn().mockReturnValue(upload$);
-		const renderMarkdown = vi.fn().mockResolvedValue('');
+		const renderMarkdown = vi.fn().mockResolvedValue('<p>rendered</p>');
 
 		TestBed.configureTestingModule({
 			imports: [HostComponent],
@@ -33,7 +33,7 @@ describe('MarkdownWriterComponent', () => {
 			(el) => el.componentInstance instanceof MarkdownWriterComponent
 		).componentInstance as MarkdownWriterComponent;
 
-		return { fixture, component, upload$, upload };
+		return { fixture, component, upload$, upload, renderMarkdown };
 	}
 
 	function dropFile(
@@ -91,6 +91,27 @@ describe('MarkdownWriterComponent', () => {
 		expect(context.component.error()).toBe(true);
 		expect(context.component.value).toBeNull();
 		expect(onChange).not.toHaveBeenCalled();
+	});
+
+	it('renders the preview through MarkdownService when switching to the preview tab', async () => {
+		const context = setup();
+		context.component.writeValue('# Title');
+
+		await context.component.showPreview();
+
+		expect(context.renderMarkdown).toHaveBeenCalledWith('# Title', expect.any(Boolean));
+		expect(context.component.preview()).toBe('<p>rendered</p>');
+		expect(context.component.mode()).toBe('preview');
+	});
+
+	it('empty value renders an empty preview without calling MarkdownService', async () => {
+		const context = setup();
+
+		await context.component.showPreview();
+
+		expect(context.component.preview()).toBe('');
+		expect(context.component.mode()).toBe('preview');
+		expect(context.renderMarkdown).not.toHaveBeenCalled();
 	});
 
 	it('ignores dropped non-image files', () => {
