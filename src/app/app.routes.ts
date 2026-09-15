@@ -35,8 +35,6 @@ const publicRoutes: Route[] = [
   },
 ];
 
-// Lang-prefixed mirrors rely on the ':lang' parent for the lang param, so
-// per-child langGuard (which reads route.paramMap only) must not be on children.
 const langPrefixedRoutes: Route[] = publicRoutes.map(({ canActivate, ...route }) => route);
 
 export const routes: Routes = [
@@ -50,11 +48,6 @@ export const routes: Routes = [
         path: 'login',
         loadComponent: () =>
           import('./features/auth/pages/login/login.component').then(m => m.LoginComponent),
-      },
-      {
-        path: 'signup',
-        loadComponent: () =>
-          import('./features/auth/pages/signup/signup.component').then(m => m.SignupComponent),
       },
     ],
   },

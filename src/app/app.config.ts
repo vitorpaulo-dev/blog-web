@@ -8,9 +8,9 @@ import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/
 
 import { routes } from './app.routes';
 import { provideClientHydration, withHttpTransferCacheOptions } from '@angular/platform-browser';
-import { ClerkService } from './clerk.service';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { TranslationService } from './core/i18n/translation.service';
+import { ClerkService } from './core/auth/clerk.service';
 
 registerLocaleData(localeEn);
 registerLocaleData(localePt);

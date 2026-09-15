@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { ClerkService } from '../../../../clerk.service';
+import { ClerkService } from '../../../../core/auth/clerk.service';
 
 @Component({
   selector: 'app-login',

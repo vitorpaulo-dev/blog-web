@@ -3,10 +3,10 @@ import { DashboardLayoutComponent } from './dashboard-layout.component';
 import { provideTaiga } from '@taiga-ui/core';
 import { provideRouter, Routes } from '@angular/router';
 import { translationProvider } from '../../../core/i18n/testing';
-import { ClerkService } from '../../../clerk.service';
 import { Router } from '@angular/router';
 import { signal } from '@angular/core';
 import { Component } from '@angular/core';
+import { ClerkService } from '../../../core/auth/clerk.service';
 
 @Component({ selector: 'app-test-page', standalone: true, template: '' })
 class TestPageComponent {}

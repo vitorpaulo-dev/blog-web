@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree } from '@angular/router';
 import { authGuard } from './auth.guard';
-import { ClerkService } from '../../clerk.service';
+import { ClerkService } from './clerk.service';
+
 
 const activatedRoute = {} as ActivatedRouteSnapshot;
 

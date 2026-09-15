@@ -19,8 +19,7 @@ bazel-out/
 
 # Environment
 .env
-.env.local
-.env.*.local
+src/environments/*
 
 # IDE & editors
 .idea/

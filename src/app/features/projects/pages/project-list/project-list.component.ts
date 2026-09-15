@@ -1,6 +1,6 @@
 import { Component, computed, effect, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TuiChip, TuiPagination, TuiToastService } from '@taiga-ui/kit';
+import { TuiPagination, TuiToastService } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { EyeIcon, Loading03Icon, SourceCodeIcon } from '@hugeicons/core-free-icons';
 import { CommonModule, isPlatformServer } from '@angular/common';
@@ -21,7 +21,6 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 		FormsModule,
 		HugeiconsIconComponent,
 		TuiPagination,
-		TuiChip,
 		ContentCardComponent,
 		TranslatePipe,
 	],

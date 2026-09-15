@@ -1,7 +1,7 @@
 import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { CanActivateFn, Router } from '@angular/router';
-import { ClerkService } from '../../clerk.service';
+import { ClerkService } from './clerk.service';
 
 export const authGuard: CanActivateFn = async (_route, state) => {
   const clerkService = inject(ClerkService);

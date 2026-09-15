@@ -2,8 +2,8 @@ import { HttpInterceptorFn } from '@angular/common/http';
 import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { from, switchMap, of } from 'rxjs';
-import { ClerkService } from '../../clerk.service';
 import { environment } from '../../../environments/environment';
+import { ClerkService } from './clerk.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const clerkService = inject(ClerkService);

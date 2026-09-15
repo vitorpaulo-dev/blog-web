@@ -3,9 +3,9 @@ import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { TuiButton } from '@taiga-ui/core';
 import { TuiNavigation } from '@taiga-ui/layout';
 import { TuiChevron, TuiFade } from '@taiga-ui/kit';
-import { ClerkService } from '../../../clerk.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../core/i18n/translation.service';
+import { ClerkService } from '../../../core/auth/clerk.service';
 
 @Component({
 	selector: 'app-dashboard-layout',

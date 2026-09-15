@@ -25,6 +25,7 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { ContentCardComponent, ContentCardItem } from '../../../../shared/components/content-card/content-card.component';
+import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 
 @Component({
 	selector: 'app-home-page',
@@ -210,6 +211,7 @@ export class HomePageComponent {
 	private readonly languageService = inject(LanguageService);
 	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
+	private readonly turnstileService = inject(TurnstileService);
 
 	posts = signal<PostDto[]>([]);
 	postsLoading = signal(true);
@@ -302,6 +304,7 @@ export class HomePageComponent {
 			return;
 		}
 
+		this.turnstileService.getToken().then(token => alert(token))
 		const { email } = this.newsletterForm.getRawValue();
 	}
 
