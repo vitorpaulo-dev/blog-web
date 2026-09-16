@@ -13,6 +13,7 @@
 		"reactionHellYeah": "Hell yeah",
 		"reactionMindBlown": "Mind blown",
 		"reactionWhat": "What?!",
+		"reactionFailed": "Your reaction could not be registered. Please try again.",
 		"share": "Share",
 		"linkCopied": "Link copied to clipboard!",
 		"failedToCopy": "Failed to copy link"

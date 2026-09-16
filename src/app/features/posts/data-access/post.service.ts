@@ -1,7 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { TurnstileService } from '../../../core/captcha/turnstile.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 
 export type Language = 'ENGLISH' | 'PORTUGUESE';
@@ -111,11 +112,23 @@ export interface SearchParams {
 	language?: Language;
 }
 
+export type ReactionType = 'LOVE' | 'CELEBRATE' | 'GENIUS' | 'HELP';
+
+export interface ReactionResponse {
+	loveCount: number;
+	celebrateCount: number;
+	geniusCount: number;
+	helpCount: number;
+	reactionCount: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PostService {
 	private readonly http = inject(HttpClient);
 	private readonly languageService = inject(LanguageService);
+	private readonly turnstile = inject(TurnstileService);
 	private readonly base = `${environment.apiBaseUrl}/v1/post`;
+	private reactInFlight = false; // single in-flight react submission guard
 
 	create(payload: CreatePostPayload): Observable<PostDto> {
 		return this.http.post<PostDto>(this.base, payload);
@@ -149,5 +162,30 @@ export class PostService {
 		params.query.language = this.languageService.language();
 
 		return this.http.post<GenericPageableResponse<PostDto>>(`${this.base}/search`, params);
+	}
+
+	async reactTo(slug: string, reactionType: ReactionType): Promise<ReactionResponse> {
+		// Never double-POST: a second call while a react request is pending is rejected.
+		if (this.reactInFlight) {
+			throw new Error('Reaction request already in progress');
+		}
+		this.reactInFlight = true;
+
+		try {
+			const token = await this.turnstile.getToken();
+
+			if (!token) {
+				throw new Error('Turnstile token unavailable');
+			}
+
+			return await firstValueFrom(this.http.post<ReactionResponse>(
+				`${this.base}/${slug}/react`,
+				{ reactionType },
+				{ headers: { 'X-Captcha-Token': token } },
+			));
+		} finally {
+			this.reactInFlight = false;
+			this.turnstile.reset();
+		}
 	}
 }

@@ -9,6 +9,7 @@ import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/
 import { routes } from './app.routes';
 import { provideClientHydration, withHttpTransferCacheOptions } from '@angular/platform-browser';
 import { authInterceptor } from './core/auth/auth.interceptor';
+import { ssrIpForwardInterceptor } from './core/http/ssr-ip-forward.interceptor';
 import { TranslationService } from './core/i18n/translation.service';
 import { ClerkService } from './core/auth/clerk.service';
 
@@ -24,7 +25,7 @@ export const appConfig: ApplicationConfig = {
 				includePostRequests: true
 			})
 		),
-		provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+		provideHttpClient(withFetch(), withInterceptors([ssrIpForwardInterceptor, authInterceptor])),
 		provideTaiga({
 			apis: {
 				all: true

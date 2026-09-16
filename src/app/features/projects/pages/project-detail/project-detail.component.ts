@@ -33,6 +33,7 @@ import { LocalizedDatePipe } from '../../../../core/i18n/localized-date.pipe';
 import { firstTranslation } from '../../../../core/util/text.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOfUtil } from '../../../../core/util/tag.util';
 import { ProjectDto, ProjectService } from '../../data-access/project.service';
+import { type ReactionType } from '../../../posts/data-access/post.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 
 @Component({
@@ -143,26 +144,29 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 				<hr class="my-8">
 
 				<section class="flex flex-wrap items-center justify-between gap-2">
+					@if (reactionError(); as reactionErrorText) {
+						<p class="w-full text-red-400" role="alert">{{ reactionErrorText }}</p>
+					}
 					<div class="flex flex-wrap gap-2">
-						<button tuiChip class="inline-flex items-center gap-2">
+						<button tuiChip class="inline-flex items-center gap-2" [disabled]="reactionBusy()" (click)="onReact('LOVE')">
 							<img loading="lazy" src="/reactions/red-heart.png" [alt]="'common.reactionLovedIt' | translate" class="w-5" />
 							<span>{{ 'common.reactionLovedIt' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.loveCount }}</span>
 						</button>
 
-						<button tuiChip class="inline-flex items-center gap-2">
+						<button tuiChip class="inline-flex items-center gap-2" [disabled]="reactionBusy()" (click)="onReact('CELEBRATE')">
 							<img loading="lazy" src="/reactions/party-popper.png" [alt]="'common.reactionHellYeah' | translate" class="w-5" />
 							<span>{{ 'common.reactionHellYeah' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.celebrateCount }}</span>
 						</button>
 
-						<button tuiChip class="inline-flex items-center gap-2">
+						<button tuiChip class="inline-flex items-center gap-2" [disabled]="reactionBusy()" (click)="onReact('GENIUS')">
 							<img loading="lazy" src="/reactions/exploding-head.png" [alt]="'common.reactionMindBlown' | translate" class="w-5" />
 							<span>{{ 'common.reactionMindBlown' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.geniusCount }}</span>
 						</button>
 
-						<button tuiChip class="inline-flex items-center gap-2">
+						<button tuiChip class="inline-flex items-center gap-2" [disabled]="reactionBusy()" (click)="onReact('HELP')">
 							<img loading="lazy" src="/reactions/suffering-cat.webp" [alt]="'common.reactionWhat' | translate" class="w-5" />
 							<span>{{ 'common.reactionWhat' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.helpCount }}</span>
@@ -201,6 +205,8 @@ export class ProjectDetailComponent {
 	readonly loading = signal(true);
 	readonly error = signal<string | null>(null);
 	readonly tagMap = signal<Map<string, TagDto>>(new Map());
+	readonly reactionBusy = signal(false);
+	readonly reactionError = signal<string | null>(null);
 	readonly lang = this.languageService.language.asReadonly();
 	readonly projectListLink = computed(() => this.languageService.prefixed('/project'));
 	readonly slug = this.route.snapshot.paramMap.get('slug');
@@ -262,6 +268,36 @@ export class ProjectDetailComponent {
 			error: () => this.tagMap.set(new Map()),
 		});
 	}
+
+	readonly onReact = async (reactionType: ReactionType): Promise<void> => {
+		const project = this.project();
+		if (!this.isBrowser || !project || this.reactionBusy()) return;
+
+		this.reactionBusy.set(true);
+		this.reactionError.set(null);
+
+		try {
+			const result = await this.projectService.reactTo(this.slug!, reactionType);
+			this.project.set({
+				...project,
+				loveCount: result.loveCount,
+				celebrateCount: result.celebrateCount,
+				geniusCount: result.geniusCount,
+				helpCount: result.helpCount,
+				reactionCount: result.reactionCount,
+			});
+		} catch {
+			const message = this.translationService.translate('common.reactionFailed');
+			this.reactionError.set(message);
+			this.toastService.open(message, {
+				appearance: 'error',
+				autoClose: 5000,
+				data: '@tui.circle-x',
+			}).subscribe();
+		} finally {
+			this.reactionBusy.set(false);
+		}
+	};
 
 	shareProject(): void {
 		if (!this.isBrowser) return;
