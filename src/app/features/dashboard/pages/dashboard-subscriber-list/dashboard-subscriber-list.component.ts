@@ -4,7 +4,8 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, filter } from 'rxjs';
 
-import { TuiButton, TuiDialogService, TuiInput, TuiTextfield } from '@taiga-ui/core';
+import { TuiButton, TuiDialogService, TuiDropdown, TuiInput, TuiTextfield } from '@taiga-ui/core';
+import { TuiChevron, TuiDataListWrapper, TuiSelect, TuiToastService } from '@taiga-ui/kit';
 import { TuiTable, TuiTablePagination } from '@taiga-ui/addon-table';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { Loading03Icon, UserXIcon } from '@hugeicons/core-free-icons';
@@ -19,7 +20,7 @@ import {
 import { LanguageService, Language } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
-import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
+import { TUI_CONFIRM } from '@taiga-ui/kit';
 
 const STATUS_LABELS: Record<SubscriberStatus, string> = {
 	ACTIVE: 'statusActive',
@@ -49,6 +50,10 @@ const FREQUENCY_LABELS: Record<Frequency, string> = {
 		HugeiconsIconComponent,
 		TuiInput,
 		TuiTextfield,
+		TuiSelect,
+		TuiChevron,
+		TuiDropdown,
+		TuiDataListWrapper,
 		TranslatePipe,
 	],
 	template: `
@@ -57,32 +62,26 @@ const FREQUENCY_LABELS: Record<Frequency, string> = {
 				<h1 class="text-2xl font-bold">{{ 'dashboard.subscribers.title' | translate }}</h1>
 			</div>
 
-			<div class="mb-4 flex flex-wrap items-center gap-3">
-				<tui-textfield class="w-full max-w-72">
+			<div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+				<tui-textfield>
 					<label tuiLabel>{{ 'dashboard.subscribers.searchPlaceholder' | translate }}</label>
 					<input tuiInput [formControl]="searchControl" />
 				</tui-textfield>
 
-				<select class="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground" [formControl]="statusControl">
-					<option [value]="">{{ 'dashboard.subscribers.status' | translate }}</option>
-					@for (status of statuses; track status) {
-						<option [value]="status">{{ statusLabel(status) }}</option>
-					}
-				</select>
+				<tui-textfield tuiChevron [content]="statusOption" [stringify]="stringifyStatus">
+					<input tuiSelect [formControl]="statusControl" />
+					<tui-data-list-wrapper *tuiDropdown [itemContent]="statusOption" [items]="statuses" />
+				</tui-textfield>
 
-				<select class="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground" [formControl]="languageControl">
-					<option [value]="">{{ 'dashboard.subscribers.language' | translate }}</option>
-					@for (language of languages; track language) {
-						<option [value]="language">{{ languageLabel(language) }}</option>
-					}
-				</select>
+				<tui-textfield tuiChevron [content]="languageOption" [stringify]="stringifyLanguage">
+					<input tuiSelect [formControl]="languageControl" />
+					<tui-data-list-wrapper *tuiDropdown [itemContent]="languageOption" [items]="languages" />
+				</tui-textfield>
 
-				<select class="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground" [formControl]="frequencyControl">
-					<option [value]="">{{ 'dashboard.subscribers.frequency' | translate }}</option>
-					@for (frequency of frequencies; track frequency) {
-						<option [value]="frequency">{{ frequencyLabel(frequency) }}</option>
-					}
-				</select>
+				<tui-textfield tuiChevron [content]="frequencyOption" [stringify]="stringifyFrequency">
+					<input tuiSelect [formControl]="frequencyControl" />
+					<tui-data-list-wrapper *tuiDropdown [itemContent]="frequencyOption" [items]="frequencies" />
+				</tui-textfield>
 			</div>
 
 			@if (loading()) {
@@ -135,6 +134,18 @@ const FREQUENCY_LABELS: Record<Frequency, string> = {
 				</div>
 			}
 		</div>
+
+		<ng-template #statusOption let-value>
+			<span class="text-sm">{{ value ? statusLabel(value) : ('dashboard.subscribers.status' | translate) }}</span>
+		</ng-template>
+
+		<ng-template #languageOption let-value>
+			<span class="text-sm">{{ value ? languageLabel(value) : ('dashboard.subscribers.language' | translate) }}</span>
+		</ng-template>
+
+		<ng-template #frequencyOption let-value>
+			<span class="text-sm">{{ value ? frequencyLabel(value) : ('dashboard.subscribers.frequency' | translate) }}</span>
+		</ng-template>
 	`,
 })
 export class DashboardSubscriberListComponent {
@@ -163,6 +174,15 @@ export class DashboardSubscriberListComponent {
 	readonly totalElements = signal(0);
 
 	readonly columns: string[] = ['email', 'language', 'frequency', 'status', 'createdAt', 'actions'];
+
+	protected readonly stringifyStatus = (status: SubscriberStatus | ''): string =>
+		status ? this.statusLabel(status) : '';
+
+	protected readonly stringifyLanguage = (language: Language | ''): string =>
+		language ? this.languageLabel(language) : '';
+
+	protected readonly stringifyFrequency = (frequency: Frequency | ''): string =>
+		frequency ? this.frequencyLabel(frequency) : '';
 
 	constructor() {
 		this.searchControl.valueChanges

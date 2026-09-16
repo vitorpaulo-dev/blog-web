@@ -137,6 +137,30 @@ describe('DashboardSubscriberListComponent', () => {
     });
   });
 
+  it('should map empty filter selections to undefined in the query', () => {
+    (newsletterServiceMock.listSubscribers as any)
+      .mockReturnValue(of({ content: [], totalPages: 1, totalElements: 0 }));
+
+    component.load();
+
+    expect(newsletterServiceMock.listSubscribers).toHaveBeenCalledWith({
+      query: { email: undefined, status: undefined, language: undefined, frequency: undefined },
+      page: 0,
+      size: 10,
+      sort: 'createdAt',
+      direction: 'DESC',
+    });
+  });
+
+  it('should stringify filter options with translated labels and empty column labels', () => {
+    expect((component as any).stringifyStatus('ACTIVE')).toBe('Active');
+    expect((component as any).stringifyStatus('')).toBe('');
+    expect((component as any).stringifyLanguage('PORTUGUESE')).toBe('Portuguese');
+    expect((component as any).stringifyLanguage('')).toBe('');
+    expect((component as any).stringifyFrequency('MONTHLY_DIGEST')).toBe('Monthly digest');
+    expect((component as any).stringifyFrequency('')).toBe('');
+  });
+
   it('should set error on load failure', () => {
     (newsletterServiceMock.listSubscribers as any).mockReturnValue(throwError(() => new Error('Failed')));
 
