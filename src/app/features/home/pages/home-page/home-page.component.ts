@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { TuiAppearance, TuiButton, TuiError, TuiInput, TuiLink, TuiTextfield } from '@taiga-ui/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import {
@@ -15,13 +16,14 @@ import {
 } from '@hugeicons/core-free-icons';
 import { PostDto, PostService } from '../../../posts/data-access/post.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
+import { Frequency as SubscriberFrequency, NewsletterService } from '../../../dashboard/data-access/newsletter.service';
 import { RouterLink } from '@angular/router';
 import { CommonModule, isPlatformServer } from '@angular/common';
 import { TuiCardLarge, TuiForm } from '@taiga-ui/layout';
 import { TuiChip, TuiToastService } from '@taiga-ui/kit';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../core/util/tag.util';
-import { LanguageService } from '../../../../core/i18n/language.service';
+import { LanguageService, Language } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { ContentCardComponent, ContentCardItem } from '../../../../shared/components/content-card/content-card.component';
@@ -160,12 +162,34 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 								</tui-textfield>
 							</label>
 
+							<label tuiLabel class="block py-1.5 text-sm font-mono text-muted">
+								{{ 'home.languageLabel' | translate }}
+								<select
+									formControlName="language"
+									class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+								>
+									<option value="ENGLISH">English</option>
+									<option value="PORTUGUESE">Português</option>
+								</select>
+							</label>
+
+							<label tuiLabel class="block py-1.5 text-sm font-mono text-muted">
+								{{ 'home.frequencyLabel' | translate }}
+								<select
+									formControlName="frequency"
+									class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+								>
+									<option value="EVERY_POST">{{ 'home.frequencyEveryPost' | translate }}</option>
+									<option value="MONTHLY_DIGEST">{{ 'home.frequencyMonthlyDigest' | translate }}</option>
+								</select>
+							</label>
+
 							<button
 								tuiButton
 								type="submit"
 								class="w-full"
 								tuiAppearance="primary"
-								[disabled]="newsletterForm.invalid"
+								[disabled]="newsletterForm.invalid || subscribeBusy()"
 							>
 								{{ 'home.subscribe' | translate }}
 								<hugeicons-icon [icon]="ArrowRight01Icon" [size]="22" [strokeWidth]="1.5" />
@@ -198,13 +222,6 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 	`,
 })
 export class HomePageComponent {
-	protected readonly newsletterForm = new FormGroup({
-		email: new FormControl('', {
-			nonNullable: true,
-			validators: [Validators.required, Validators.email],
-		}),
-	});
-
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly postService = inject(PostService);
 	private readonly tagService = inject(TagService);
@@ -212,6 +229,24 @@ export class HomePageComponent {
 	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 	private readonly turnstileService = inject(TurnstileService);
+	private readonly newsletterService = inject(NewsletterService);
+
+	readonly newsletterForm = new FormGroup({
+		email: new FormControl('', {
+			nonNullable: true,
+			validators: [Validators.required, Validators.email],
+		}),
+		language: new FormControl<Language>(this.languageService.language(), {
+			nonNullable: true,
+			validators: [Validators.required],
+		}),
+		frequency: new FormControl<SubscriberFrequency>('EVERY_POST', {
+			nonNullable: true,
+			validators: [Validators.required],
+		}),
+	});
+
+	readonly subscribeBusy = signal(false);
 
 	posts = signal<PostDto[]>([]);
 	postsLoading = signal(true);
@@ -298,14 +333,51 @@ export class HomePageComponent {
 		});
 	}
 
-	protected subscribe(): void {
-		if (this.newsletterForm.invalid) {
+	readonly subscribe = async (): Promise<void> => {
+		if (this.newsletterForm.invalid || this.subscribeBusy()) {
 			this.newsletterForm.markAllAsTouched();
 			return;
 		}
 
-		this.turnstileService.getToken().then(token => alert(token))
-		const { email } = this.newsletterForm.getRawValue();
+		this.subscribeBusy.set(true);
+
+		try {
+			const token = await this.turnstileService.getToken();
+
+			if (!token) {
+				this.openToast(this.translationService.translate('home.subscribeUnavailable'));
+				return;
+			}
+
+			const { email, language, frequency } = this.newsletterForm.getRawValue();
+			await firstValueFrom(this.newsletterService.subscribe({ email, language, frequency }, token));
+
+			this.openToast(this.translationService.translate('home.subscribeSuccess'), 'success', 3000, '@tui.check');
+			this.resetForm();
+			this.turnstileService.reset();
+		} catch {
+			this.openToast(this.translationService.translate('home.subscribeError'));
+			this.turnstileService.reset();
+		} finally {
+			this.subscribeBusy.set(false);
+		}
+	};
+
+	private resetForm(): void {
+		this.newsletterForm.reset({
+			email: '',
+			language: this.languageService.language(),
+			frequency: 'EVERY_POST',
+		});
+	}
+
+	private openToast(
+		message: string,
+		appearance: 'success' | 'error' = 'error',
+		autoClose = 5000,
+		data = '@tui.circle-x',
+	): void {
+		this.toastService.open(message, { appearance, autoClose, data }).subscribe();
 	}
 
 	protected readonly ArrowRight01Icon = ArrowRight01Icon;
