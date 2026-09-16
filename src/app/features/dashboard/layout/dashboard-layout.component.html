@@ -58,14 +58,9 @@
 		</tui-aside-group>
 
 		<tui-aside-group>
-			<button tuiAsideItem tuiChevron iconStart="@tui.mail" type="button" class="font-medium">
-				{{ 'dashboard.subscribers.title' | translate }}
-				<ng-template>
-					<a tuiAsideItem routerLink="/dashboard/subscribers" class="app-aside-subitem" iconStart="@tui.list">
-						{{ 'dashboard.nav.subscribers' | translate }}
-					</a>
-				</ng-template>
-			</button>
+			<a tuiAsideItem routerLink="/dashboard/subscribers" iconStart="@tui.mail" class="font-medium">
+				{{ 'dashboard.nav.subscribers' | translate }}
+			</a>
 		</tui-aside-group>
 
 		<footer>
