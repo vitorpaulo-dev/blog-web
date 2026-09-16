@@ -1,8 +1,13 @@
 import { Injectable, inject, signal, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { Clerk } from '@clerk/clerk-js';
-import { ui } from '@clerk/ui';
+import type { Clerk } from '@clerk/clerk-js';
 import { environment } from '../../../environments/environment';
+
+export interface ClerkUser {
+	fullName: string | null;
+	firstName: string | null;
+	imageUrl: string | null;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ClerkService {
@@ -13,7 +18,7 @@ export class ClerkService {
 
 	readonly isLoaded = signal(false);
 	readonly isSignedIn = signal(false);
-	readonly user = signal<Clerk['user']>(null);
+	readonly user = signal<ClerkUser | null>(null);
 
 	get instance(): Clerk | null {
 		return this.clerk;
@@ -37,6 +42,11 @@ export class ClerkService {
 		}
 
 		if (this.clerk) return;
+
+		const [{ Clerk }, { ui }] = await Promise.all([
+			import('@clerk/clerk-js'),
+			import('@clerk/ui'),
+		]);
 
 		this.clerk = new Clerk(key);
 		await this.clerk.load({ ui });

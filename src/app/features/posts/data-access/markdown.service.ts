@@ -1,7 +1,5 @@
 import { ApplicationRef, createComponent, ElementRef, EnvironmentInjector, inject, Injectable } from '@angular/core';
 import { Marked, MarkedExtension, Tokens } from 'marked';
-import { createHighlighter } from 'shiki';
-import markedShiki from 'marked-shiki';
 import DOMPurify from 'dompurify';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import {
@@ -55,6 +53,11 @@ export class MarkdownService {
 	markdownRendererPromise: Promise<Marked> | null = null;
 
 	private async createMarkdownRenderer(): Promise<Marked> {
+		const [{ createHighlighter }, { default: markedShiki }] = await Promise.all([
+			import('shiki'),
+			import('marked-shiki'),
+		]);
+
 		const highlighter = await createHighlighter({
 			themes: ['github-dark-default'],
 			langs: [

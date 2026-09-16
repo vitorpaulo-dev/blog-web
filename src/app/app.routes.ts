@@ -107,6 +107,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/dashboard/pages/tag-editor/tag-editor.component').then(m => m.TagEditorComponent),
       },
+      {
+        path: 'subscribers',
+        loadComponent: () =>
+          import('./features/dashboard/pages/dashboard-subscriber-list/dashboard-subscriber-list.component').then(m => m.DashboardSubscriberListComponent),
+      },
     ],
   },
   {
