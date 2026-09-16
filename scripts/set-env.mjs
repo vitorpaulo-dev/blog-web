@@ -8,16 +8,14 @@ const turnstileSiteKey = process.env['TURNSTILE_SITE_KEY'] ?? '';
 const clerkPublishableKey = process.env['CLERK_PUBLISHABLE_KEY'] ?? '';
 
 const targets = [
-	{ path: 'src/environments/environment.ts', production: false },
-	{ path: 'src/environments/environment.prod.ts', production: true },
+	{ path: 'src/environments/environment.ts' },
 ];
 
-for (const { path, production } of targets) {
+for (const { path } of targets) {
 	writeFileSync(
 		path,
 		`
 			export const environment = {
-				  production: ${production},
 				  apiBaseUrl: '${apiBase}',
 				  turnstileSiteKey: '${turnstileSiteKey}',
 				  clerkPublishableKey: '${clerkPublishableKey}',
