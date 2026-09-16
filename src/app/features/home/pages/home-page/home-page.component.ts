@@ -126,78 +126,8 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 					</div>
 				</div>
 			</section>
-			<section aria-labelledby="newsletter-title" class="py-6 md:py-10 border-t border-border">
-				<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-					<div class="col-span-1 md:col-span-2">
-					<p class="text-xs uppercase tracking-widest text-accent font-light mb-2 font-mono">
-						{{ 'home.newsletterEyebrow' | translate }}
-					</p>
-						<h1 class="font-bold text-4xl whitespace-pre-line">
-							{{ 'home.newsletterHeading' | translate }}
-						</h1>
-						<p class="text-muted font-mono">
-							{{ 'home.newsletterDescription' | translate }}
-						</p>
-					</div>
-					<div tuiAppearance="outline" class="bg-surface border border-border p-4 rounded-xl">
-						<form
-							tuiForm="m"
-							[formGroup]="newsletterForm"
-							(ngSubmit)="subscribe()"
-							[attr.aria-label]="'home.newsletterEyebrow' | translate"
-						>
-							<label tuiLabel>
-							<p class="text-lg font-medium font-mono py-1.5 text-muted">
-								{{ 'home.subscribeLabel' | translate }}
-							</p>
 
-								<tui-textfield>
-									<input
-										tuiInput
-										type="email"
-										formControlName="email"
-										[placeholder]="'home.emailPlaceholder' | translate"
-										autocomplete="email"
-									/>
-								</tui-textfield>
-							</label>
-
-							<label tuiLabel class="block py-1.5 text-sm font-mono text-muted">
-								{{ 'home.languageLabel' | translate }}
-								<select
-									formControlName="language"
-									class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
-								>
-									<option value="ENGLISH">English</option>
-									<option value="PORTUGUESE">Português</option>
-								</select>
-							</label>
-
-							<label tuiLabel class="block py-1.5 text-sm font-mono text-muted">
-								{{ 'home.frequencyLabel' | translate }}
-								<select
-									formControlName="frequency"
-									class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
-								>
-									<option value="EVERY_POST">{{ 'home.frequencyEveryPost' | translate }}</option>
-									<option value="MONTHLY_DIGEST">{{ 'home.frequencyMonthlyDigest' | translate }}</option>
-								</select>
-							</label>
-
-							<button
-								tuiButton
-								type="submit"
-								class="w-full"
-								tuiAppearance="primary"
-								[disabled]="newsletterForm.invalid || subscribeBusy()"
-							>
-								{{ 'home.subscribe' | translate }}
-								<hugeicons-icon [icon]="ArrowRight01Icon" [size]="22" [strokeWidth]="1.5" />
-							</button>
-						</form>
-					</div>
-				</div>
-			</section>
+			
 
 			<section aria-labelledby="opensource" class="py-6 md:py-10 border-t border-border">
 				<p class="text-xs uppercase tracking-widest text-accent font-light mb-2 font-mono">{{ 'home.builtInOpenEyebrow' | translate }}</p>
