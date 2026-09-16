@@ -1,7 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { TurnstileService } from '../../../core/captcha/turnstile.service';
 import {
 	AuthorDto,
 	GenericPageableRequest,
@@ -9,11 +10,13 @@ import {
 	Language,
 	ProjectContentDto,
 	ProjectDto,
+	type ReactionResponse,
+	type ReactionType,
 } from '../../posts/data-access/post.service';
 import { TuiToastService } from '@taiga-ui/kit';
 import { LanguageService } from '../../../core/i18n/language.service';
 
-export type { ProjectDto, ProjectContentDto };
+export type { ProjectDto, ProjectContentDto, ReactionResponse, ReactionType };
 
 export interface CreateProjectPayload {
 	logoUrl?: string;
@@ -45,7 +48,9 @@ export interface ProjectQueryParams {
 export class ProjectService {
 	private readonly http = inject(HttpClient);
 	private readonly languageService = inject(LanguageService);
+	private readonly turnstile = inject(TurnstileService);
 	private readonly base = `${environment.apiBaseUrl}/v1/project`;
+	private reactInFlight = false; // single in-flight react submission guard
 
 	create(payload: CreateProjectPayload): Observable<ProjectDto> {
 		return this.http.post<ProjectDto>(this.base, payload);
@@ -75,5 +80,30 @@ export class ProjectService {
 
 	getByIds(ids: string[], language: Language): Observable<ProjectDto[]> {
 		return this.http.post<ProjectDto[]>(`${this.base}/batch`, { ids, language });
+	}
+
+	async reactTo(slug: string, reactionType: ReactionType): Promise<ReactionResponse> {
+		// Never double-POST: a second call while a react request is pending is rejected.
+		if (this.reactInFlight) {
+			throw new Error('Reaction request already in progress');
+		}
+		this.reactInFlight = true;
+
+		try {
+			const token = await this.turnstile.getToken();
+
+			if (!token) {
+				throw new Error('Turnstile token unavailable');
+			}
+
+			return await firstValueFrom(this.http.post<ReactionResponse>(
+				`${this.base}/${slug}/react`,
+				{ reactionType },
+				{ headers: { 'X-Captcha-Token': token } },
+			));
+		} finally {
+			this.reactInFlight = false;
+			this.turnstile.reset();
+		}
 	}
 }

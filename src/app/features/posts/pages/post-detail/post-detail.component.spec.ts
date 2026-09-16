@@ -10,6 +10,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { TuiToastService } from '@taiga-ui/kit';
 import { signal } from '@angular/core';
+import { PLATFORM_ID } from '@angular/core';
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -69,6 +70,7 @@ describe('PostDetailComponent', () => {
         { provide: MarkdownService, useValue: markdownServiceMock },
         { provide: Router, useValue: routerMock },
         { provide: TuiToastService, useValue: toastServiceMock },
+        { provide: PLATFORM_ID, useValue: 'browser' },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -123,5 +125,55 @@ describe('PostDetailComponent', () => {
       autoClose: 5000,
       data: '@tui.circle-x',
     });
+  });
+
+  it('should block further react clicks while a react request is pending', async () => {
+    (postServiceMock as any).reactTo = vi.fn().mockReturnValue(new Promise(() => {}));
+
+    component.post.set({
+      id: '1',
+      slug: 'test-post',
+      loveCount: 0,
+      celebrateCount: 0,
+      geniusCount: 0,
+      helpCount: 0,
+      reactionCount: 0,
+    } as any);
+
+    void component.onReact('LOVE');
+    await component.onReact('LOVE'); // busy guard: second click resolves without a second request
+
+    expect((postServiceMock as any).reactTo).toHaveBeenCalledTimes(1);
+    expect(component.reactionBusy()).toBe(true);
+  });
+
+  it('should allow react again only after the pending request completes', async () => {
+    let release: (value: unknown) => void;
+    (postServiceMock as any).reactTo = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        })
+    );
+
+    component.post.set({
+      id: '1',
+      slug: 'test-post',
+      loveCount: 0,
+      celebrateCount: 0,
+      geniusCount: 0,
+      helpCount: 0,
+      reactionCount: 0,
+    } as any);
+
+    const first = component.onReact('LOVE');
+    const second = component.onReact('LOVE'); // blocked: single in-flight submission
+    release!({ loveCount: 1, celebrateCount: 0, geniusCount: 0, helpCount: 0, reactionCount: 1 });
+    await Promise.all([first, second]);
+
+    expect((postServiceMock as any).reactTo).toHaveBeenCalledWith('test-post', 'LOVE');
+
+    void component.onReact('LOVE'); // new click after completion → new attempt
+    expect((postServiceMock as any).reactTo).toHaveBeenCalledTimes(2);
   });
 });

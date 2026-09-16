@@ -1,21 +1,30 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { vi } from 'vitest';
 import { ProjectService } from './project.service';
 import { LanguageService } from '../../../core/i18n/language.service';
+import { TurnstileService } from '../../../core/captcha/turnstile.service';
 import { signal } from '@angular/core';
 import { environment } from '../../../../environments/environment';
 
 describe('ProjectService', () => {
   let service: ProjectService;
   let httpMock: HttpTestingController;
+  let turnstileSpy: { getToken: ReturnType<typeof vi.fn>; reset: ReturnType<typeof vi.fn> };
   const baseUrl = `${environment.apiBaseUrl}/v1/project`;
 
   beforeEach(() => {
+    turnstileSpy = {
+      getToken: vi.fn().mockResolvedValue('captcha-token'),
+      reset: vi.fn(),
+    };
+
     TestBed.configureTestingModule({
       providers: [
         ProjectService,
         { provide: LanguageService, useValue: { language: signal('ENGLISH') } },
+        { provide: TurnstileService, useValue: turnstileSpy },
         provideHttpClient(withInterceptorsFromDi()),
         provideHttpClientTesting(),
       ],
@@ -128,5 +137,59 @@ describe('ProjectService', () => {
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ ids: ['id1', 'id2'], language: 'ENGLISH' });
     req.flush([{ id: 'id1' }, { id: 'id2' }]);
+  });
+
+  it('reactTo() should POST /v1/project/{slug}/react with captcha header, reset turnstile and return counts', async () => {
+    const response = { loveCount: 1, celebrateCount: 0, geniusCount: 0, helpCount: 2, reactionCount: 3 };
+
+    let result: unknown;
+    const promise = service.reactTo('my-project-slug', 'HELP').then((res) => {
+      result = res;
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const req = httpMock.expectOne(`${baseUrl}/my-project-slug/react`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ reactionType: 'HELP' });
+    expect(req.request.headers.get('X-Captcha-Token')).toBe('captcha-token');
+    req.flush(response);
+
+    await promise;
+    expect(result).toEqual(response);
+    expect(turnstileSpy.reset).toHaveBeenCalled();
+  });
+
+  it('reactTo() should NOT fire the request when turnstile token is null', async () => {
+    turnstileSpy.getToken.mockResolvedValue(null);
+
+    await expect(service.reactTo('my-project-slug', 'HELP')).rejects.toThrow();
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    httpMock.expectNone(`${baseUrl}/my-project-slug/react`);
+    expect(turnstileSpy.reset).toHaveBeenCalled();
+  });
+
+  it('reactTo() should reject the second concurrent call and fire only one POST', async () => {
+    let releaseToken: (token: string) => void;
+    turnstileSpy.getToken.mockImplementation(
+      () =>
+        new Promise<string>((resolve) => {
+          releaseToken = resolve;
+        })
+    );
+
+    const first = service.reactTo('my-project-slug', 'HELP');
+    await expect(service.reactTo('my-project-slug', 'HELP')).rejects.toThrow('Reaction request already in progress');
+
+    releaseToken!('captcha-token');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const requests = httpMock.match((req) => req.url === `${baseUrl}/my-project-slug/react`);
+    expect(requests.length).toBe(1);
+
+    requests[0].flush({ loveCount: 1, celebrateCount: 0, geniusCount: 0, helpCount: 2, reactionCount: 3 });
+    await expect(first).resolves.toEqual({ loveCount: 1, celebrateCount: 0, geniusCount: 0, helpCount: 2, reactionCount: 3 });
   });
 });

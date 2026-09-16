@@ -13,7 +13,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { type SafeHtml } from '@angular/platform-browser';
 
-import { PostDto, PostService, ProjectDto } from '../../data-access/post.service';
+import { PostDto, PostService, ProjectDto, ReactionResponse, ReactionType } from '../../data-access/post.service';
 import { ProjectService } from '../../../projects/data-access/project.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 
@@ -168,26 +168,29 @@ import {
 				<hr class="my-8" />
 
 				<section class="flex flex-wrap items-center justify-between gap-2">
+					@if (reactionError(); as reactionErrorText) {
+						<p class="w-full text-red-400" role="alert">{{ reactionErrorText }}</p>
+					}
 					<div class="flex flex-wrap gap-2">
-						<button tuiChip class="inline-flex items-center gap-2">
+						<button tuiChip class="inline-flex items-center gap-2" [disabled]="reactionBusy()" (click)="onReact('LOVE')">
 							<img loading="lazy" src="/reactions/red-heart.png" [alt]="'common.reactionLovedIt' | translate" class="w-5" />
 							<span>{{ 'common.reactionLovedIt' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.loveCount }}</span>
 						</button>
 
-						<button tuiChip class="inline-flex items-center gap-2">
+						<button tuiChip class="inline-flex items-center gap-2" [disabled]="reactionBusy()" (click)="onReact('CELEBRATE')">
 							<img loading="lazy" src="/reactions/party-popper.png" [alt]="'common.reactionHellYeah' | translate" class="w-5" />
 							<span>{{ 'common.reactionHellYeah' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.celebrateCount }}</span>
 						</button>
 
-						<button tuiChip class="inline-flex items-center gap-2">
+						<button tuiChip class="inline-flex items-center gap-2" [disabled]="reactionBusy()" (click)="onReact('GENIUS')">
 							<img loading="lazy" src="/reactions/exploding-head.png" [alt]="'common.reactionMindBlown' | translate" class="w-5" />
 							<span>{{ 'common.reactionMindBlown' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.geniusCount }}</span>
 						</button>
 
-						<button tuiChip class="inline-flex items-center gap-2">
+						<button tuiChip class="inline-flex items-center gap-2" [disabled]="reactionBusy()" (click)="onReact('HELP')">
 							<img loading="lazy" src="/reactions/suffering-cat.webp" [alt]="'common.reactionWhat' | translate" class="w-5" />
 							<span>{{ 'common.reactionWhat' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.helpCount }}</span>
@@ -240,6 +243,8 @@ export class PostDetailComponent implements AfterViewInit {
 	readonly html = signal<string | SafeHtml>('');
 	readonly tagMap = signal<Map<string, TagDto>>(new Map());
 	readonly projectTagMap = signal<Map<string, TagDto>>(new Map());
+	readonly reactionBusy = signal(false);
+	readonly reactionError = signal<string | null>(null);
 	readonly lang = this.languageService.language.asReadonly();
 	readonly postListLink = computed(() => this.languageService.prefixed('/post'));
 	readonly projectListLink = computed(() => this.languageService.prefixed('/project'));
@@ -338,8 +343,7 @@ export class PostDetailComponent implements AfterViewInit {
 		});
 	}
 
-	private loadTags(post: PostDto): void {
-		const ids = collectTagIds([post]);
+	private loadTags(post: PostDto): void {		const ids = collectTagIds([post]);
 		if (ids.length === 0) {
 			this.tagMap.set(new Map());
 			return;
@@ -359,6 +363,40 @@ export class PostDetailComponent implements AfterViewInit {
 		this.tagService.batch(ids).subscribe({
 			next: (tags) => this.projectTagMap.set(buildTagMap(tags)),
 			error: () => this.projectTagMap.set(new Map()),
+		});
+	}
+
+	readonly onReact = async (reactionType: ReactionType): Promise<void> => {
+		const post = this.post();
+		if (!this.isBrowser || !post || this.reactionBusy()) return;
+
+		this.reactionBusy.set(true);
+		this.reactionError.set(null);
+
+		try {
+			const result = await this.postService.reactTo(this.slug!, reactionType);
+			this.applyReactionCounts(post, result);
+		} catch {
+			const message = this.translationService.translate('common.reactionFailed');
+			this.reactionError.set(message);
+			this.toastService.open(message, {
+				appearance: 'error',
+				autoClose: 5000,
+				data: '@tui.circle-x',
+			}).subscribe();
+		} finally {
+			this.reactionBusy.set(false);
+		}
+	};
+
+	private applyReactionCounts(post: PostDto, result: ReactionResponse): void {
+		this.post.set({
+			...post,
+			loveCount: result.loveCount,
+			celebrateCount: result.celebrateCount,
+			geniusCount: result.geniusCount,
+			helpCount: result.helpCount,
+			reactionCount: result.reactionCount,
 		});
 	}
 

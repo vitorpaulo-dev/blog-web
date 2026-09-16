@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ProjectDetailComponent } from './project-detail.component';
+import { vi } from 'vitest';
 import { provideTaiga } from '@taiga-ui/core';
 import { provideRouter, Router, ActivatedRoute } from '@angular/router';
 import { ProjectService } from '../../data-access/project.service';
@@ -213,5 +214,26 @@ describe('ProjectDetailComponent', () => {
     const content = component.content();
     expect(content).toBeTruthy();
     expect(content!.title).toBe('Test');
+  });
+
+  it('should block further react clicks while a react request is pending', async () => {
+    (projectServiceMock as any).reactTo = vi.fn().mockReturnValue(new Promise(() => {}));
+
+    component.project.set({
+      id: '1',
+      slug: 'test-project',
+      loveCount: 0,
+      celebrateCount: 0,
+      geniusCount: 0,
+      helpCount: 0,
+      reactionCount: 0,
+      translations: {},
+    } as any);
+
+    void component.onReact('HELP');
+    await component.onReact('HELP'); // busy guard: second click resolves without a second request
+
+    expect((projectServiceMock as any).reactTo).toHaveBeenCalledTimes(1);
+    expect(component.reactionBusy()).toBe(true);
   });
 });
