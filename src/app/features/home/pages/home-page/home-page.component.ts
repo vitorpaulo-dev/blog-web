@@ -1,7 +1,7 @@
 import { Component, computed, effect, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { TuiAppearance, TuiButton, TuiError, TuiInput, TuiLink, TuiTextfield } from '@taiga-ui/core';
+import { TuiAppearance, TuiButton, TuiDropdown, TuiError, TuiInput, TuiLink, TuiTextfield } from '@taiga-ui/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import {
 	ArrowRight01Icon,
@@ -19,8 +19,8 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 import { Frequency as SubscriberFrequency, NewsletterService } from '../../../dashboard/data-access/newsletter.service';
 import { RouterLink } from '@angular/router';
 import { CommonModule, isPlatformServer } from '@angular/common';
-import { TuiCardLarge, TuiForm } from '@taiga-ui/layout';
-import { TuiChip, TuiToastService } from '@taiga-ui/kit';
+import { TuiCardLarge } from '@taiga-ui/layout';
+import { TuiChevron, TuiDataListWrapper, TuiSelect, TuiToastService } from '@taiga-ui/kit';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../core/util/tag.util';
 import { LanguageService, Language } from '../../../../core/i18n/language.service';
@@ -39,8 +39,11 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 		TuiButton,
 		TuiTextfield,
 		HugeiconsIconComponent,
-		TuiForm,
 		TuiInput,
+		TuiSelect,
+		TuiChevron,
+		TuiDropdown,
+		TuiDataListWrapper,
 		TuiAppearance,
 		ContentCardComponent,
 		TranslatePipe,
@@ -127,7 +130,134 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 				</div>
 			</section>
 
-			
+			<section
+				aria-labelledby="newsletter-title"
+				class="border-t border-border py-16 sm:py-20 lg:py-24"
+			>
+				<div class="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start lg:gap-16">
+					<!-- Copy -->
+					<div class="lg:col-span-7">
+						<p class="mb-3 font-mono text-xs font-medium uppercase tracking-wide text-accent">
+							{{ 'home.newsletterEyebrow' | translate }}
+						</p>
+						<h2
+							id="newsletter-title"
+							class="whitespace-pre-line text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl"
+						>
+							{{ 'home.newsletterHeading' | translate }}
+						</h2>
+						<p class="mt-4 max-w-md text-base leading-relaxed text-muted">
+							{{ 'home.newsletterDescription' | translate }}
+						</p>
+					</div>
+
+					<!-- Form card -->
+				<div class="relative lg:col-span-5">
+					<div aria-hidden="true" class="pointer-events-none absolute -top-16 right-6 size-44 rounded-full bg-accent/10 blur-3xl"></div>
+					<div class="relative rounded-xl border border-border bg-surface p-6 sm:p-8">
+						<div class="flex items-center gap-3 border-b border-border/60 pb-5">
+							<span class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent/40 bg-accent/10 text-accent">
+								<hugeicons-icon [icon]="Mail01Icon" [size]="18" [strokeWidth]="1.5" />
+							</span>
+							<h3
+								id="newsletter-form-heading"
+								class="font-mono text-xs font-medium uppercase tracking-widest text-muted"
+							>
+								{{ 'home.subscribeLabel' | translate }}
+							</h3>
+						</div>
+
+						<form
+							[formGroup]="newsletterForm"
+							(ngSubmit)="subscribe()"
+							aria-labelledby="newsletter-form-heading"
+							class="mt-6 flex flex-col gap-6"
+						>
+							<div>
+								<p class="mb-2 font-mono text-xs uppercase tracking-widest text-muted">
+									{{ 'home.emailLabel' | translate }}
+								</p>
+								<tui-textfield>
+									<input
+										tuiInput
+										type="email"
+										formControlName="email"
+										[placeholder]="'home.emailPlaceholder' | translate"
+										autocomplete="email"
+									/>
+								</tui-textfield>
+								@if (newsletterForm.get('email')?.invalid && newsletterForm.get('email')?.touched) {
+									<p role="alert" class="mt-1.5 text-xs text-red-600 dark:text-red-400">
+										{{ 'home.emailError' | translate }}
+									</p>
+								}
+							</div>
+
+							<button
+								tuiButton
+								type="submit"
+								tuiAppearance="primary"
+								class="!w-full justify-center gap-2 transition-all duration-100 active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100"
+								[disabled]="newsletterForm.invalid || subscribeBusy()"
+								[attr.aria-busy]="subscribeBusy()"
+							>
+								@if (subscribeBusy()) {
+									{{ 'home.subscribing' | translate }}
+								} @else {
+									{{ 'home.subscribe' | translate }}
+									<hugeicons-icon
+										[icon]="ArrowRight01Icon"
+										[size]="18"
+										[strokeWidth]="1.5"
+										class="transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none"
+									/>
+								}
+							</button>
+
+							<div class="flex flex-col gap-5 border-t border-border/60 pt-6">
+								<div>
+									<p class="mb-2 font-mono text-xs uppercase tracking-widest text-muted">
+										{{ 'home.languageLabel' | translate }}
+									</p>
+									<tui-textfield tuiChevron [content]="languageOption" [stringify]="stringifyLanguage">
+										<input tuiSelect formControlName="language" />
+										<tui-data-list-wrapper *tuiDropdown [itemContent]="languageOption" [items]="languages" />
+									</tui-textfield>
+								</div>
+
+								<div>
+									<p class="mb-2 font-mono text-xs uppercase tracking-widest text-muted">
+										{{ 'home.frequencyLabel' | translate }}
+									</p>
+									<div role="group" class="flex gap-1 rounded-xl border border-border bg-background p-1">
+										<button
+											type="button"
+											(click)="selectFrequency('EVERY_POST')"
+											[disabled]="subscribeBusy()"
+											[attr.aria-pressed]="newsletterForm.controls.frequency.value === 'EVERY_POST'"
+											[class]="isFrequency('EVERY_POST') ? frequencyPillActive : frequencyPillIdle"
+											class="flex-1 rounded-lg px-3 py-1.5 text-center font-mono text-xs uppercase tracking-wide transition-all duration-100 active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100"
+										>
+											{{ 'home.frequencyEveryPost' | translate }}
+										</button>
+										<button
+											type="button"
+											(click)="selectFrequency('MONTHLY_DIGEST')"
+											[disabled]="subscribeBusy()"
+											[attr.aria-pressed]="newsletterForm.controls.frequency.value === 'MONTHLY_DIGEST'"
+											[class]="isFrequency('MONTHLY_DIGEST') ? frequencyPillActive : frequencyPillIdle"
+											class="flex-1 rounded-lg px-3 py-1.5 text-center font-mono text-xs uppercase tracking-wide transition-all duration-100 active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100"
+										>
+											{{ 'home.frequencyMonthlyDigest' | translate }}
+										</button>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
+					</div>
+				</div>
+			</section>
 
 			<section aria-labelledby="opensource" class="py-6 md:py-10 border-t border-border">
 				<p class="text-xs uppercase tracking-widest text-accent font-light mb-2 font-mono">{{ 'home.builtInOpenEyebrow' | translate }}</p>
@@ -148,6 +278,13 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 					<hugeicons-icon [icon]="GithubIcon" [size]="22" [strokeWidth]="1.5" />
 				</a>
 			</section>
+
+			<ng-template #languageOption let-value>
+				<span class="flex items-center gap-2">
+					<span aria-hidden="true" class="text-base leading-none">{{ value === 'PORTUGUESE' ? '🇧🇷' : '🇺🇸' }}</span>
+					<span class="text-sm font-medium">{{ value === 'PORTUGUESE' ? 'Português' : 'English' }}</span>
+				</span>
+			</ng-template>
 		</div>
 	`,
 })
@@ -177,6 +314,23 @@ export class HomePageComponent {
 	});
 
 	readonly subscribeBusy = signal(false);
+
+	readonly languages: Language[] = ['ENGLISH', 'PORTUGUESE'];
+
+	protected readonly stringifyLanguage = (language: Language): string =>
+		language === 'PORTUGUESE' ? '🇧🇷 Português' : '🇺🇸 English';
+
+	protected readonly frequencyPillActive = 'bg-accent font-bold text-foreground';
+
+	protected readonly frequencyPillIdle = 'font-medium text-muted hover:text-accent';
+
+	selectFrequency(frequency: SubscriberFrequency): void {
+		this.newsletterForm.controls.frequency.setValue(frequency);
+	}
+
+	isFrequency(frequency: SubscriberFrequency): boolean {
+		return this.newsletterForm.controls.frequency.value === frequency;
+	}
 
 	posts = signal<PostDto[]>([]);
 	postsLoading = signal(true);
@@ -212,6 +366,10 @@ export class HomePageComponent {
 
 			this.loadRecent();
 			this.loadFeatured();
+		});
+
+		effect(() => {
+			this.newsletterForm.patchValue({ language: this.languageService.language() });
 		});
 	}
 
@@ -314,4 +472,5 @@ export class HomePageComponent {
 	protected readonly Loading03Icon = Loading03Icon;
 	protected readonly SparklesIcon = SparklesIcon;
 	protected readonly GithubIcon = GithubIcon;
+	protected readonly Mail01Icon = Mail01Icon;
 }
