@@ -15,6 +15,7 @@ import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../co
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
+import { SeoService } from '../../../../core/seo/seo.service';
 import { ContentCardComponent, ContentCardItem } from '../../../../shared/components/content-card/content-card.component';
 
 @Component({
@@ -69,6 +70,7 @@ export class PostListComponent {
 	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 	private readonly platformId = inject(PLATFORM_ID);
+	private readonly seoService = inject(SeoService);
 
 	query = '';
 	posts = signal<PostDto[]>([]);
@@ -99,6 +101,11 @@ export class PostListComponent {
 	});
 
 	constructor() {
+		this.seoService.setPageMeta({
+			title: 'Posts',
+			description: 'All posts on vitorpaulo.dev. Read about software development, programming, and technology.',
+		});
+
 		effect(() => {
 			this.languageService.language();
 			this.page();

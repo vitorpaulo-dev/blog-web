@@ -30,6 +30,7 @@ import { ImageSignDirective } from '../../../../shared/directives/image-sign.dir
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { LocalizedDatePipe } from '../../../../core/i18n/localized-date.pipe';
+import { SeoService } from '../../../../core/seo/seo.service';
 import { firstTranslation } from '../../../../core/util/text.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOfUtil } from '../../../../core/util/tag.util';
 import { ProjectDto, ProjectService } from '../../data-access/project.service';
@@ -191,6 +192,7 @@ export class ProjectDetailComponent {
 	private readonly languageService = inject(LanguageService);
 	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
+	private readonly seoService = inject(SeoService);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
 
@@ -243,6 +245,7 @@ export class ProjectDetailComponent {
 			next: (project) => {
 				this.project.set(project);
 				this.loading.set(false);
+				this.setPageMeta(project);
 				this.loadTags(project);
 			},
 			error: () => {
@@ -254,6 +257,17 @@ export class ProjectDetailComponent {
 				}).subscribe();
 				void this.router.navigate(['']);
 			},
+		});
+	}
+
+	private setPageMeta(project: ProjectDto): void {
+		const content = this.content();
+
+		this.seoService.setPageMeta({
+			title: content?.title ?? project.slug,
+			description: content?.summary || content?.description || '',
+			ogType: 'article',
+			image: project.bannerUrl || project.logoUrl || null,
 		});
 	}
 

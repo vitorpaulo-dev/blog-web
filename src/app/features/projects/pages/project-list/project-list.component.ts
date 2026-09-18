@@ -7,6 +7,7 @@ import { CommonModule, isPlatformServer } from '@angular/common';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
+import { SeoService } from '../../../../core/seo/seo.service';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../core/util/tag.util';
 import { ProjectDto, ProjectService } from '../../data-access/project.service';
@@ -65,6 +66,7 @@ export class ProjectListComponent {
 	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 	private readonly platformId = inject(PLATFORM_ID);
+	private readonly seoService = inject(SeoService);
 
 	projects = signal<ProjectDto[]>([]);
 	loading = signal(false);
@@ -94,6 +96,11 @@ export class ProjectListComponent {
 	});
 
 	constructor() {
+		this.seoService.setPageMeta({
+			title: 'Projects',
+			description: 'All projects on vitorpaulo.dev. Explore software projects and open source work.',
+		});
+
 		effect(() => {
 			this.languageService.language();
 			this.page();

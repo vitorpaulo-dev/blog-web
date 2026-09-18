@@ -11,6 +11,8 @@ import { of, throwError } from 'rxjs';
 import { TuiToastService } from '@taiga-ui/kit';
 import { signal } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
+import { SeoService } from '../../../../core/seo/seo.service';
+import { TagService } from '../../../tags/data-access/tag.service';
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -34,6 +36,8 @@ describe('PostDetailComponent', () => {
   let markdownServiceMock: Partial<MarkdownService>;
   let routerMock: Partial<Router>;
   let toastServiceMock: Partial<TuiToastService>;
+  let tagServiceMock: Partial<TagService>;
+  let seoServiceMock: { setPageMeta: ReturnType<typeof vi.fn>; setArticleTags: ReturnType<typeof vi.fn>; setTitle: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     postServiceMock = {
@@ -59,6 +63,16 @@ describe('PostDetailComponent', () => {
       open: vi.fn().mockReturnValue(of(true)),
     };
 
+    tagServiceMock = {
+      batch: vi.fn().mockReturnValue(of([])),
+    };
+
+    seoServiceMock = {
+      setPageMeta: vi.fn(),
+      setArticleTags: vi.fn(),
+      setTitle: vi.fn(),
+    };
+
     await TestBed.configureTestingModule({
       imports: [PostDetailComponent],
       providers: [
@@ -70,6 +84,8 @@ describe('PostDetailComponent', () => {
         { provide: MarkdownService, useValue: markdownServiceMock },
         { provide: Router, useValue: routerMock },
         { provide: TuiToastService, useValue: toastServiceMock },
+        { provide: SeoService, useValue: seoServiceMock },
+        { provide: TagService, useValue: tagServiceMock },
         { provide: PLATFORM_ID, useValue: 'browser' },
         {
           provide: ActivatedRoute,
@@ -90,6 +106,39 @@ describe('PostDetailComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('sets meta and article tags from the loaded post', () => {
+    (postServiceMock.getBySlug as any).mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-post',
+        bannerUrl: 'https://cdn.example.com/banner.png',
+        createdAt: '2026-01-15T00:00:00Z',
+        updatedAt: '2026-02-20T00:00:00Z',
+        authors: [{ id: 'a1', slug: 'vitor', name: 'Vitor Paulo' }],
+        tagIds: ['t1'],
+        translations: {
+          ENGLISH: { title: 'My Post', content: '# Hello', summary: 'My summary' },
+        },
+      }),
+    );
+    (tagServiceMock.batch as any).mockReturnValue(
+      of([{ id: 't1', slug: 'angular', translations: { ENGLISH: { name: 'Angular' } } }]),
+    );
+
+    fixture.detectChanges();
+
+    expect(seoServiceMock.setPageMeta).toHaveBeenCalledWith({
+      title: 'My Post',
+      description: 'My summary',
+      ogType: 'article',
+      image: 'https://cdn.example.com/banner.png',
+      publishedTime: '2026-01-15T00:00:00Z',
+      modifiedTime: '2026-02-20T00:00:00Z',
+      authorName: 'Vitor Paulo',
+    });
+    expect(seoServiceMock.setArticleTags).toHaveBeenCalledWith(['Angular']);
   });
 
   it('should show error toast and redirect on API error', () => {

@@ -26,6 +26,7 @@ import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../co
 import { LanguageService, Language } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
+import { SeoService } from '../../../../core/seo/seo.service';
 import { ContentCardComponent, ContentCardItem } from '../../../../shared/components/content-card/content-card.component';
 import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 
@@ -297,6 +298,7 @@ export class HomePageComponent {
 	private readonly toastService = inject(TuiToastService);
 	private readonly turnstileService = inject(TurnstileService);
 	private readonly newsletterService = inject(NewsletterService);
+	private readonly seoService = inject(SeoService);
 
 	readonly newsletterForm = new FormGroup({
 		email: new FormControl('', {
@@ -359,6 +361,11 @@ export class HomePageComponent {
 	});
 
 	constructor() {
+		this.seoService.setPageMeta({
+			home: true,
+			description: 'Software development blog by Vitor Paulo. Posts about programming, projects, and technology.',
+		});
+
 		effect(() => {
 			if (isPlatformServer(this.platformId)) {
 				return;

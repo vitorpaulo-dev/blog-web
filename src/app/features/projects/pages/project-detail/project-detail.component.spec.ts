@@ -10,6 +10,8 @@ import { TuiToastService } from '@taiga-ui/kit';
 import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
+import { SeoService } from '../../../../core/seo/seo.service';
+import { TagService } from '../../../tags/data-access/tag.service';
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -32,6 +34,8 @@ describe('ProjectDetailComponent', () => {
   let languageServiceMock: Partial<LanguageService>;
   let routerMock: Partial<Router>;
   let toastServiceMock: Partial<TuiToastService>;
+  let tagServiceMock: Partial<TagService>;
+  let seoServiceMock: { setPageMeta: ReturnType<typeof vi.fn>; setArticleTags: ReturnType<typeof vi.fn>; setTitle: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     projectServiceMock = {
@@ -52,6 +56,16 @@ describe('ProjectDetailComponent', () => {
       open: vi.fn().mockReturnValue(of(true)),
     };
 
+    tagServiceMock = {
+      batch: vi.fn().mockReturnValue(of([])),
+    };
+
+    seoServiceMock = {
+      setPageMeta: vi.fn(),
+      setArticleTags: vi.fn(),
+      setTitle: vi.fn(),
+    };
+
     await TestBed.configureTestingModule({
       imports: [ProjectDetailComponent],
       providers: [
@@ -62,6 +76,8 @@ describe('ProjectDetailComponent', () => {
         translationProvider(),
         { provide: Router, useValue: routerMock },
         { provide: TuiToastService, useValue: toastServiceMock },
+        { provide: TagService, useValue: tagServiceMock },
+        { provide: SeoService, useValue: seoServiceMock },
         { provide: PLATFORM_ID, useValue: 'browser' },
         {
           provide: ActivatedRoute,
@@ -82,6 +98,29 @@ describe('ProjectDetailComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('sets meta from the loaded project', () => {
+    (projectServiceMock.getBySlug as any).mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-project',
+        logoUrl: 'https://example.com/logo.png',
+        bannerUrl: 'https://example.com/banner.png',
+        translations: {
+          ENGLISH: { title: 'My Project', description: 'Project description' },
+        },
+      }),
+    );
+
+    fixture.detectChanges();
+
+    expect(seoServiceMock.setPageMeta).toHaveBeenCalledWith({
+      title: 'My Project',
+      description: 'Project description',
+      ogType: 'article',
+      image: 'https://example.com/banner.png',
+    });
   });
 
   it('should load project by slug on init', () => {
@@ -143,6 +182,8 @@ describe('ProjectDetailComponent', () => {
         translationProvider(),
         { provide: Router, useValue: routerMock },
         { provide: TuiToastService, useValue: toastServiceMock },
+        { provide: TagService, useValue: tagServiceMock },
+        { provide: SeoService, useValue: seoServiceMock },
         { provide: PLATFORM_ID, useValue: 'browser' },
         {
           provide: ActivatedRoute,
