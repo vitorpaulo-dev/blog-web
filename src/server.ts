@@ -11,6 +11,8 @@ import { buildSitemap, SitemapItem } from './server/sitemap';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
+const siteUrl = `https://${process.env['HOST'] ?? 'vitorpaulo.dev'}`;
+
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
@@ -72,9 +74,9 @@ async function generateSitemap(): Promise<string> {
       fetchSearchEntries('/v1/project/search'),
     ]);
 
-    return buildSitemap({ siteUrl: environment.siteUrl, posts, projects });
+    return buildSitemap({ siteUrl, posts, projects });
   } catch {
-    return buildSitemap({ siteUrl: environment.siteUrl, posts: [], projects: [] });
+    return buildSitemap({ siteUrl, posts: [], projects: [] });
   }
 }
 
