@@ -42,6 +42,7 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { LocalizedDatePipe } from '../../../../core/i18n/localized-date.pipe';
+import { SeoService } from '../../../../core/seo/seo.service';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOfUtil } from '../../../../core/util/tag.util';
 import {
@@ -225,6 +226,7 @@ export class PostDetailComponent implements AfterViewInit {
 	private readonly languageService = inject(LanguageService);
 	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
+	private readonly seoService = inject(SeoService);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
 
@@ -282,12 +284,12 @@ export class PostDetailComponent implements AfterViewInit {
 	content() {
 		const p = this.post();
 		if (!p) return null;
-		return p.translations ? (Object.values(p.translations)[0] ?? null) : null;
+		return firstTranslation(p.translations) ?? null;
 	}
 
 	projectContent(project?: ProjectDto) {
 		if (!project) return null;
-		return project.translations ? (Object.values(project.translations)[0] ?? null) : null;
+		return firstTranslation(project.translations) ?? null;
 	}
 
 	getFirstTranslation(translations?: Record<string, { name?: string }>) {
@@ -318,6 +320,7 @@ export class PostDetailComponent implements AfterViewInit {
 				if (c) {
 					void this.renderMarkdown(c.content);
 				}
+				this.setPageMeta(post);
 				this.loadTags(post);
 				if (post.projectIds && post.projectIds.length > 0) {
 					this.projectService.getByIds(post.projectIds, this.lang()).subscribe({
@@ -343,13 +346,34 @@ export class PostDetailComponent implements AfterViewInit {
 		});
 	}
 
-	private loadTags(post: PostDto): void {		const ids = collectTagIds([post]);
+	private setPageMeta(post: PostDto): void {
+		const content = this.content();
+
+		this.seoService.setPageMeta({
+			title: content?.title ?? post.slug,
+			description: content?.summary || excerpt(content?.content) || '',
+			ogType: 'article',
+			image: post.bannerUrl ?? null,
+			publishedTime: post.createdAt,
+			modifiedTime: post.updatedAt,
+			authorName: post.authors?.[0]?.name ?? null,
+		});
+	}
+
+	private loadTags(post: PostDto): void {
+		const ids = collectTagIds([post]);
 		if (ids.length === 0) {
 			this.tagMap.set(new Map());
+			this.seoService.setArticleTags([]);
 			return;
 		}
 		this.tagService.batch(ids).subscribe({
-			next: (tags) => this.tagMap.set(buildTagMap(tags)),
+			next: (tags) => {
+				this.tagMap.set(buildTagMap(tags));
+				this.seoService.setArticleTags(
+					tags.map((tag) => tagNameOfUtil(tag, this.lang())).filter((name) => name.length > 0),
+				);
+			},
 			error: () => this.tagMap.set(new Map()),
 		});
 	}

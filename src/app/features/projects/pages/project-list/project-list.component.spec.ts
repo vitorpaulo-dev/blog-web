@@ -9,6 +9,7 @@ import { translationProvider } from '../../../../core/i18n/testing';
 import { TuiToastService } from '@taiga-ui/kit';
 import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
+import { SeoService } from '../../../../core/seo/seo.service';
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -31,6 +32,7 @@ describe('ProjectListComponent', () => {
   let tagServiceMock: Partial<TagService>;
   let languageServiceMock: Partial<LanguageService>;
   let toastServiceMock: Partial<TuiToastService>;
+  let seoServiceMock: { setPageMeta: ReturnType<typeof vi.fn>; setArticleTags: ReturnType<typeof vi.fn>; setTitle: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     projectServiceMock = {
@@ -54,6 +56,12 @@ describe('ProjectListComponent', () => {
       open: vi.fn().mockReturnValue(of(true)),
     };
 
+    seoServiceMock = {
+      setPageMeta: vi.fn(),
+      setArticleTags: vi.fn(),
+      setTitle: vi.fn(),
+    };
+
     await TestBed.configureTestingModule({
       imports: [ProjectListComponent],
       providers: [
@@ -64,6 +72,7 @@ describe('ProjectListComponent', () => {
         { provide: LanguageService, useValue: languageServiceMock },
         translationProvider(),
         { provide: TuiToastService, useValue: toastServiceMock },
+        { provide: SeoService, useValue: seoServiceMock },
       ],
     }).compileComponents();
 
@@ -73,6 +82,13 @@ describe('ProjectListComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('sets list meta on init', () => {
+    expect(seoServiceMock.setPageMeta).toHaveBeenCalledWith({
+      title: 'Projects',
+      description: 'All projects on vitorpaulo.dev. Explore software projects and open source work.',
+    });
   });
 
   it('should load projects on init', () => {

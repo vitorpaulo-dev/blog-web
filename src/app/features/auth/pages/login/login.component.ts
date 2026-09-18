@@ -10,6 +10,7 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { ClerkService } from '../../../../core/auth/clerk.service';
+import { SeoService } from '../../../../core/seo/seo.service';
 
 @Component({
   selector: 'app-login',
@@ -27,7 +28,12 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
   private readonly clerkService = inject(ClerkService);
   private readonly route = inject(ActivatedRoute);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly seoService = inject(SeoService);
   private mounted = false;
+
+  constructor() {
+    this.seoService.setTitle('Login');
+  }
 
   async ngAfterViewInit(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;

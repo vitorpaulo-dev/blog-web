@@ -9,6 +9,7 @@ import { throwError } from 'rxjs';
 import { TuiToastService } from '@taiga-ui/kit';
 import { of } from 'rxjs';
 import { signal } from '@angular/core';
+import { SeoService } from '../../../../core/seo/seo.service';
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -30,6 +31,7 @@ describe('PostListComponent', () => {
   let postServiceMock: Partial<PostService>;
   let languageServiceMock: Partial<LanguageService>;
   let toastServiceMock: Partial<TuiToastService>;
+  let seoServiceMock: { setPageMeta: ReturnType<typeof vi.fn>; setArticleTags: ReturnType<typeof vi.fn>; setTitle: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     postServiceMock = {
@@ -46,6 +48,12 @@ describe('PostListComponent', () => {
       open: vi.fn().mockReturnValue(of(true)),
     };
 
+    seoServiceMock = {
+      setPageMeta: vi.fn(),
+      setArticleTags: vi.fn(),
+      setTitle: vi.fn(),
+    };
+
     await TestBed.configureTestingModule({
       imports: [PostListComponent],
       providers: [
@@ -55,6 +63,7 @@ describe('PostListComponent', () => {
         { provide: LanguageService, useValue: languageServiceMock },
         translationProvider(),
         { provide: TuiToastService, useValue: toastServiceMock },
+        { provide: SeoService, useValue: seoServiceMock },
       ],
     }).compileComponents();
 
@@ -64,6 +73,13 @@ describe('PostListComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('sets list meta on init', () => {
+    expect(seoServiceMock.setPageMeta).toHaveBeenCalledWith({
+      title: 'Posts',
+      description: 'All posts on vitorpaulo.dev. Read about software development, programming, and technology.',
+    });
   });
 
   it('should show error toast when loading posts fails', () => {

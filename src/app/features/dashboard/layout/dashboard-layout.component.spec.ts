@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 import { signal } from '@angular/core';
 import { Component } from '@angular/core';
 import { ClerkService } from '../../../core/auth/clerk.service';
+import { SeoService } from '../../../core/seo/seo.service';
 
 @Component({ selector: 'app-test-page', standalone: true, template: '' })
 class TestPageComponent {}
@@ -52,6 +53,10 @@ describe('DashboardLayoutComponent', () => {
         provideRouter(testRoutes),
         translationProvider(),
         { provide: ClerkService, useValue: clerkServiceMock },
+        {
+          provide: SeoService,
+          useValue: { setPageMeta: vi.fn(), setArticleTags: vi.fn(), setTitle: vi.fn() },
+        },
       ],
     }).compileComponents();
 

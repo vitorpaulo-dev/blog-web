@@ -11,6 +11,7 @@ import { TuiToastService } from '@taiga-ui/kit';
 import { of } from 'rxjs';
 import { signal } from '@angular/core';
 import { TurnstileService } from '../../../../core/captcha/turnstile.service';
+import { SeoService } from '../../../../core/seo/seo.service';
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -34,6 +35,7 @@ describe('HomePageComponent', () => {
   let languageServiceMock: Partial<LanguageService>;
   let toastServiceMock: Partial<TuiToastService>;
   let turnstileServiceMock: Partial<TurnstileService>;
+  let seoServiceMock: { setPageMeta: ReturnType<typeof vi.fn>; setArticleTags: ReturnType<typeof vi.fn>; setTitle: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     postServiceMock = {
@@ -60,6 +62,12 @@ describe('HomePageComponent', () => {
       reset: vi.fn(),
     };
 
+    seoServiceMock = {
+      setPageMeta: vi.fn(),
+      setArticleTags: vi.fn(),
+      setTitle: vi.fn(),
+    };
+
     await TestBed.configureTestingModule({
       imports: [HomePageComponent],
       providers: [
@@ -71,6 +79,7 @@ describe('HomePageComponent', () => {
         translationProvider(),
         { provide: TuiToastService, useValue: toastServiceMock },
         { provide: TurnstileService, useValue: turnstileServiceMock },
+        { provide: SeoService, useValue: seoServiceMock },
       ],
     }).compileComponents();
 
@@ -80,6 +89,17 @@ describe('HomePageComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('sets home meta on init', () => {
+    (postServiceMock.search as any).mockReturnValue(of({ content: [], totalPages: 0, totalElements: 0 }));
+
+    fixture.detectChanges();
+
+    expect(seoServiceMock.setPageMeta).toHaveBeenCalledWith({
+      home: true,
+      description: 'Software development blog by Vitor Paulo. Posts about programming, projects, and technology.',
+    });
   });
 
   it('should show error toast when loading posts fails', () => {

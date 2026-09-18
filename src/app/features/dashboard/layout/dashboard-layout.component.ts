@@ -6,6 +6,7 @@ import { TuiChevron, TuiFade } from '@taiga-ui/kit';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { ClerkService } from '../../../core/auth/clerk.service';
+import { SeoService } from '../../../core/seo/seo.service';
 
 @Component({
 	selector: 'app-dashboard-layout',
@@ -18,6 +19,11 @@ export class DashboardLayoutComponent {
 	protected readonly clerkService = inject(ClerkService);
 	private readonly translationService = inject(TranslationService);
 	private readonly router = inject(Router);
+	private readonly seoService = inject(SeoService);
+
+	constructor() {
+		this.seoService.setTitle('Dashboard');
+	}
 
 	protected readonly expanded = signal(true);
 
