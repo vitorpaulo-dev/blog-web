@@ -69,6 +69,27 @@
 		"website": "Site"
 	},
 	"dashboard": {
+		"index": {
+			"greetingMorning": "Bom dia, {{name}}",
+			"greetingAfternoon": "Boa tarde, {{name}}",
+			"greetingEvening": "Boa noite, {{name}}",
+			"newPost": "Novo post",
+			"newProject": "Novo projeto",
+			"sendNewsletter": "Enviar newsletter",
+			"totalPosts": "Total de posts",
+			"publishedPosts": "Posts publicados",
+			"totalProjects": "Total de projetos",
+			"totalViews": "Total de views",
+			"totalReactions": "Total de reações",
+			"activeSubscribers": "Inscritos ativos",
+			"noContent": "Nenhum conteúdo publicado ainda.",
+			"createFirstPost": "Criar primeiro post",
+			"postsTopViews": "Posts mais vistos (todo o período)",
+			"postsLast24h": "Posts mais vistos (24h)",
+			"projectsTopViews": "Projetos mais vistos (todo o período)",
+			"projectsLast24h": "Projetos mais vistos (24h)",
+			"failedToLoad": "Falha ao carregar o dashboard. Tente novamente."
+		},
 		"nav": {
 			"allPosts": "Todos os Posts",
 			"createPost": "Criar Post",

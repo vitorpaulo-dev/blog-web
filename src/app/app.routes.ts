@@ -58,6 +58,11 @@ export const routes: Routes = [
       import('./features/dashboard/layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     children: [
       {
+        path: '',
+        loadComponent: () =>
+          import('./features/dashboard/pages/dashboard-index/dashboard-index.component').then(m => m.DashboardIndexComponent),
+      },
+      {
         path: 'post',
         loadComponent: () =>
           import('./features/dashboard/pages/dashboard-post-list/dashboard-post-list.component').then(m => m.DashboardPostListComponent),
