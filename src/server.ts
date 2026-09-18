@@ -6,11 +6,90 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { environment } from './environments/environment';
+import { buildSitemap, SitemapItem } from './server/sitemap';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
+
+const SITEMAP_TTL_MS = 60 * 60 * 1000;
+const SITEMAP_PAGE_SIZE = 50;
+
+interface SitemapCache {
+  xml: string;
+  fetchedAt: number;
+}
+
+let sitemapCache: SitemapCache | null = null;
+
+interface SearchPageResponse {
+  content: Array<{ slug: string; updatedAt: string }>;
+  totalPages: number;
+}
+
+async function fetchSearchEntries(path: string): Promise<SitemapItem[]> {
+  const items: SitemapItem[] = [];
+  let totalPages = 1;
+  let page = 0;
+
+  while (page < totalPages) {
+    const response = await fetch(`${environment.apiBaseUrl}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: {},
+        page,
+        size: SITEMAP_PAGE_SIZE,
+        sort: 'createdAt',
+        direction: 'DESC',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Search request failed with status ${response.status}`);
+    }
+
+    const data = (await response.json()) as SearchPageResponse;
+    items.push(
+      ...(data.content ?? []).map((item) => ({
+        slug: item.slug,
+        updatedAt: item.updatedAt,
+      })),
+    );
+    totalPages = data.totalPages ?? 1;
+    page += 1;
+  }
+
+  return items;
+}
+
+async function generateSitemap(): Promise<string> {
+  try {
+    const [posts, projects] = await Promise.all([
+      fetchSearchEntries('/v1/post/search'),
+      fetchSearchEntries('/v1/project/search'),
+    ]);
+
+    return buildSitemap({ siteUrl: environment.siteUrl, posts, projects });
+  } catch {
+    return buildSitemap({ siteUrl: environment.siteUrl, posts: [], projects: [] });
+  }
+}
+
+app.get('/sitemap.xml', async (_req, res) => {
+  const now = Date.now();
+
+  if (!sitemapCache || now - sitemapCache.fetchedAt > SITEMAP_TTL_MS) {
+    sitemapCache = {
+      xml: await generateSitemap(),
+      fetchedAt: now,
+    };
+  }
+
+  res.type('application/xml').send(sitemapCache.xml);
+});
 
 /**
  * Example Express Rest API endpoints can be defined here.
