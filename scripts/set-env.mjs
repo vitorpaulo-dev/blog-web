@@ -6,7 +6,6 @@ config();
 const apiBase = process.env['API_BASE'] ?? '';
 const turnstileSiteKey = process.env['TURNSTILE_SITE_KEY'] ?? '';
 const clerkPublishableKey = process.env['CLERK_PUBLISHABLE_KEY'] ?? '';
-const siteUrl = `https://${process.env['HOST'] ?? 'vitorpaulo.dev'}`;
 
 const targets = [
 	{ path: 'src/environments/environment.ts' },
@@ -17,9 +16,8 @@ for (const { path } of targets) {
 		path,
 		`
 			export const environment = {
-				  apiBaseUrl: '${apiBase}',
-				  siteUrl: '${siteUrl}',
-				  turnstileSiteKey: '${turnstileSiteKey}',
+			  apiBaseUrl: '${apiBase}',
+			  turnstileSiteKey: '${turnstileSiteKey}',
 				  clerkPublishableKey: '${clerkPublishableKey}',
 			};
 		`
