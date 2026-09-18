@@ -7,6 +7,8 @@ import { SeoService } from './seo.service';
 import { LanguageService } from '../i18n/language.service';
 import { UploadService } from '../upload/upload.service';
 
+const BASE = location.origin;
+
 describe('SeoService', () => {
 	let service: SeoService;
 	let title: Title;
@@ -70,10 +72,10 @@ describe('SeoService', () => {
 	it('sets canonical and hreflang links from the current route', () => {
 		service.setPageMeta({ title: 'Posts', description: 'All posts' });
 
-		expect(linkHref('link[rel="canonical"]')).toBe('https://vitorpaulo.dev/');
-		expect(linkHref('link[rel="alternate"][hreflang="en"]')).toBe('https://vitorpaulo.dev/');
-		expect(linkHref('link[rel="alternate"][hreflang="pt"]')).toBe('https://vitorpaulo.dev/pt/');
-		expect(linkHref('link[rel="alternate"][hreflang="x-default"]')).toBe('https://vitorpaulo.dev/');
+		expect(linkHref('link[rel="canonical"]')).toBe(`${BASE}/`);
+		expect(linkHref('link[rel="alternate"][hreflang="en"]')).toBe(`${BASE}/`);
+		expect(linkHref('link[rel="alternate"][hreflang="pt"]')).toBe(`${BASE}/pt/`);
+		expect(linkHref('link[rel="alternate"][hreflang="x-default"]')).toBe(`${BASE}/`);
 	});
 
 	it('sets canonical to the /pt URL when language is Portuguese', () => {
@@ -81,8 +83,8 @@ describe('SeoService', () => {
 
 		service.setPageMeta({ title: 'Posts', description: 'All posts' });
 
-		expect(linkHref('link[rel="canonical"]')).toBe('https://vitorpaulo.dev/pt/');
-		expect(linkHref('link[rel="alternate"][hreflang="en"]')).toBe('https://vitorpaulo.dev/');
+		expect(linkHref('link[rel="canonical"]')).toBe(`${BASE}/pt/`);
+		expect(linkHref('link[rel="alternate"][hreflang="en"]')).toBe(`${BASE}/`);
 	});
 
 	it('sets OG and Twitter tags with website type by default', () => {
@@ -92,7 +94,7 @@ describe('SeoService', () => {
 		expect(metaContent('property="og:title"')).toBe('Posts - vitorpaulo.dev');
 		expect(metaContent('property="og:description"')).toBe('All posts');
 		expect(metaContent('property="og:type"')).toBe('website');
-		expect(metaContent('property="og:url"')).toBe('https://vitorpaulo.dev/');
+		expect(metaContent('property="og:url"')).toBe(`${BASE}/`);
 		expect(metaContent('property="og:locale"')).toBe('en_US');
 		expect(metaContent('name="twitter:card"')).toBe('summary_large_image');
 		expect(metaContent('name="twitter:title"')).toBe('Posts - vitorpaulo.dev');
@@ -111,8 +113,8 @@ describe('SeoService', () => {
 		service.setPageMeta({ title: 'Posts', description: 'All posts' });
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
-		expect(metaContent('property="og:image"')).toBe('https://vitorpaulo.dev/banner.png');
-		expect(metaContent('name="twitter:image"')).toBe('https://vitorpaulo.dev/banner.png');
+		expect(metaContent('property="og:image"')).toBe(`${BASE}/banner.png`);
+		expect(metaContent('name="twitter:image"')).toBe(`${BASE}/banner.png`);
 	});
 
 	it('uses absolute image URLs directly without signing', async () => {
@@ -153,7 +155,7 @@ describe('SeoService', () => {
 		});
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
-		expect(metaContent('property="og:image"')).toBe('https://vitorpaulo.dev/banner.png');
+		expect(metaContent('property="og:image"')).toBe(`${BASE}/banner.png`);
 	});
 
 	it('sets article meta for article pages', () => {

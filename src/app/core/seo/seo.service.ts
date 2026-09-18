@@ -1,7 +1,8 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { DOCUMENT } from '@angular/common';
 import { Router } from '@angular/router';
+import { isPlatformServer } from '@angular/common';
 import { map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { LanguageService } from '../i18n/language.service';
@@ -23,7 +24,7 @@ export interface SeoPageMeta {
 const SITE_NAME = 'vitorpaulo.dev';
 const TITLE_SUFFIX = ` - ${SITE_NAME}`;
 const AUTHOR = 'Vitor Paulo';
-const DEFAULT_IMAGE = `${environment.siteUrl}/banner.png`;
+const DEFAULT_IMAGE_PATH = '/banner.png';
 const RAW_KEY_PATTERN = /^(?:post|project)\/(?:banner|logo|content)\/[\w.-]+$/;
 
 const LOCALES: Record<string, string> = {
@@ -39,6 +40,7 @@ export class SeoService {
 	private readonly router = inject(Router);
 	private readonly languageService = inject(LanguageService);
 	private readonly uploadService = inject(UploadService);
+	private readonly platformId = inject(PLATFORM_ID);
 
 	private trackedArticleProperties = new Set<string>();
 
@@ -142,11 +144,20 @@ export class SeoService {
 
 	private urls(): { canonicalUrl: string; enUrl: string; ptUrl: string } {
 		const path = this.currentPath();
-		const enUrl = `${environment.siteUrl}${path}`;
-		const ptUrl = `${environment.siteUrl}/pt${path}`;
+		const base = this.baseUrl();
+		const enUrl = `${base}${path}`;
+		const ptUrl = `${base}/pt${path}`;
 		const canonicalUrl = this.languageService.language() === 'PORTUGUESE' ? ptUrl : enUrl;
 
 		return { canonicalUrl, enUrl, ptUrl };
+	}
+
+	private baseUrl(): string {
+		if (isPlatformServer(this.platformId)) {
+			return environment.host;
+		}
+
+		return this.document.location.origin;
 	}
 
 	private currentPath(): string {
@@ -164,7 +175,7 @@ export class SeoService {
 
 	private resolveImage(image: string | null) {
 		if (!image) {
-			return of(DEFAULT_IMAGE);
+			return of(`${this.baseUrl()}${DEFAULT_IMAGE_PATH}`);
 		}
 
 		if (/^https?:\/\//.test(image)) {
@@ -173,10 +184,10 @@ export class SeoService {
 
 		if (RAW_KEY_PATTERN.test(image)) {
 			return this.uploadService.sign([image]).pipe(
-				map((urls) => urls[image] || DEFAULT_IMAGE),
+				map((urls) => urls[image] || `${this.baseUrl()}${DEFAULT_IMAGE_PATH}`),
 			);
 		}
 
-		return of(DEFAULT_IMAGE);
+		return of(`${this.baseUrl()}${DEFAULT_IMAGE_PATH}`);
 	}
 }
