@@ -116,7 +116,7 @@ describe('langGuard wiring on public routes', () => {
     }
 
     expect(dashboardParent.canActivate).not.toContain(langGuard);
-    expect(dashboardParent.children?.length).toBe(11);
+    expect(dashboardParent.children?.length).toBe(12);
     for (const child of dashboardParent.children!) {
       expect(child.canActivate).not.toContain(langGuard);
     }

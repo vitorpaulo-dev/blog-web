@@ -26,6 +26,10 @@ const publicServerRoutes: ServerRoute[] = [
 export const serverRoutes: ServerRoute[] = [
   ...publicServerRoutes,
   {
+    path: 'dashboard',
+    renderMode: RenderMode.Server
+  },
+  {
     path: 'dashboard/post',
     renderMode: RenderMode.Server
   },
