@@ -363,7 +363,7 @@ export class HomePageComponent {
 	constructor() {
 		this.seoService.setPageMeta({
 			home: true,
-			description: 'Software development blog by Vitor Paulo. Posts about programming, projects, and technology.',
+			description: 'I write about programming, technology, and the projects I build, sharing things I learn, experiments I try, and ideas I find interesting along the way.',
 		});
 
 		effect(() => {

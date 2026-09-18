@@ -98,7 +98,7 @@ export class ProjectListComponent {
 	constructor() {
 		this.seoService.setPageMeta({
 			title: 'Projects',
-			description: 'All projects on vitorpaulo.dev. Explore software projects and open source work.',
+			description: 'I write about programming, technology, and the projects I build, sharing things I learn, experiments I try, and ideas I find interesting along the way.',
 		});
 
 		effect(() => {
