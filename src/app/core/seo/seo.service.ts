@@ -4,6 +4,7 @@ import { DOCUMENT } from '@angular/common';
 import { Router } from '@angular/router';
 import { isPlatformServer } from '@angular/common';
 import { map, of } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import { LanguageService } from '../i18n/language.service';
 import { UploadService } from '../upload/upload.service';
 
@@ -23,7 +24,6 @@ export interface SeoPageMeta {
 const SITE_NAME = 'vitorpaulo.dev';
 const TITLE_SUFFIX = ` - ${SITE_NAME}`;
 const AUTHOR = 'Vitor Paulo';
-const DEFAULT_HOST = 'vitorpaulo.dev';
 const DEFAULT_IMAGE_PATH = '/banner.png';
 const RAW_KEY_PATTERN = /^(?:post|project)\/(?:banner|logo|content)\/[\w.-]+$/;
 
@@ -154,7 +154,7 @@ export class SeoService {
 
 	private baseUrl(): string {
 		if (isPlatformServer(this.platformId)) {
-			return `https://${process.env['HOST'] ?? DEFAULT_HOST}`;
+			return environment.host;
 		}
 
 		return this.document.location.origin;

@@ -11,7 +11,7 @@ import { buildSitemap, SitemapItem } from './server/sitemap';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
-const siteUrl = `https://${process.env['HOST'] ?? 'vitorpaulo.dev'}`;
+const siteUrl = environment.host;
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
