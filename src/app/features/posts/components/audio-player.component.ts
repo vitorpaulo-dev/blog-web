@@ -33,6 +33,26 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 const PLAYBACK_RATES = [1, 1.25, 1.5, 2, 0.75];
 const WAVE_BARS = 64;
+const BUFFERED_TYPES: readonly AudioType[] = ['PODCAST'];
+const AUDIO_MIME: Record<string, string> = {
+	mp3: 'audio/mpeg',
+	m4a: 'audio/mp4',
+	aac: 'audio/aac',
+	wav: 'audio/wav',
+	ogg: 'audio/ogg',
+	opus: 'audio/ogg',
+	webm: 'audio/webm',
+};
+const MP3_BITRATES: Record<number, number[]> = {
+	3: [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320],
+	2: [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
+	0: [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
+};
+const MP3_SAMPLE_RATES: Record<number, number[]> = {
+	3: [44100, 48000, 32000],
+	2: [22050, 24000, 16000],
+	0: [11025, 12000, 8000],
+};
 export const STICKY_TOP = '1.25rem';
 
 @Component({
@@ -40,340 +60,341 @@ export const STICKY_TOP = '1.25rem';
 	standalone: true,
 	imports: [HugeiconsIconComponent, TranslatePipe, TuiButton, TuiAppearance],
 	styles: `
-		.pap {
-			--sticky-top: ${STICKY_TOP};
-			font-family: 'Schibsted Grotesk', var(--font-sans, ui-sans-serif), system-ui, sans-serif;
-		}
+    .pap {
+        --sticky-top: ${STICKY_TOP};
+        font-family: 'Schibsted Grotesk', var(--font-sans, ui-sans-serif), system-ui, sans-serif;
+    }
 
-		.pap[data-sticky='true'] {
-			position: sticky;
-			top: var(--sticky-top);
-			z-index: 30;
-		}
+    .pap[data-sticky='true'] {
+        position: sticky;
+        top: var(--sticky-top);
+        z-index: 30;
+    }
 
-		.pap[data-sticky='true']:not(:hover):not(:focus-within) {
-			opacity: 0.68;
-			padding: 0.5rem;
-		}
+    .pap[data-sticky='true']:not(:hover):not(:focus-within) {
+        opacity: 0.68;
+        padding: 0.5rem;
+    }
 
-		.pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-head {
-			position: absolute;
-			left: 0.5rem;
-			top: 50%;
-			z-index: 20;
-			width: auto;
-			min-height: 0;
-			transform: translateY(-50%);
-			pointer-events: none;
-		}
+    .pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-head {
+        position: absolute;
+        left: 0.5rem;
+        top: 50%;
+        z-index: 20;
+        width: auto;
+        min-height: 0;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
 
-		.pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-head-main {
-			flex: none;
-		}
+    .pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-head-main {
+        flex: none;
+    }
 
-		.pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-head-main > span,
-		.pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-type-switch,
-		.pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-times,
-		.pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-ctrl {
-			display: none;
-		}
+    .pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-head-main > span,
+    .pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-type-switch,
+    .pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-times,
+    .pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-ctrl {
+        display: none;
+    }
 
-		.pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-scrub {
-			margin-top: 0;
-			margin-left: 1.8rem;
-		}
+    .pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-scrub {
+        margin-top: 0;
+        margin-left: 1.8rem;
+    }
 
-		.pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-bars {
-			height: 2rem;
-		}
+    .pap[data-sticky='true']:not(:hover):not(:focus-within) .pap-bars {
+        height: 2rem;
+    }
 
-		@media (prefers-reduced-motion: no-preference) {
-			.pap {
-				transition:
-					opacity 180ms ease,
-					padding 180ms ease,
-					box-shadow 180ms ease,
-					transform 180ms ease;
-			}
-		}
+    @media (prefers-reduced-motion: no-preference) {
+        .pap {
+            transition:
+                opacity 180ms ease,
+                padding 180ms ease,
+                box-shadow 180ms ease,
+                transform 180ms ease;
+        }
+    }
 
-		.pap button:not(:disabled),
-		.pap input[type='range']:not(:disabled) {
-			cursor: pointer !important;
-		}
+    .pap button:not(:disabled),
+    .pap input[type='range']:not(:disabled) {
+        cursor: pointer !important;
+    }
 
-		.pap-bars-fill {
-			position: absolute;
-			inset: 0;
-			clip-path: inset(0 calc((1 - var(--p, 0)) * 100%) 0 0);
-			will-change: clip-path;
-			pointer-events: none;
-		}
+    .pap-bars-fill {
+        position: absolute;
+        inset: 0;
+        clip-path: inset(0 calc((1 - var(--p, 0)) * 100%) 0 0);
+        will-change: clip-path;
+        pointer-events: none;
+    }
 
-		.pap-bar {
-			transition: height 120ms ease;
-		}
+    .pap-bar {
+        transition: height 120ms ease;
+    }
 
-		.pap-seek {
-			appearance: none;
-			-webkit-appearance: none;
-		}
+    .pap-seek {
+        appearance: none;
+        -webkit-appearance: none;
+    }
 
-		.pap-seek::-webkit-slider-thumb {
-			appearance: none;
-			width: 1px;
-			height: 1px;
-		}
+    .pap-seek::-webkit-slider-thumb {
+        appearance: none;
+        width: 1px;
+        height: 1px;
+    }
 
-		.pap-seek::-moz-range-thumb {
-			width: 1px;
-			height: 1px;
-			border: 0;
-		}
+    .pap-seek::-moz-range-thumb {
+        width: 1px;
+        height: 1px;
+        border: 0;
+    }
 
-		.pap[data-buffering='true'] .pap-ring {
-			animation: pap-pulse 1.2s ease-in-out infinite;
-		}
+    .pap[data-buffering='true'] .pap-ring {
+        animation: pap-pulse 1.2s ease-in-out infinite;
+    }
 
-		@keyframes pap-pulse {
-			0%,
-			100% {
-				opacity: 1;
-			}
+    @keyframes pap-pulse {
+        0%,
+        100% {
+            opacity: 1;
+        }
 
-			50% {
-				opacity: 0.35;
-			}
-		}
-	`,
+        50% {
+            opacity: 0.35;
+        }
+    }
+    `,
 	template: `
-		@if (visible()) {
-			<section
-				class="pap relative mt-4 min-w-0 rounded-xl border border-border bg-surface p-3 shadow-sm transition-all duration-200 ease-out max-[480px]:p-3"
-				[style.--p]="progressFraction()"
-				[attr.data-playing]="playing()"
-				[attr.data-buffering]="buffering()"
-				[attr.data-muted]="muted()"
-				[attr.data-sticky]="sticky()"
-			>
-				<audio
-					#audioEl
-					hidden
-					preload="metadata"
-					(loadedmetadata)="onLoadedMetadata()"
-					(timeupdate)="onTimeUpdate()"
-					(play)="onPlay()"
-					(pause)="onPause()"
-					(waiting)="onStalled()"
-					(playing)="onCanPlay()"
-					(canplay)="onCanPlay()"
-					(canplaythrough)="onCanPlay()"
-					(error)="onAudioError()"
-					(ended)="onPause()"
-					(volumechange)="onVolumeChange()"
-				></audio>
+        @if (visible()) {
+            <section
+                class="pap relative mt-4 min-w-0 rounded-xl border border-border bg-surface p-3 shadow-sm transition-all duration-200 ease-out max-[480px]:p-3"
+                [style.--p]="progressFraction()"
+                [attr.data-playing]="playing()"
+                [attr.data-buffering]="buffering()"
+                [attr.data-muted]="muted()"
+                [attr.data-sticky]="sticky()"
+            >
+                <audio
+                    #audioEl
+                    hidden
+                    preload="metadata"
+                    (loadedmetadata)="onLoadedMetadata()"
+                    (durationchange)="onDurationChange()"
+                    (timeupdate)="onTimeUpdate()"
+                    (play)="onPlay()"
+                    (pause)="onPause()"
+                    (waiting)="onStalled()"
+                    (playing)="onCanPlay()"
+                    (canplay)="onCanPlay()"
+                    (canplaythrough)="onCanPlay()"
+                    (error)="onAudioError()"
+                    (ended)="onPause()"
+                    (volumechange)="onVolumeChange()"
+                ></audio>
 
-				<div class="pap-head flex min-h-8 min-w-0 items-center gap-2">
-					<div class="pap-head-main flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-						<hugeicons-icon
-							[icon]="HeadsetIcon"
-							[size]="17"
-							[strokeWidth]="2.4"
-							class="shrink-0 text-accent"
-						/>
+                <div class="pap-head flex min-h-8 min-w-0 items-center gap-2">
+                    <div class="pap-head-main flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+                        <hugeicons-icon
+                            [icon]="HeadsetIcon"
+                            [size]="17"
+                            [strokeWidth]="2.4"
+                            class="shrink-0 text-accent"
+                        />
 
-						<span
-							class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs font-semibold uppercase tracking-widest text-muted"
-						>
-							Audio
-						</span>
-					</div>
+                        <span
+                            class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs font-semibold uppercase tracking-widest text-muted"
+                        >
+                            Audio
+                        </span>
+                    </div>
 
-					@if (playableTypes().length > 1) {
-						<div
-							class="pap-type-switch flex w-fit max-w-full shrink-0 flex-wrap items-center gap-1"
-							role="group"
-							[attr.aria-label]="'posts.audio.source' | translate"
-						>
-							@for (type of playableTypes(); track type) {
-								<button
-									tuiButton
-									class="cursor-pointer"
-									size="s"
-									type="button"
-									[appearance]="type === currentType() ? 'primary' : 'outline'"
-									[attr.aria-pressed]="type === currentType()"
-									(click)="selectType(type)"
-								>
-									<hugeicons-icon [icon]="typeIconOf(type)" [size]="14" [strokeWidth]="2.2" />
-									{{ typeLabelOf(type) | translate }}
-								</button>
-							}
-						</div>
-					}
-				</div>
+                    @if (playableTypes().length > 1) {
+                        <div
+                            class="pap-type-switch flex w-fit max-w-full shrink-0 flex-wrap items-center gap-1"
+                            role="group"
+                            [attr.aria-label]="'posts.audio.source' | translate"
+                        >
+                            @for (type of playableTypes(); track type) {
+                                <button
+                                    tuiButton
+                                    class="cursor-pointer"
+                                    size="s"
+                                    type="button"
+                                    [appearance]="type === currentType() ? 'primary' : 'outline'"
+                                    [attr.aria-pressed]="type === currentType()"
+                                    (click)="selectType(type)"
+                                >
+                                    <hugeicons-icon [icon]="typeIconOf(type)" [size]="14" [strokeWidth]="2.2" />
+                                    {{ typeLabelOf(type) | translate }}
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
 
-				@if (error(); as message) {
-					<p class="mt-2 text-sm text-red-400" role="alert">
-						{{ message | translate }}
-					</p>
-				}
+                @if (error(); as message) {
+                    <p class="mt-2 text-sm text-red-400" role="alert">
+                        {{ message | translate }}
+                    </p>
+                }
 
-				<div class="pap-scrub relative mt-4 min-w-0">
-					<div class="pap-bars relative h-10 overflow-hidden rounded-xl max-[480px]:h-11">
-						<div class="flex h-full w-full items-center gap-0.5 px-0.5" aria-hidden="true">
-							@for (bar of waveform(); track $index) {
-								<span
-									class="pap-bar min-w-0 flex-1 basis-0 rounded-full bg-muted opacity-30"
-									[style.--h.%]="bar"
-									[style.height.%]="bar"
-									[style.max-height.%]="100"
-								></span>
-							} @empty {
-								<span
-									class="pap-bar min-w-0 flex-1 basis-0 rounded-full bg-muted opacity-30"
-									style="height: 25%"
-								></span>
-							}
-						</div>
+                <div class="pap-scrub relative mt-4 min-w-0">
+                    <div class="pap-bars relative h-10 overflow-hidden rounded-xl max-[480px]:h-11">
+                        <div class="flex h-full w-full items-center gap-0.5 px-0.5" aria-hidden="true">
+                            @for (bar of waveform(); track $index) {
+                                <span
+                                    class="pap-bar min-w-0 flex-1 basis-0 rounded-full bg-muted opacity-30"
+                                    [style.--h.%]="bar"
+                                    [style.height.%]="bar"
+                                    [style.max-height.%]="100"
+                                ></span>
+                            } @empty {
+                                <span
+                                    class="pap-bar min-w-0 flex-1 basis-0 rounded-full bg-muted opacity-30"
+                                    style="height: 25%"
+                                ></span>
+                            }
+                        </div>
 
-						<div class="pap-bars-fill flex h-full w-full items-center gap-0.5 px-0.5" aria-hidden="true">
-							@for (bar of waveform(); track $index) {
-								<span
-									class="pap-bar min-w-0 flex-1 basis-0 rounded-full bg-accent"
-									[style.--h.%]="bar"
-									[style.height.%]="bar"
-									[style.max-height.%]="100"
-								></span>
-							} @empty {
-								<span
-									class="pap-bar min-w-0 flex-1 basis-0 rounded-full bg-accent"
-									style="height: 25%"
-								></span>
-							}
-						</div>
-					</div>
+                        <div class="pap-bars-fill flex h-full w-full items-center gap-0.5 px-0.5" aria-hidden="true">
+                            @for (bar of waveform(); track $index) {
+                                <span
+                                    class="pap-bar min-w-0 flex-1 basis-0 rounded-full bg-accent"
+                                    [style.--h.%]="bar"
+                                    [style.height.%]="bar"
+                                    [style.max-height.%]="100"
+                                ></span>
+                            } @empty {
+                                <span
+                                    class="pap-bar min-w-0 flex-1 basis-0 rounded-full bg-accent"
+                                    style="height: 25%"
+                                ></span>
+                            }
+                        </div>
+                    </div>
 
-					<input
-						class="pap-seek absolute inset-0 z-10 m-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed disabled:opacity-45"
-						type="range"
-						[min]="0"
-						[max]="maxSeek()"
-						step="0.1"
-						[value]="currentTime()"
-						[attr.aria-label]="'posts.audio.seek' | translate"
-						[disabled]="disabled()"
-						(input)="onSeekInput($event)"
-					/>
+                    <input
+                        class="pap-seek absolute inset-0 z-10 m-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed disabled:opacity-45"
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.001"
+                        [value]="progressFraction()"
+                        [attr.aria-label]="'posts.audio.seek' | translate"
+                        [disabled]="error() !== null"
+                        (input)="onSeekInput($event)"
+                    />
 
-					<span
-						class="pap-playhead pointer-events-none absolute top-0 bottom-0 z-[5] flex -translate-x-1/2 items-center"
-						[style.left.%]="progressFraction() * 100"
-						aria-hidden="true"
-					>
-						<span
-							class="pap-ring size-2.5 rounded-full border-2 border-accent bg-surface shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-accent)_20%,transparent)]"
-						></span>
-					</span>
-				</div>
+                    <span
+                        class="pap-playhead pointer-events-none absolute top-0 bottom-0 z-[5] flex -translate-x-1/2 items-center"
+                        [style.left.%]="progressFraction() * 100"
+                        aria-hidden="true"
+                    >
+                        <span
+                            class="pap-ring size-2.5 rounded-full border-2 border-accent bg-surface shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-accent)_20%,transparent)]"
+                        ></span>
+                    </span>
+                </div>
 
-				<div class="pap-times mt-2 flex min-w-0 items-center justify-between text-xs tabular-nums text-muted">
-					<span>{{ currentTimeText() }}</span>
+                <div class="pap-times mt-2 flex min-w-0 items-center justify-between text-xs tabular-nums text-muted">
+                    <span>{{ currentTimeText() }}</span>
 
-					<span aria-hidden="true"> −{{ remainingText() }} </span>
-				</div>
+                    <span aria-hidden="true"> −{{ remainingText() }} </span>
+                </div>
 
-				<div
-					class="pap-ctrl mt-3 grid min-h-12 min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 max-[480px]:gap-1"
-				>
-					<button
-						tuiButton
-						size="s"
-						tuiAppearance="flat"
-						class="justify-self-start disabled:cursor-not-allowed disabled:opacity-45"
-						[attr.aria-label]="'posts.audio.speed' | translate"
-						[disabled]="disabled()"
-						(click)="cycleSpeed()"
-					>
-						{{ speed() }}×
-					</button>
+                <div
+                    class="pap-ctrl mt-3 grid min-h-12 min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 max-[480px]:gap-1"
+                >
+                    <button
+                        tuiButton
+                        size="s"
+                        tuiAppearance="flat"
+                        class="justify-self-start disabled:cursor-not-allowed disabled:opacity-45"
+                        [attr.aria-label]="'posts.audio.speed' | translate"
+                        [disabled]="disabled()"
+                        (click)="cycleSpeed()"
+                    >
+                        {{ speed() }}×
+                    </button>
 
-					<div class="pap-main flex items-center justify-center gap-0.5">
-						<button
-							tuiButton
-							size="m"
-							tuiAppearance="flat"
-							class="disabled:cursor-not-allowed disabled:opacity-45"
-							[attr.aria-label]="'posts.audio.back10' | translate"
-							[disabled]="disabled()"
-							(click)="skipBack()"
-						>
-							<hugeicons-icon [icon]="RotateLeft01Icon" [size]="18" [strokeWidth]="2.5" />
-						</button>
+                    <div class="pap-main flex items-center justify-center gap-0.5">
+                        <button
+                            tuiButton
+                            size="m"
+                            tuiAppearance="flat"
+                            class="disabled:cursor-not-allowed disabled:opacity-45"
+                            [attr.aria-label]="'posts.audio.back10' | translate"
+                            [disabled]="disabled()"
+                            (click)="skipBack()"
+                        >
+                            <hugeicons-icon [icon]="RotateLeft01Icon" [size]="18" [strokeWidth]="2.5" />
+                        </button>
 
-						<button
-							tuiButton
-							size="m"
-							class="pap-play disabled:cursor-not-allowed disabled:opacity-45"
-							[attr.aria-label]="(playing() ? 'posts.audio.pause' : 'posts.audio.play') | translate"
-							[disabled]="disabled()"
-							(click)="togglePlay()"
-						>
-							@if (playing()) {
-								<hugeicons-icon [icon]="PauseIcon" [size]="20" [strokeWidth]="2.5" />
-							} @else {
-								<hugeicons-icon [icon]="PlayIcon" [size]="20" [strokeWidth]="2.5" />
-							}
-						</button>
+                        <button
+                            tuiButton
+                            size="m"
+                            class="pap-play disabled:cursor-not-allowed disabled:opacity-45"
+                            [attr.aria-label]="(playing() ? 'posts.audio.pause' : 'posts.audio.play') | translate"
+                            [disabled]="disabled()"
+                            (click)="togglePlay()"
+                        >
+                            @if (playing()) {
+                                <hugeicons-icon [icon]="PauseIcon" [size]="20" [strokeWidth]="2.5" />
+                            } @else {
+                                <hugeicons-icon [icon]="PlayIcon" [size]="20" [strokeWidth]="2.5" />
+                            }
+                        </button>
 
-						<button
-							tuiButton
-							size="m"
-							tuiAppearance="flat"
-							class="disabled:cursor-not-allowed disabled:opacity-45"
-							[attr.aria-label]="'posts.audio.fwd10' | translate"
-							[disabled]="disabled()"
-							(click)="skipForward()"
-						>
-							<hugeicons-icon [icon]="RotateRight01Icon" [size]="18" [strokeWidth]="2.5" />
-						</button>
-					</div>
+                        <button
+                            tuiButton
+                            size="m"
+                            tuiAppearance="flat"
+                            class="disabled:cursor-not-allowed disabled:opacity-45"
+                            [attr.aria-label]="'posts.audio.fwd10' | translate"
+                            [disabled]="disabled()"
+                            (click)="skipForward()"
+                        >
+                            <hugeicons-icon [icon]="RotateRight01Icon" [size]="18" [strokeWidth]="2.5" />
+                        </button>
+                    </div>
 
-					<div class="pap-vol flex items-center justify-self-end gap-1">
-						<button
-							type="button"
-							class="cursor-pointer rounded-lg p-2 text-muted transition-colors hover:text-accent disabled:cursor-not-allowed disabled:opacity-45"
-							[attr.aria-label]="(muted() ? 'posts.audio.unmute' : 'posts.audio.mute') | translate"
-							[disabled]="disabled()"
-							(click)="toggleMute()"
-						>
-							@if (muted()) {
-								<hugeicons-icon [icon]="VolumeMute02Icon" [size]="18" [strokeWidth]="2.5" />
-							} @else {
-								<hugeicons-icon [icon]="VolumeHighIcon" [size]="18" [strokeWidth]="2.5" />
-							}
-						</button>
+                    <div class="pap-vol flex items-center justify-self-end gap-1">
+                        <button
+                            type="button"
+                            class="cursor-pointer rounded-lg p-2 text-muted transition-colors hover:text-accent disabled:cursor-not-allowed disabled:opacity-45"
+                            [attr.aria-label]="(muted() ? 'posts.audio.unmute' : 'posts.audio.mute') | translate"
+                            [disabled]="disabled()"
+                            (click)="toggleMute()"
+                        >
+                            @if (muted()) {
+                                <hugeicons-icon [icon]="VolumeMute02Icon" [size]="18" [strokeWidth]="2.5" />
+                            } @else {
+                                <hugeicons-icon [icon]="VolumeHighIcon" [size]="18" [strokeWidth]="2.5" />
+                            }
+                        </button>
 
-						<input
-							class="w-20 accent-accent max-[480px]:hidden disabled:cursor-not-allowed disabled:opacity-45"
-							type="range"
-							min="0"
-							max="1"
-							step="0.05"
-							[value]="volume()"
-							[attr.aria-label]="'posts.audio.volume' | translate"
-							[disabled]="disabled()"
-							(input)="setVolume($event)"
-						/>
-					</div>
-				</div>
+                        <input
+                            class="w-20 accent-accent max-[480px]:hidden disabled:cursor-not-allowed disabled:opacity-45"
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            [value]="volume()"
+                            [attr.aria-label]="'posts.audio.volume' | translate"
+                            [disabled]="disabled()"
+                            (input)="setVolume($event)"
+                        />
+                    </div>
+                </div>
 
-				<span class="sr-only" aria-live="polite">
-					{{ live() | translate }}
-				</span>
-			</section>
-		}
-	`,
+                <span class="sr-only" aria-live="polite">
+                    {{ live() | translate }}
+                </span>
+            </section>
+        }
+    `,
 })
 export class AudioPlayerComponent {
 	readonly audio = input<PostAudioDto | undefined>();
@@ -397,6 +418,8 @@ export class AudioPlayerComponent {
 
 	private readonly signed = signal<string | null>(null);
 	private readonly signedKey = signal<string | null>(null);
+	private readonly playbackUrl = signal<string | null>(null);
+	private readonly playbackKey = signal<string | null>(null);
 	private readonly closed = signal(false);
 	private readonly cumulative = signal(0);
 	private readonly selectedType = signal<AudioType | null>(null);
@@ -414,7 +437,9 @@ export class AudioPlayerComponent {
 	readonly live = signal('posts.audio.stopped');
 	readonly waveform = signal<number[]>([]);
 
+	private readonly objectUrls = new Set<string>();
 	private lastTick: number | null = null;
+	private pendingSeekFraction: number | null = null;
 
 	readonly language = computed<Language>(() => this.languageService.language());
 
@@ -508,7 +533,7 @@ export class AudioPlayerComponent {
 					this.error.set(null);
 					this.waveform.set([]);
 
-					this.decodeWaveform(url, key);
+					this.load(url, key);
 				},
 				error: () => this.failKey(key),
 			});
@@ -521,9 +546,9 @@ export class AudioPlayerComponent {
 
 			const element = this.audioEl()?.nativeElement;
 			const key = this.currentKey();
-			const url = this.signed();
+			const url = this.playbackUrl();
 
-			if (!element || !key || !url || this.signedKey() !== key) {
+			if (!element || !key || !url || this.playbackKey() !== key) {
 				return;
 			}
 
@@ -539,6 +564,13 @@ export class AudioPlayerComponent {
 			element.src = url;
 			element.load();
 
+			this.objectUrls.forEach((tracked) => {
+				if (tracked !== url) {
+					URL.revokeObjectURL(tracked);
+					this.objectUrls.delete(tracked);
+				}
+			});
+
 			this.duration.set(0);
 			this.currentTime.set(0);
 			this.lastTick = null;
@@ -551,6 +583,8 @@ export class AudioPlayerComponent {
 				element.nativeElement.pause();
 				element.nativeElement.removeAttribute('src');
 			}
+
+			this.releaseObjectUrls();
 		});
 	}
 
@@ -571,11 +605,12 @@ export class AudioPlayerComponent {
 			return;
 		}
 
-		const element = this.audioEl()?.nativeElement;
-
-		element?.pause();
+		this.resetElement();
+		this.releaseObjectUrls();
 		this.signed.set(null);
 		this.signedKey.set(null);
+		this.playbackUrl.set(null);
+		this.playbackKey.set(null);
 		this.playing.set(false);
 		this.canPlay.set(false);
 		this.stalled.set(false);
@@ -584,6 +619,7 @@ export class AudioPlayerComponent {
 		this.duration.set(0);
 		this.waveform.set([]);
 		this.lastTick = null;
+		this.pendingSeekFraction = null;
 		this.selectedType.set(type);
 	}
 
@@ -659,21 +695,31 @@ export class AudioPlayerComponent {
 	}
 
 	onSeekInput(event: Event): void {
-		if (this.disabled()) {
+		if (this.error() !== null) {
 			return;
 		}
 
-		const time = Number((event.target as HTMLInputElement).value);
-
+		const fraction = Number((event.target as HTMLInputElement).value);
 		const element = this.audioEl()?.nativeElement;
 
-		if (!element || !Number.isFinite(time)) {
+		if (!element || !Number.isFinite(fraction)) {
 			return;
 		}
 
-		element.currentTime = time;
-		this.currentTime.set(time);
+		const duration = element.duration;
+
+		if (!Number.isFinite(duration) || duration <= 0) {
+			this.pendingSeekFraction = Math.min(1, Math.max(0, fraction));
+			return;
+		}
+
+		const clampedFraction = Math.min(1, Math.max(0, fraction));
+		const targetTime = clampedFraction * duration;
+
+		this.currentTime.set(targetTime);
 		this.lastTick = null;
+
+		element.currentTime = targetTime;
 	}
 
 	onCanPlay(): void {
@@ -681,6 +727,8 @@ export class AudioPlayerComponent {
 			this.canPlay.set(true);
 			this.stalled.set(false);
 		}
+
+		this.applyPendingSeek();
 	}
 
 	onStalled(): void {
@@ -694,10 +742,43 @@ export class AudioPlayerComponent {
 			this.duration.set(element.duration);
 		}
 
+		this.applyPendingSeek();
+
 		if (element) {
 			element.playbackRate = this.speed();
 			element.volume = this.volume();
 			element.muted = this.muted();
+		}
+	}
+
+	onDurationChange(): void {
+		const element = this.audioEl()?.nativeElement;
+
+		if (element && Number.isFinite(element.duration) && element.duration > 0) {
+			this.duration.set(element.duration);
+		}
+
+		this.applyPendingSeek();
+	}
+
+	private applyPendingSeek(): void {
+		const element = this.audioEl()?.nativeElement;
+
+		if (!element || this.pendingSeekFraction === null) {
+			return;
+		}
+
+		if (element.getAttribute('data-key') !== this.currentKey()) {
+			return;
+		}
+
+		if (element.readyState >= 1 && Number.isFinite(element.duration) && element.duration > 0) {
+			const time = Math.min(1, Math.max(0, this.pendingSeekFraction)) * element.duration;
+
+			this.pendingSeekFraction = null;
+			element.currentTime = time;
+			this.currentTime.set(time);
+			this.lastTick = null;
 		}
 	}
 
@@ -753,16 +834,20 @@ export class AudioPlayerComponent {
 			return;
 		}
 
-		const limit = element.duration || this.duration();
+		const duration = element.duration;
 
-		const time = Math.max(0, Math.min(limit || 0, this.currentTime() + seconds));
-
-		if (limit > 0) {
-			element.currentTime = time;
+		if (!Number.isFinite(duration) || duration <= 0) {
+			return;
 		}
 
-		this.currentTime.set(time);
+		const currentTime = Number.isFinite(element.currentTime) ? element.currentTime : this.currentTime();
+
+		const targetTime = Math.min(duration, Math.max(0, currentTime + seconds));
+
+		this.currentTime.set(targetTime);
 		this.lastTick = null;
+
+		element.currentTime = targetTime;
 	}
 
 	private failKey(key: string | null): void {
@@ -774,8 +859,12 @@ export class AudioPlayerComponent {
 			});
 		}
 
+		this.resetElement();
+		this.releaseObjectUrls();
 		this.signed.set(null);
 		this.signedKey.set(null);
+		this.playbackUrl.set(null);
+		this.playbackKey.set(null);
 		this.playing.set(false);
 		this.canPlay.set(false);
 		this.stalled.set(false);
@@ -784,6 +873,34 @@ export class AudioPlayerComponent {
 		this.duration.set(0);
 		this.waveform.set([]);
 		this.live.set('posts.audio.stopped');
+		this.pendingSeekFraction = null;
+	}
+
+	private resetElement(): void {
+		const element = this.audioEl()?.nativeElement;
+
+		if (!element) {
+			return;
+		}
+
+		element.pause();
+		element.removeAttribute('src');
+		element.removeAttribute('data-key');
+		element.load();
+	}
+
+	private releaseObjectUrls(): void {
+		this.objectUrls.forEach((tracked) => URL.revokeObjectURL(tracked));
+		this.objectUrls.clear();
+	}
+
+	private isCurrent(key: string): boolean {
+		return key === this.currentKey() && key === this.signedKey();
+	}
+
+	private startPlayback(url: string, key: string): void {
+		this.playbackKey.set(key);
+		this.playbackUrl.set(url);
 	}
 
 	private keyboardHook(): void {
@@ -833,16 +950,53 @@ export class AudioPlayerComponent {
 		window.addEventListener('keydown', handler);
 	}
 
-	private decodeWaveform(url: string, key: string): void {
+	private load(url: string, key: string): void {
+		const buffered = BUFFERED_TYPES.includes(this.currentType());
+
+		if (!buffered) {
+			this.startPlayback(url, key);
+		}
+
 		fetch(url)
-			.then((response) => (response.ok ? response.arrayBuffer() : Promise.reject(new Error('audio-fetch'))))
+			.then((response) => (response.ok ? response.blob() : Promise.reject(new Error('audio-fetch'))))
+			.then(async (blob) => {
+				const data = buffered ? ((await repairMp3(blob)) ?? audioBlob(blob, key)) : audioBlob(blob, key);
+
+				if (!this.isCurrent(key)) {
+					return;
+				}
+
+				if (buffered) {
+					const objectUrl = URL.createObjectURL(data);
+
+					this.objectUrls.add(objectUrl);
+					this.startPlayback(objectUrl, key);
+				}
+
+				this.decodeWaveform(data, key);
+			})
+			.catch(() => {
+				if (!this.isCurrent(key)) {
+					return;
+				}
+
+				if (buffered) {
+					this.startPlayback(url, key);
+				}
+
+				this.waveform.set(fallbackWaveform());
+			});
+	}
+
+	private decodeWaveform(blob: Blob, key: string): void {
+		blob.arrayBuffer()
 			.then((buffer) => {
 				const context = new AudioContext();
 
 				return context.decodeAudioData(buffer).finally(() => context.close().catch(() => undefined));
 			})
 			.then((decoded) => {
-				if (key !== this.currentKey() || key !== this.signedKey()) {
+				if (!this.isCurrent(key)) {
 					return;
 				}
 
@@ -871,11 +1025,134 @@ export class AudioPlayerComponent {
 				this.waveform.set(bars.map((bar) => Math.max(4, Math.round((bar / max) * 100))));
 			})
 			.catch(() => {
-				if (key === this.currentKey() && key === this.signedKey()) {
+				if (this.isCurrent(key)) {
 					this.waveform.set(fallbackWaveform());
 				}
 			});
 	}
+}
+
+async function repairMp3(blob: Blob): Promise<Blob | null> {
+	const bytes = new Uint8Array(await blob.arrayBuffer());
+	const chunks: Uint8Array[] = [];
+	let position = 0;
+	let runStart = -1;
+	let frames = 0;
+	let tags = 0;
+	let infoFrames = 0;
+
+	const closeRun = (end: number) => {
+		if (runStart >= 0 && end > runStart) {
+			chunks.push(bytes.subarray(runStart, end));
+		}
+
+		runStart = -1;
+	};
+
+	while (position + 4 <= bytes.length) {
+		if (bytes[position] === 0x49 && bytes[position + 1] === 0x44 && bytes[position + 2] === 0x33) {
+			if (position + 10 > bytes.length) {
+				return null;
+			}
+
+			const footer = (bytes[position + 5] & 0x10) !== 0 ? 10 : 0;
+			const size =
+				((bytes[position + 6] & 0x7f) << 21) |
+				((bytes[position + 7] & 0x7f) << 14) |
+				((bytes[position + 8] & 0x7f) << 7) |
+				(bytes[position + 9] & 0x7f);
+
+			closeRun(position);
+			position += 10 + size + footer;
+			tags++;
+			continue;
+		}
+
+		const b1 = bytes[position];
+		const b2 = bytes[position + 1];
+		const b3 = bytes[position + 2];
+		const b4 = bytes[position + 3];
+		const version = (b2 >> 3) & 3;
+		const layer = (b2 >> 1) & 3;
+		const bitrateIndex = b3 >> 4;
+		const rateIndex = (b3 >> 2) & 3;
+
+		if (
+			b1 !== 0xff ||
+			(b2 & 0xe0) !== 0xe0 ||
+			version === 1 ||
+			layer !== 1 ||
+			bitrateIndex === 0 ||
+			bitrateIndex === 15 ||
+			rateIndex === 3
+		) {
+			if (
+				bytes.length - position === 128 &&
+				bytes[position] === 0x54 &&
+				bytes[position + 1] === 0x41 &&
+				bytes[position + 2] === 0x47
+			) {
+				break;
+			}
+
+			return null;
+		}
+
+		const bitrate = MP3_BITRATES[version][bitrateIndex] * 1000;
+		const sampleRate = MP3_SAMPLE_RATES[version][rateIndex];
+		const length = Math.floor(((version === 3 ? 144 : 72) * bitrate) / sampleRate) + ((b3 >> 1) & 1);
+
+		if (position + length > bytes.length) {
+			break;
+		}
+
+		const mono = b4 >> 6 === 3;
+		const crc = (b2 & 1) === 0 ? 2 : 0;
+		const sideInfo = version === 3 ? (mono ? 17 : 32) : mono ? 9 : 17;
+		const tagAt = position + 4 + crc + sideInfo;
+		const isInfo =
+			tagAt + 4 <= position + length &&
+			((bytes[tagAt] === 0x58 &&
+					bytes[tagAt + 1] === 0x69 &&
+					bytes[tagAt + 2] === 0x6e &&
+					bytes[tagAt + 3] === 0x67) ||
+				(bytes[tagAt] === 0x49 &&
+					bytes[tagAt + 1] === 0x6e &&
+					bytes[tagAt + 2] === 0x66 &&
+					bytes[tagAt + 3] === 0x6f));
+
+		if (isInfo) {
+			closeRun(position);
+			infoFrames++;
+		} else {
+			if (runStart < 0) {
+				runStart = position;
+			}
+
+			frames++;
+		}
+
+		position += length;
+	}
+
+	closeRun(position);
+
+	if (frames === 0 || (infoFrames <= 1 && tags <= 1)) {
+		return null;
+	}
+
+	return new Blob(chunks as BlobPart[], { type: 'audio/mpeg' });
+}
+
+function audioBlob(blob: Blob, key: string): Blob {
+	if (blob.type.startsWith('audio/')) {
+		return blob;
+	}
+
+	const extension = key.split('.').pop()?.toLowerCase() ?? '';
+	const type = AUDIO_MIME[extension];
+
+	return type ? new Blob([blob], { type }) : blob;
 }
 
 function fallbackWaveform(): number[] {
