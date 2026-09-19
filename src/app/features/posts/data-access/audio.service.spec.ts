@@ -30,25 +30,6 @@ describe('AudioService', () => {
     httpMock.verify();
   });
 
-  it('flattenAudio() returns artifacts only for the languages present in the post payload', () => {
-    const artifacts = service.flattenAudio({
-      NARRATION: {
-        PORTUGUESE: { status: 'READY', key: 'post/audio/NARRATION-PORTUGUESE.wav' },
-      },
-    });
-
-    expect(artifacts).toEqual([
-      {
-        type: 'NARRATION',
-        language: 'PORTUGUESE',
-        status: 'READY',
-        key: 'post/audio/NARRATION-PORTUGUESE.wav',
-        error: undefined,
-        progress: undefined,
-      },
-    ]);
-  });
-
   it('signArtifacts() batch-signs RAW keys of READY artifacts via the upload sign endpoint', () => {
     let signed: Record<string, string> | undefined;
 

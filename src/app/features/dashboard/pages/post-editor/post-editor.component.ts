@@ -18,7 +18,6 @@ import {
 } from '@angular/forms';
 import {
 	TuiButton,
-	TuiDataList,
 	TuiDropdown,
 	TuiFilterByInputPipe,
 	TuiInput,
@@ -29,7 +28,6 @@ import {
 	TuiChip,
 	TuiDataListWrapper, TuiInputChipComponent, TuiInputChipDirective,
 	TuiMultiSelect,
-	TuiToast,
 	TuiToastService,
 } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
@@ -37,8 +35,6 @@ import {
 	ArrowLeft01Icon,
 	Edit01Icon,
 	ExternalLinkIcon,
-	EyeIcon,
-	File01Icon,
 	HeadsetIcon,
 	Image01Icon,
 	Layers01Icon,
@@ -50,7 +46,9 @@ import {
 } from '@hugeicons/core-free-icons';
 
 import {
+	AudioType,
 	Language,
+	PostAudioDto,
 	PostService,
 } from '../../../posts/data-access/post.service';
 import { AudioArtifactDto, AudioService } from '../../../posts/data-access/audio.service';
@@ -84,6 +82,9 @@ interface TranslationValue {
 }
 
 type PostStatus = 'DRAFT' | 'PUBLISHED';
+
+const AUDIO_TYPES: AudioType[] = ['NARRATION', 'PODCAST'];
+const AUDIO_LANGUAGES: Language[] = ['ENGLISH', 'PORTUGUESE'];
 
 @Component({
 	selector: 'app-post-editor',
@@ -443,7 +444,32 @@ export class PostEditorComponent implements OnInit {
 	readonly availableProjects = signal<ProjectOption[]>([]);
 	readonly projectSearchText = signal('');
 
-	readonly artifacts = signal<AudioArtifactDto[]>([]);
+	readonly audio = signal<PostAudioDto | undefined>(undefined);
+	readonly artifacts = computed<AudioArtifactDto[]>(() => {
+		const audio = this.audio();
+		const artifacts: AudioArtifactDto[] = [];
+
+		for (const type of AUDIO_TYPES) {
+			for (const language of AUDIO_LANGUAGES) {
+				const artifact = audio?.[type]?.[language];
+
+				if (!artifact) {
+					continue;
+				}
+
+				artifacts.push({
+					type,
+					language,
+					status: artifact.status,
+					key: artifact.key ?? '',
+					error: artifact.error,
+					progress: artifact.progress,
+				});
+			}
+		}
+
+		return artifacts;
+	});
 	readonly audioError = signal<string | null>(null);
 	readonly audioBusyKeys = signal<Set<string>>(new Set());
 
@@ -557,7 +583,7 @@ export class PostEditorComponent implements OnInit {
 			bannerUrl: post.bannerUrl ?? '',
 		});
 
-		this.artifacts.set(this.audioService.flattenAudio(post.audio));
+		this.audio.set(post.audio);
 		this.ensureAudioPolling();
 
 		this.populateTranslations(post.translations);
@@ -829,11 +855,11 @@ export class PostEditorComponent implements OnInit {
 
 		this.postService.getById(this.postId).subscribe({
 			next: (post) => {
-				this.artifacts.set(this.audioService.flattenAudio(post.audio));
+				this.audio.set(post.audio);
 				this.ensureAudioPolling();
 			},
 			error: () => {
-				this.artifacts.set([]);
+				this.audio.set(undefined);
 				this.audioError.set(this.translationService.translate('dashboard.posts.editor.audioLoadFailed'));
 			},
 		});
@@ -880,11 +906,18 @@ export class PostEditorComponent implements OnInit {
 
 		this.audioService.retry(this.postId, artifact.type, artifact.language).subscribe({
 			next: (updated) => {
-				this.artifacts.update((current) =>
-					current.map((item) =>
-						item.type === updated.type && item.language === updated.language ? updated : item,
-					),
-				);
+				this.audio.update((current) => ({
+					...current,
+					[updated.type]: {
+						...current?.[updated.type],
+						[updated.language]: {
+							status: updated.status,
+							key: updated.key || undefined,
+							progress: updated.progress,
+							error: updated.error,
+						},
+					},
+				}));
 				this.audioBusyKeys.update((keys) => {
 					const next = new Set(keys);
 					next.delete(key);

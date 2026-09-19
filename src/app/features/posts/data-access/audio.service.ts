@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { AudioType, Language, PostAudioDto } from './post.service';
+import { AudioType, Language } from './post.service';
 import { UploadService } from '../../../core/upload/upload.service';
 import { environment } from '../../../../environments/environment';
 
@@ -19,45 +19,11 @@ export interface AudioArtifactDto {
 	progress?: number;
 }
 
-const AUDIO_TYPES: AudioType[] = ['NARRATION', 'PODCAST'];
-const AUDIO_LANGUAGES: Language[] = ['ENGLISH', 'PORTUGUESE'];
-
 @Injectable({ providedIn: 'root' })
 export class AudioService {
 	private readonly http = inject(HttpClient);
 	private readonly uploadService = inject(UploadService);
 	private readonly base = `${environment.apiBaseUrl}/v1/post`;
-
-	flattenAudio(audio: PostAudioDto | undefined): AudioArtifactDto[] {
-		if (!audio) {
-			return [];
-		}
-
-		const artifacts: AudioArtifactDto[] = [];
-
-		for (const type of AUDIO_TYPES) {
-			const forType = audio[type] ?? {};
-
-			for (const language of AUDIO_LANGUAGES) {
-				const artifact = forType[language];
-
-				if (!artifact) {
-					continue;
-				}
-
-				artifacts.push({
-					type,
-					language,
-					status: artifact.status,
-					key: artifact.key ?? '',
-					error: artifact.error,
-					progress: artifact.progress,
-				});
-			}
-		}
-
-		return artifacts;
-	}
 
 	signArtifacts(artifacts: Array<Partial<AudioArtifactDto>>): Observable<Record<string, string>> {
 		const keys = artifacts
