@@ -2,6 +2,14 @@
 @plugin "@tailwindcss/typography";
 
 @font-face {
+	font-family: 'Schibsted Grotesk';
+	src: url('../node_modules/@fontsource-variable/schibsted-grotesk/files/schibsted-grotesk-latin-wght-normal.woff2') format('woff2-variations');
+	font-weight: 400 900;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
 	font-family: 'Geist';
 	src: url('../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2') format('woff2');
 	font-weight: 100 900;
