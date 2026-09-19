@@ -36,6 +36,7 @@ import { TuiAppearance, TuiButton } from '@taiga-ui/core';
 import { TuiChip, TuiToastService } from '@taiga-ui/kit';
 
 import { MarkdownService } from '../../data-access/markdown.service';
+import { AudioPlayerComponent } from '../../components/audio-player.component';
 import { ImageSignContainerDirective, ImageSignDirective } from '../../../../shared/directives/image-sign.directive';
 import { GiscusComponent } from '../../components/giscus.component';
 import { LanguageService } from '../../../../core/i18n/language.service';
@@ -62,6 +63,7 @@ import {
 		TuiAppearance,
 		TuiChip,
 		GiscusComponent,
+		AudioPlayerComponent,
 		ContentCardComponent,
 		TranslatePipe,
 		LocalizedDatePipe,
@@ -94,7 +96,7 @@ import {
 				<h1 class="text-3xl md:text-4xl font-bold tracking-tight leading-tight max-w-4xl break-words">
 					{{ content()?.title }}
 				</h1>
-
+				
 				<div class="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted">
 					<span class="inline-flex items-center gap-1">
 						<hugeicons-icon [icon]="Calendar01Icon" [size]="16" [strokeWidth]="1.5" />
@@ -144,6 +146,8 @@ import {
 						</span>
 					}
 				</div>
+
+				<app-audio-player [audio]="p.audio" [estimatedReading]="p.estimatedReading" />
 
 				<article
 					#articleEl
@@ -285,15 +289,6 @@ export class PostDetailComponent implements AfterViewInit {
 		const p = this.post();
 		if (!p) return null;
 		return firstTranslation(p.translations) ?? null;
-	}
-
-	projectContent(project?: ProjectDto) {
-		if (!project) return null;
-		return firstTranslation(project.translations) ?? null;
-	}
-
-	getFirstTranslation(translations?: Record<string, { name?: string }>) {
-		return translations ? (Object.values(translations)[0] ?? null) : null;
 	}
 
 	tagNameOf(tag: TagDto | undefined, lang: string): string {

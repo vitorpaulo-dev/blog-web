@@ -1,6 +1,7 @@
 import {
 	Component,
 	computed,
+	DestroyRef,
 	inject,
 	OnInit,
 	PLATFORM_ID,
@@ -38,8 +39,11 @@ import {
 	ExternalLinkIcon,
 	EyeIcon,
 	File01Icon,
+	HeadsetIcon,
 	Image01Icon,
 	Layers01Icon,
+	MicVocalIcon,
+	RefreshCwIcon,
 	SaveIcon,
 	SendIcon,
 	Tag01Icon,
@@ -49,6 +53,7 @@ import {
 	Language,
 	PostService,
 } from '../../../posts/data-access/post.service';
+import { AudioArtifactDto, AudioService } from '../../../posts/data-access/audio.service';
 import { ProjectService } from '../../../projects/data-access/project.service';
 import { TagService } from '../../../tags/data-access/tag.service';
 import { MarkdownWriterComponent } from '../../../../shared/components/markdown-writer/markdown-writer.component';
@@ -92,6 +97,7 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 		TuiDropdown,
 		TuiMultiSelect,
 		TuiChevron,
+		TuiChip,
 		HugeiconsIconComponent,
 		TuiInput,
 		TuiDataListWrapper,
@@ -326,6 +332,60 @@ type PostStatus = 'DRAFT' | 'PUBLISHED';
 					}
 				</div>
 			</form>
+
+			<!-- Audio artifacts -->
+			@if (isEdit()) {
+				<section class="mt-10">
+					<h2 class="mb-4 flex items-center gap-2 text-lg font-semibold">
+						<hugeicons-icon [icon]="HEADSETIcon" [size]="20" [strokeWidth]="2.5" />
+						{{ 'dashboard.posts.editor.audioTitle' | translate }}
+					</h2>
+
+					@if (audioError(); as audioErrorText) {
+						<p class="text-sm text-red-400" role="alert">{{ audioErrorText }}</p>
+					} @else {
+						<div class="flex flex-col gap-3">
+								@for (artifact of artifacts(); track artifactKey(artifact)) {
+								<div class="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+									<hugeicons-icon [icon]="artifact.type === 'PODCAST' ? micVocalIcon : HEADSETIcon" [size]="16" [strokeWidth]="2.5" class="text-muted" />
+
+									<span class="text-sm font-medium">{{ typeLabel(artifact.type) | translate }}</span>
+									<span class="text-sm text-muted">{{ audioLanguageLabel(artifact.language) | translate }}</span>
+
+									<span class="text-xs font-medium" [class]="statusClass(artifact.status)">
+										{{ statusLabel(artifact.status) | translate }}
+									</span>
+
+									@if (artifact.status === 'GENERATING' && artifact.progress !== undefined && artifact.progress !== null) {
+										<span class="text-xs text-muted">{{ artifact.progress }}%</span>
+									}
+
+									@if (artifact.status === 'FAILED' && artifact.error) {
+										<span class="text-xs text-red-400">{{ artifact.error }}</span>
+									}
+
+									<span class="grow"></span>
+
+									@if (artifact.status !== 'GENERATING') {
+										<button
+											tuiButton
+											tuiAppearance="outline"
+											size="s"
+											type="button"
+											class="gap-1"
+											[disabled]="artifactBusy(artifact)"
+											(click)="retry(artifact)"
+										>
+											<hugeicons-icon [icon]="refreshIcon" [size]="14" [strokeWidth]="2.5" />
+											{{ 'dashboard.posts.editor.audioRetry' | translate }}
+										</button>
+									}
+								</div>
+							}
+						</div>
+					}
+				</section>
+			}
 		</div>
 	`,
 })
@@ -338,6 +398,13 @@ export class PostEditorComponent implements OnInit {
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
+	private readonly audioService = inject(AudioService);
+	private readonly destroyRef = inject(DestroyRef);
+	private audioPollTimer: number | null = null;
+
+	constructor() {
+		this.destroyRef.onDestroy(() => this.stopAudioPolling());
+	}
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
 
@@ -375,6 +442,14 @@ export class PostEditorComponent implements OnInit {
 	readonly availableTags = signal<TagOption[]>([]);
 	readonly availableProjects = signal<ProjectOption[]>([]);
 	readonly projectSearchText = signal('');
+
+	readonly artifacts = signal<AudioArtifactDto[]>([]);
+	readonly audioError = signal<string | null>(null);
+	readonly audioBusyKeys = signal<Set<string>>(new Set());
+
+	readonly HEADSETIcon = HeadsetIcon;
+	readonly micVocalIcon = MicVocalIcon;
+	readonly refreshIcon = RefreshCwIcon;
 
 	readonly bannerUrl = computed(() => this.form.controls.bannerUrl.value);
 
@@ -468,9 +543,11 @@ export class PostEditorComponent implements OnInit {
 
 		this.isEdit.set(true);
 		this.postId = id;
-
 		this.postService.getById(id).subscribe({
-			next: (post) => this.populateForm(post),
+			next: (post) => {
+				this.populateForm(post);
+				this.loadAudioStatus();
+			},
 			error: () => this.handleLoadError(),
 		});
 	}
@@ -479,6 +556,9 @@ export class PostEditorComponent implements OnInit {
 		this.form.patchValue({
 			bannerUrl: post.bannerUrl ?? '',
 		});
+
+		this.artifacts.set(this.audioService.flattenAudio(post.audio));
+		this.ensureAudioPolling();
 
 		this.populateTranslations(post.translations);
 		this.loadPostTags(post.tagIds ?? []);
@@ -738,5 +818,124 @@ export class PostEditorComponent implements OnInit {
 
 	changeLanguage(language: Language): void {
 		this.activeLang.set(language);
+	}
+
+	loadAudioStatus(): void {
+		if (!this.isEdit() || !this.postId) {
+			return;
+		}
+
+		this.audioError.set(null);
+
+		this.postService.getById(this.postId).subscribe({
+			next: (post) => {
+				this.artifacts.set(this.audioService.flattenAudio(post.audio));
+				this.ensureAudioPolling();
+			},
+			error: () => {
+				this.artifacts.set([]);
+				this.audioError.set(this.translationService.translate('dashboard.posts.editor.audioLoadFailed'));
+			},
+		});
+	}
+
+	statusLabel(status: string): string {
+		return `dashboard.posts.editor.status${status.charAt(0)}${status.slice(1).toLowerCase()}`;
+	}
+
+	artifactBusy(artifact: AudioArtifactDto): boolean {
+		return this.audioBusyKeys().has(this.artifactKey(artifact));
+	}
+
+	statusClass(status: string): string {
+		switch (status) {
+			case 'READY':
+				return 'text-green-400';
+			case 'GENERATING':
+				return 'text-amber-400';
+			case 'FAILED':
+				return 'text-red-400';
+			default:
+				return 'text-muted';
+		}
+	}
+
+	typeLabel(type: string): string {
+		return type === 'PODCAST' ? 'dashboard.posts.editor.audioPodcast' : 'dashboard.posts.editor.audioNarration';
+	}
+
+	audioLanguageLabel(language: Language): string {
+		return language === 'ENGLISH'
+			? 'dashboard.posts.editor.langEn'
+			: 'dashboard.posts.editor.langPt';
+	}
+
+	retry(artifact: AudioArtifactDto): void {
+		if (!this.postId || artifact.status === 'GENERATING' || this.artifactBusy(artifact)) {
+			return;
+		}
+
+		const key = this.artifactKey(artifact);
+		this.audioBusyKeys.update((keys) => new Set(keys).add(key));
+
+		this.audioService.retry(this.postId, artifact.type, artifact.language).subscribe({
+			next: (updated) => {
+				this.artifacts.update((current) =>
+					current.map((item) =>
+						item.type === updated.type && item.language === updated.language ? updated : item,
+					),
+				);
+				this.audioBusyKeys.update((keys) => {
+					const next = new Set(keys);
+					next.delete(key);
+					return next;
+				});
+				this.toastService.open(this.translationService.translate('dashboard.posts.editor.audioRetryQueued'), {
+					appearance: 'success',
+					autoClose: 3000,
+					data: '@tui.check',
+				}).subscribe();
+			},
+			error: (error) => {
+				this.audioBusyKeys.update((keys) => {
+					const next = new Set(keys);
+					next.delete(key);
+					return next;
+				});
+
+				const conflict = error?.status === 409;
+				this.toastService.open(
+					this.translationService.translate(
+						conflict ? 'dashboard.posts.editor.audioConflict' : 'dashboard.posts.editor.audioRetryFailed',
+					),
+					{
+						appearance: 'error',
+						autoClose: 5000,
+						data: '@tui.circle-x',
+					},
+				).subscribe();
+			},
+		});
+	}
+
+	protected artifactKey(artifact: AudioArtifactDto): string {
+		return `${artifact.type}:${artifact.language}`;
+	}
+
+	private ensureAudioPolling(): void {
+		const generating = this.artifacts().some((artifact) => artifact.status === 'GENERATING');
+
+		if (!generating || this.audioPollTimer !== null) {
+			return;
+		}
+
+		this.audioPollTimer = window.setInterval(() => this.loadAudioStatus(), 10000);
+	}
+
+	private stopAudioPolling(): void {
+		if (this.audioPollTimer !== null) {
+			window.clearInterval(this.audioPollTimer);
+			this.audioPollTimer = null;
+		}
 	}
 }
