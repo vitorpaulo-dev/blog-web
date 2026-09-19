@@ -4,7 +4,7 @@ import { of, Subject } from 'rxjs';
 import { vi } from 'vitest';
 import { signal } from '@angular/core';
 import { AudioPlayerComponent, STICKY_TOP } from './audio-player.component';
-import { AudioService } from '../data-access/audio.service';
+import { UploadService } from '../../../core/upload/upload.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { PostAudioDto } from '../data-access/post.service';
 import { translationProvider } from '../../../core/i18n/testing';
@@ -12,19 +12,19 @@ import { translationProvider } from '../../../core/i18n/testing';
 describe('AudioPlayerComponent', () => {
   let fixture: ComponentFixture<AudioPlayerComponent>;
   let component: AudioPlayerComponent;
-  let audioServiceMock: { signArtifacts: ReturnType<typeof vi.fn> };
+  let uploadServiceMock: { sign: ReturnType<typeof vi.fn> };
   let languageSignal: ReturnType<typeof signal>;
 
   function setup(audio: PostAudioDto, language: 'ENGLISH' | 'PORTUGUESE' = 'ENGLISH') {
     languageSignal = signal(language);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
-    audioServiceMock = { signArtifacts: vi.fn().mockReturnValue(of({ 'post/audio/NARRATION-ENGLISH.wav': 'https://signed/narration-en', 'post/audio/PODCAST-ENGLISH.wav': 'https://signed/podcast-en' })) };
+    uploadServiceMock = { sign: vi.fn().mockReturnValue(of({ 'post/audio/NARRATION-ENGLISH.wav': 'https://signed/narration-en', 'post/audio/PODCAST-ENGLISH.wav': 'https://signed/podcast-en' })) };
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [AudioPlayerComponent],
       providers: [
-        { provide: AudioService, useValue: audioServiceMock },
+        { provide: UploadService, useValue: uploadServiceMock },
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: LanguageService, useValue: { language: languageSignal } },
         translationProvider(),
@@ -45,6 +45,10 @@ describe('AudioPlayerComponent', () => {
     if (state.duration !== undefined) {
       Object.defineProperty(audio, 'duration', { configurable: true, value: state.duration });
     }
+  }
+
+  function flushMicrotasks(): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, 0));
   }
 
   function seekState(component: AudioPlayerComponent): number | null {
@@ -97,7 +101,7 @@ describe('AudioPlayerComponent', () => {
     fixture.detectChanges();
 
     expect(component.currentType()).toBe('PODCAST');
-    expect(audioServiceMock.signArtifacts).toHaveBeenCalled();
+    expect(uploadServiceMock.sign).toHaveBeenCalled();
   });
 
   it('disables playback until the hidden audio is ready', () => {
@@ -169,7 +173,7 @@ describe('AudioPlayerComponent', () => {
     const currentTimeBefore = audio.currentTime;
     const seekInput = fixture.nativeElement.querySelector('input.pap-seek') as HTMLInputElement;
 
-    seekInput.value = '60';
+    seekInput.value = '0.6';
     seekInput.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
@@ -201,7 +205,7 @@ describe('AudioPlayerComponent', () => {
     fixture.detectChanges();
 
     const seekInput = fixture.nativeElement.querySelector('input.pap-seek') as HTMLInputElement;
-    seekInput.value = '80';
+    seekInput.value = '0.4';
     seekInput.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
@@ -225,7 +229,7 @@ describe('AudioPlayerComponent', () => {
     fixture.detectChanges();
 
     const seekInput = fixture.nativeElement.querySelector('input.pap-seek') as HTMLInputElement;
-    seekInput.value = '180';
+    seekInput.value = '1.8';
     seekInput.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
@@ -242,7 +246,7 @@ describe('AudioPlayerComponent', () => {
     const audio = fixture.nativeElement.querySelector('audio') as HTMLAudioElement;
     stubAudioState(audio, { readyState: 0, duration: NaN });
     const seekInput = fixture.nativeElement.querySelector('input.pap-seek') as HTMLInputElement;
-    seekInput.value = '60';
+    seekInput.value = '0.6';
     seekInput.dispatchEvent(new Event('input'));
 
     expect(seekState(component)).toBe(0.6);
@@ -298,7 +302,7 @@ describe('AudioPlayerComponent', () => {
     expect(audio.currentTime).toBe(0);
   });
 
-  it('does not write a seek into the stale narration element while podcast is loading and applies it on the podcast source', () => {
+  it('does not write a seek into the stale narration element while podcast is loading and applies it on the podcast source', async () => {
     const signSubject = new Subject<Record<string, string>>();
 
     setup({
@@ -306,8 +310,8 @@ describe('AudioPlayerComponent', () => {
       PODCAST: { ENGLISH: { status: 'READY', key: 'post/audio/PODCAST-ENGLISH.wav' } },
     });
 
-    audioServiceMock.signArtifacts.mockImplementation((artifacts: { key?: string | null }[]) =>
-      artifacts.some((artifact) => artifact.key === 'post/audio/PODCAST-ENGLISH.wav')
+    uploadServiceMock.sign.mockImplementation((keys: string[]) =>
+      keys.includes('post/audio/PODCAST-ENGLISH.wav')
         ? signSubject.asObservable()
         : of({ 'post/audio/NARRATION-ENGLISH.wav': 'https://signed/narration-en' }),
     );
@@ -322,7 +326,7 @@ describe('AudioPlayerComponent', () => {
     fixture.detectChanges();
 
     const seekInput = fixture.nativeElement.querySelector('input.pap-seek') as HTMLInputElement;
-    seekInput.value = '60';
+    seekInput.value = '0.6';
     seekInput.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
@@ -332,6 +336,7 @@ describe('AudioPlayerComponent', () => {
     signSubject.next({
       'post/audio/PODCAST-ENGLISH.wav': 'https://signed/podcast-en',
     });
+    await flushMicrotasks();
     fixture.detectChanges();
 
     expect(audio.getAttribute('data-key')).toBe('post/audio/PODCAST-ENGLISH.wav');
@@ -352,7 +357,7 @@ describe('AudioPlayerComponent', () => {
     const audio = fixture.nativeElement.querySelector('audio') as HTMLAudioElement;
     const loadSpy = vi.spyOn(audio, 'load');
     const callsAfterFirstLoad = loadSpy.mock.calls.length;
-    const signCallsAfterFirst = audioServiceMock.signArtifacts.mock.calls.length;
+    const signCallsAfterFirst = uploadServiceMock.sign.mock.calls.length;
 
     fixture.componentRef.setInput('audio', {
       PODCAST: { ENGLISH: { status: 'READY', key: 'post/audio/PODCAST-ENGLISH.wav' } },
@@ -361,10 +366,10 @@ describe('AudioPlayerComponent', () => {
     fixture.detectChanges();
 
     expect(loadSpy.mock.calls.length).toBe(callsAfterFirstLoad);
-    expect(audioServiceMock.signArtifacts.mock.calls.length).toBe(signCallsAfterFirst);
+    expect(uploadServiceMock.sign.mock.calls.length).toBe(signCallsAfterFirst);
   });
 
-  it('applies the clicked fraction of the element duration when the seek max is stale on a long podcast', () => {
+  it('applies the clicked fraction of the element duration when the seek max is stale on a long podcast', async () => {
     setup({
       PODCAST: { ENGLISH: { status: 'READY', key: 'post/audio/PODCAST-ENGLISH.wav' } },
     });
@@ -374,10 +379,13 @@ describe('AudioPlayerComponent', () => {
     stubAudioState(audio, { readyState: 3, duration: 300 });
     component.canPlay.set(true);
 
-    expect(component.maxSeek()).toBe(100);
+    await flushMicrotasks();
+    fixture.detectChanges();
+
+    expect(component.duration()).toBe(0);
 
     const seekInput = fixture.nativeElement.querySelector('input.pap-seek') as HTMLInputElement;
-    seekInput.value = '80';
+    seekInput.value = '0.8';
     seekInput.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
@@ -386,35 +394,35 @@ describe('AudioPlayerComponent', () => {
     expect(seekState(component)).toBeNull();
   });
 
-  it('syncs the seek timeline from durationchange when metadata duration is not finite yet', () => {
+  it('syncs the seek timeline from durationchange when metadata duration is not finite yet', async () => {
     setup({
       PODCAST: { ENGLISH: { status: 'READY', key: 'post/audio/PODCAST-ENGLISH.wav' } },
     });
     fixture.detectChanges();
 
     const audio = fixture.nativeElement.querySelector('audio') as HTMLAudioElement;
+    await flushMicrotasks();
+    fixture.detectChanges();
     stubAudioState(audio, { readyState: 1, duration: Number.POSITIVE_INFINITY });
     component.onLoadedMetadata();
 
     expect(component.duration()).toBe(0);
-    expect(component.maxSeek()).toBe(100);
 
     stubAudioState(audio, { readyState: 1, duration: 300 });
     component.onDurationChange();
     fixture.detectChanges();
 
     expect(component.duration()).toBe(300);
-    expect(component.maxSeek()).toBe(300);
 
     component.canPlay.set(true);
 
     const seekInput = fixture.nativeElement.querySelector('input.pap-seek') as HTMLInputElement;
-    seekInput.value = '150';
+    seekInput.value = '0.5';
     seekInput.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
     expect(audio.currentTime).toBe(150);
     expect(component.currentTime()).toBe(150);
-    expect(component.maxSeek()).toBe(300);
+    expect(component.duration()).toBe(300);
   });
 });

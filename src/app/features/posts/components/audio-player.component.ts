@@ -27,7 +27,7 @@ import {
 import { TuiAppearance, TuiButton } from '@taiga-ui/core';
 
 import { AudioType, Language, PostAudioDto } from '../data-access/post.service';
-import { AudioService } from '../data-access/audio.service';
+import { UploadService } from '../../../core/upload/upload.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
