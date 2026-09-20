@@ -398,7 +398,7 @@ export const STICKY_TOP = '1.25rem';
 })
 export class AudioPlayerComponent {
 	readonly audio = input<PostAudioDto | undefined>();
-	private readonly audioService = inject(AudioService);
+	private readonly uploadService = inject(UploadService);
 	private readonly languageService = inject(LanguageService);
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly destroyRef = inject(DestroyRef);
@@ -511,12 +511,12 @@ export class AudioPlayerComponent {
 
 			const artifact = this.audio()?.[this.currentType()]?.[this.language()];
 
-			if (!artifact) {
+			if (!artifact?.key) {
 				return;
 			}
 
-			this.audioService.signArtifacts([artifact]).subscribe({
-				next: (urls) => {
+			this.uploadService.sign([artifact.key]).subscribe({
+				next: (urls: Record<string, string>) => {
 					if (key !== this.currentKey()) {
 						return;
 					}
