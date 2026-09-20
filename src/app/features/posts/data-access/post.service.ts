@@ -70,6 +70,19 @@ export interface ProjectDto {
 	translations: Record<Language, ProjectContentDto>;
 }
 
+export type AudioType = 'NARRATION' | 'PODCAST';
+
+export interface PostAudioArtifactDto {
+	status: 'QUEUED' | 'GENERATING' | 'READY' | 'FAILED';
+	key?: string;
+	progress?: number;
+	error?: string;
+}
+
+export type PostAudioDto = Partial<
+	Record<AudioType, Partial<Record<Language, PostAudioArtifactDto>>>
+>;
+
 export interface PostDto {
 	id: string;
 	slug: string;
@@ -89,6 +102,7 @@ export interface PostDto {
 	helpCount: number;
 	weight?: number;
 	translations: Record<Language, PostContentDto>;
+	audio?: PostAudioDto;
 }
 
 export interface FeaturePostPayload {
