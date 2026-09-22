@@ -14,7 +14,9 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 const siteUrl = environment.host;
 
 const app = express();
-const angularApp = new AngularNodeAppEngine();
+const angularApp = new AngularNodeAppEngine({
+  trustProxyHeaders: true,
+});
 
 const SITEMAP_TTL_MS = 60 * 60 * 1000;
 const SITEMAP_PAGE_SIZE = 50;
