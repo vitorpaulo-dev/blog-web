@@ -6,13 +6,13 @@ import {
 	ElementRef,
 	inject,
 	PLATFORM_ID,
+	SecurityContext,
 	signal,
 	ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { type SafeHtml } from '@angular/platform-browser';
-
+import { type SafeHtml, DomSanitizer } from '@angular/platform-browser';
 import { PostDto, PostService, ProjectDto, ReactionResponse, ReactionType } from '../../data-access/post.service';
 import { ProjectService } from '../../../projects/data-access/project.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
@@ -44,7 +44,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { LocalizedDatePipe } from '../../../../core/i18n/localized-date.pipe';
 import { SeoService } from '../../../../core/seo/seo.service';
-import { excerpt, firstTranslation } from '../../../../core/util/text.util';
+import { excerpt, extractToc, firstTranslation, TocItem, withHeadingIds } from '../../../../core/util/text.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOfUtil } from '../../../../core/util/tag.util';
 import {
 	ContentCardComponent,
@@ -147,13 +147,49 @@ import {
 					}
 				</div>
 
-				<app-audio-player [audio]="p.audio" [estimatedReading]="p.estimatedReading" />
+				<app-audio-player [audio]="p.audio" />
 
-				<article
-					#articleEl
-					class="prose prose-invert max-w-none mt-8 break-words"
-					[innerHTML]="html()" appImageSignContainer
-				></article>
+				<div class="relative">
+					<aside class="hidden xl:block absolute right-full top-0 h-full w-[calc((100vw-56rem)/2-1rem)] mx-auto px-1 pr-6">
+						<div class="sticky top-24">
+							@if (toc().length > 0) {
+								<nav [attr.aria-label]="'posts.toc' | translate" class="mb-6 opacity-50 hover:opacity-100 transition-opacity duration-300 ease-in-out">
+									<p class="text-xs font-semibold uppercase tracking-wider text-muted mb-2">
+										{{ 'posts.toc' | translate }}
+									</p>
+
+									<ul class="text-xs">
+										@for (item of toc(); track item.id) {
+											<li [class]="tocIndentClass(item.level)">
+												<p
+													class="hover:text-accent py-0.5 break-words transition-colors cursor-pointer"
+													(click)="onTocClick($event, item.id)"
+												>
+													{{ item.text }}
+												</p>
+											</li>
+										}
+									</ul>
+								</nav>
+							}
+
+							<a href="https://hypehost.com.br/?aff=78" target="_blank" rel="noopener noreferrer" class="opacity-50 hover:opacity-100 transition-opacity duration-300 ease-in-out">
+								<img
+									src="/ads/hypehost-banner.png"
+									alt="Advertisement"
+									loading="lazy"
+									class="w-full h-auto rounded-lg"
+								/>
+							</a>
+						</div>
+					</aside>
+
+					<article
+						#articleEl
+						class="prose prose-invert max-w-none mt-8 break-words"
+						[innerHTML]="html()" appImageSignContainer
+					></article>
+				</div>
 
 				@if (projects().length > 0) {
 					<hr class="my-8" />
@@ -231,8 +267,15 @@ export class PostDetailComponent implements AfterViewInit {
 	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
 	private readonly seoService = inject(SeoService);
+	private readonly sanitizer = inject(DomSanitizer);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
+
+	tocIndentClass(level: 1 | 2 | 3): string | null {
+		if (level === 2) return 'my-1 ml-4 text-muted/70';
+		if (level === 3) return 'my-1 ml-8 text-muted/60';
+		return 'text-muted';
+	}
 
 	readonly Calendar01Icon = Calendar01Icon;
 	readonly EyeIcon = EyeIcon;
@@ -247,6 +290,7 @@ export class PostDetailComponent implements AfterViewInit {
 	readonly loading = signal(true);
 	readonly error = signal<string | null>(null);
 	readonly html = signal<string | SafeHtml>('');
+	readonly toc = signal<TocItem[]>([]);
 	readonly tagMap = signal<Map<string, TagDto>>(new Map());
 	readonly projectTagMap = signal<Map<string, TagDto>>(new Map());
 	readonly reactionBusy = signal(false);
@@ -431,7 +475,10 @@ export class PostDetailComponent implements AfterViewInit {
 		this.error.set(null);
 
 		try {
-			this.html.set(await this.markdownService.renderMarkdown(content, this.isBrowser));
+			const rendered = await this.markdownService.renderMarkdown(content, this.isBrowser);
+			const htmlWithIds = withHeadingIds(this.asHtmlString(rendered));
+			this.html.set(this.sanitizer.bypassSecurityTrustHtml(htmlWithIds));
+			this.toc.set(extractToc(htmlWithIds));
 			this.loading.set(false);
 		} catch (error) {
 			this.loading.set(false);
@@ -444,6 +491,21 @@ export class PostDetailComponent implements AfterViewInit {
 				})
 				.subscribe();
 		}
+	}
+
+	private asHtmlString(rendered: string | SafeHtml): string {
+		if (typeof rendered === 'string') return rendered;
+		return this.sanitizer.sanitize(SecurityContext.HTML, rendered) ?? '';
+	}
+
+	onTocClick(event: MouseEvent, id: string): void {
+		if (!this.isBrowser) return;
+
+		const heading = this.articleEl?.nativeElement.querySelector(`#${id}`);
+		if (!heading) return;
+
+		event.preventDefault();
+		heading.scrollIntoView({ behavior: 'smooth' });
 	}
 
 	sharePost(): void {

@@ -130,7 +130,7 @@ export class MarkdownService {
 			async: true,
 		});
 
-		const sanitized = isBrowser? DOMPurify.sanitize(raw, { ADD_ATTR: ['class', 'data-mermaid'], }) : raw;
+		const sanitized = isBrowser? DOMPurify.sanitize(raw, { ADD_ATTR: ['class', 'data-mermaid', 'id'], }) : raw;
 		return this.sanitizer.bypassSecurityTrustHtml(sanitized);
 	}
 
