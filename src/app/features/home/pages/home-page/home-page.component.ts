@@ -269,7 +269,7 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 					{{ 'home.builtInOpenDescription' | translate }}
 				</p>
 
-				<a tuiButton routerLink="/opensource" class="mt-4 mr-4">
+				<a tuiButton routerLink="/post/i-didn-t-build-this-blog-alone-my-ai-squad-did" class="mt-4 mr-4">
 					{{ 'home.howItWorks' | translate }}
 					<hugeicons-icon [icon]="ArrowRight01Icon" [size]="22" [strokeWidth]="1.5" />
 				</a>
