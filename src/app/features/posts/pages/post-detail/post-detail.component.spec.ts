@@ -225,4 +225,149 @@ describe('PostDetailComponent', () => {
     void component.onReact('LOVE'); // new click after completion → new attempt
     expect((postServiceMock as any).reactTo).toHaveBeenCalledTimes(2);
   });
+
+  it('extracts and renders the TOC when the rendered content has headings', async () => {
+    (postServiceMock.getBySlug as any).mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-post',
+        translations: {
+          ENGLISH: { title: 'Test', content: '## My Section' },
+        },
+      }),
+    );
+    (markdownServiceMock.renderMarkdown as any).mockResolvedValue(
+      '<h2 id="my-section">My Section</h2><h3 id="nested-part">Nested Part</h3><p>Body</p>',
+    );
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await vi.waitFor(() => expect(component.toc().length).toBe(2));
+    fixture.detectChanges();
+
+    expect(component.toc()).toEqual([
+      { id: 'my-section', text: 'My Section', level: 2 },
+      { id: 'nested-part', text: 'Nested Part', level: 3 },
+    ]);
+
+    const links = Array.from(
+      fixture.nativeElement.querySelectorAll('aside nav a') as HTMLAnchorElement[],
+    );
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '#my-section',
+      '#nested-part',
+    ]);
+    expect(fixture.nativeElement.textContent).toContain('On this page');
+  });
+
+  it('does not render the TOC when the content has no headings', async () => {
+    (postServiceMock.getBySlug as any).mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-post',
+        translations: {
+          ENGLISH: { title: 'Test', content: 'plain text' },
+        },
+      }),
+    );
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await vi.waitFor(() => expect(component.toc().length).toBe(0));
+
+    expect(component.toc()).toEqual([]);
+    expect(fixture.nativeElement.querySelector('aside nav')).toBeNull();
+  });
+
+  it('renders the ad banner below the TOC area as a new-tab link', async () => {
+    (postServiceMock.getBySlug as any).mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-post',
+        translations: {
+          ENGLISH: { title: 'Test', content: 'plain text' },
+        },
+      }),
+    );
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await vi.waitFor(() => expect(component.loading()).toBe(false));
+    fixture.detectChanges();
+
+    const adLink: HTMLAnchorElement = fixture.nativeElement.querySelector(
+      'aside a[href="https://hypehost.com.br/?aff=78"]',
+    );
+    expect(adLink).toBeTruthy();
+    expect(adLink.target).toBe('_blank');
+    expect(adLink.rel).toBe('noopener noreferrer');
+
+    const adImage = adLink.querySelector('img');
+    expect(adImage?.getAttribute('src')).toBe('/ads/hypehost-banner.png');
+    expect(adImage?.alt).toBe('Advertisement');
+  });
+
+  it('smooth-scrolls to the heading when a TOC item is clicked', async () => {
+    (postServiceMock.getBySlug as any).mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-post',
+        translations: {
+          ENGLISH: { title: 'Test', content: '## My Section' },
+        },
+      }),
+    );
+    (markdownServiceMock.renderMarkdown as any).mockResolvedValue('<h2 id="my-section">My Section</h2>');
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await vi.waitFor(() => expect(component.toc().length).toBe(1));
+    fixture.detectChanges();
+
+    const heading = fixture.nativeElement.querySelector('#my-section');
+    const scrollSpy = vi.fn();
+    heading.scrollIntoView = scrollSpy;
+
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('aside nav a');
+    link.dispatchEvent(new MouseEvent('click', { cancelable: true }));
+
+    expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'smooth' });
+  });
+
+  it('renders the full TOC expanded with level indentation and no toggles', async () => {
+    (postServiceMock.getBySlug as any).mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-post',
+        translations: {
+          ENGLISH: { title: 'Test', content: '# Alpha\n## Beta\n### Gamma' },
+        },
+      }),
+    );
+    (markdownServiceMock.renderMarkdown as any).mockResolvedValue(
+      '<h1 id="alpha">Alpha</h1><h2 id="beta">Beta</h2><h3 id="gamma">Gamma</h3>',
+    );
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await vi.waitFor(() => expect(component.toc().length).toBe(3));
+    fixture.detectChanges();
+
+    const links = Array.from(
+      fixture.nativeElement.querySelectorAll('aside nav a') as HTMLAnchorElement[],
+    );
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '#alpha',
+      '#beta',
+      '#gamma',
+    ]);
+
+    const itemClasses = links.map((link) => link.parentElement?.className ?? '');
+    expect(itemClasses[0]).not.toContain('ml-4');
+    expect(itemClasses[1]).toContain('ml-4');
+    expect(itemClasses[2]).toContain('ml-8');
+
+    const buttons = fixture.nativeElement.querySelectorAll('aside nav button');
+    expect(buttons).toHaveLength(0);
+  });
 });
