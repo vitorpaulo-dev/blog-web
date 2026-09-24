@@ -3,11 +3,7 @@ export interface SitemapItem {
 	updatedAt: string;
 }
 
-export interface SitemapInput {
-	siteUrl: string;
-	posts: SitemapItem[];
-	projects: SitemapItem[];
-}
+export type SitemapLocale = 'en' | 'pt';
 
 export function escapeXml(value: string): string {
 	return value
@@ -18,97 +14,69 @@ export function escapeXml(value: string): string {
 		.replace(/'/g, '&apos;');
 }
 
-export function lastModifiedDate(updatedAt: string): string {
+export function lastModifiedDate(updatedAt: string, fallback?: string): string {
 	const date = new Date(updatedAt);
-	return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10);
+	if (Number.isNaN(date.getTime())) {
+		return fallback ?? '';
+	}
+	return date.toISOString();
 }
 
-export function buildSitemap(input: SitemapInput): string {
+export function buildSitemapIndex(siteUrl: string, lastmod: string): string {
+	const entries = ['/en/sitemap.xml', '/pt/sitemap.xml']
+		.map((path) =>
+			[
+				'  <sitemap>',
+				`    <loc>${escapeXml(`${siteUrl}${path}`)}</loc>`,
+				`    <lastmod>${escapeXml(lastmod)}</lastmod>`,
+				'  </sitemap>',
+			].join('\n'),
+		)
+		.join('\n');
+
+	return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</sitemapindex>\n`;
+}
+
+export function buildLocaleSitemap(
+	locale: SitemapLocale,
+	siteUrl: string,
+	posts: SitemapItem[],
+	projects: SitemapItem[],
+	sharedLastmod: string,
+): string {
+	const prefix = locale === 'pt' ? '/pt' : '';
+
 	const urls: string[] = [];
 
-	urls.push(
-		entry({
-			loc: `${input.siteUrl}/`,
-			alternates: alternates(input.siteUrl, '/'),
-			changefreq: 'daily',
-			priority: '1.0',
-		}),
-	);
-
-	urls.push(
-		entry({
-			loc: `${input.siteUrl}/post`,
-			alternates: alternates(input.siteUrl, '/post'),
-			changefreq: 'daily',
-			priority: '0.9',
-		}),
-	);
-
-	urls.push(
-		entry({
-			loc: `${input.siteUrl}/project`,
-			alternates: alternates(input.siteUrl, '/project'),
-			changefreq: 'daily',
-			priority: '0.9',
-		}),
-	);
-
-	for (const post of input.posts) {
-		urls.push(
-			entry({
-				loc: `${input.siteUrl}/post/${post.slug}`,
-				alternates: alternates(input.siteUrl, `/post/${post.slug}`),
-				lastmod: lastModifiedDate(post.updatedAt),
-				changefreq: 'monthly',
-				priority: '0.8',
-			}),
-		);
+	for (const path of ['/', '/post', '/project']) {
+		urls.push(buildEntry(homeAwareLoc(siteUrl, prefix, path), sharedLastmod, siteUrl, path));
 	}
 
-	for (const project of input.projects) {
-		urls.push(
-			entry({
-				loc: `${input.siteUrl}/project/${project.slug}`,
-				alternates: alternates(input.siteUrl, `/project/${project.slug}`),
-				lastmod: lastModifiedDate(project.updatedAt),
-				changefreq: 'monthly',
-				priority: '0.8',
-			}),
-		);
+	for (const post of posts) {
+		const path = `/post/${post.slug}`;
+		urls.push(buildEntry(`${siteUrl}${prefix}${path}`, lastModifiedDate(post.updatedAt, sharedLastmod), siteUrl, path));
+	}
+
+	for (const project of projects) {
+		const path = `/project/${project.slug}`;
+		urls.push(buildEntry(`${siteUrl}${prefix}${path}`, lastModifiedDate(project.updatedAt, sharedLastmod), siteUrl, path));
 	}
 
 	return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join('\n')}\n</urlset>\n`;
 }
 
-function alternates(siteUrl: string, path: string): string {
-	return [
-		`    <xhtml:link rel="alternate" hreflang="en" href="${escapeXml(`${siteUrl}${path}`)}" />`,
-		`    <xhtml:link rel="alternate" hreflang="pt" href="${escapeXml(`${siteUrl}/pt${path}`)}" />`,
-	].join('\n');
+function homeAwareLoc(siteUrl: string, prefix: string, path: string): string {
+	const suffix = prefix && path === '/' ? '' : path;
+	return `${siteUrl}${prefix}${suffix}`;
 }
 
-function entry(options: {
-	loc: string;
-	alternates: string;
-	lastmod?: string;
-	changefreq: string;
-	priority: string;
-}): string {
-	const lines = [
+function buildEntry(loc: string, lastmod: string, siteUrl: string, path: string): string {
+	return [
 		'  <url>',
-		`    <loc>${escapeXml(options.loc)}</loc>`,
-		options.alternates,
-	];
-
-	if (options.lastmod) {
-		lines.push(`    <lastmod>${escapeXml(options.lastmod)}</lastmod>`);
-	}
-
-	lines.push(
-		`    <changefreq>${options.changefreq}</changefreq>`,
-		`    <priority>${options.priority}</priority>`,
+		`    <loc>${escapeXml(loc)}</loc>`,
+		`    <lastmod>${escapeXml(lastmod)}</lastmod>`,
+		`    <xhtml:link rel="alternate" hreflang="en" href="${escapeXml(`${siteUrl}${path}`)}" />`,
+		`    <xhtml:link rel="alternate" hreflang="pt" href="${escapeXml(`${siteUrl}/pt${path}`)}" />`,
 		'  </url>',
-	);
-
-	return lines.join('\n');
+	].join('\n');
 }
