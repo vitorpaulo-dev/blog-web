@@ -79,6 +79,10 @@
 			"error": "Audio playback failed."
 		}
 	},
+	"lightbox": {
+		"close": "Close",
+		"image": "Image"
+	},
 	"projects": {
 		"title": "Projects",
 		"backToList": "Back to projects",

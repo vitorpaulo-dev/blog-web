@@ -79,6 +79,10 @@
 			"error": "Falha na reprodução do áudio."
 		}
 	},
+	"lightbox": {
+		"close": "Fechar",
+		"image": "Imagem"
+	},
 	"projects": {
 		"title": "Projetos",
 		"backToList": "Voltar aos projetos",

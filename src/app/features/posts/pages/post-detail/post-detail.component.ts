@@ -38,6 +38,7 @@ import { TuiChip, TuiToastService } from '@taiga-ui/kit';
 import { MarkdownService } from '../../data-access/markdown.service';
 import { AudioPlayerComponent } from '../../components/audio-player.component';
 import { ImageSignContainerDirective, ImageSignDirective } from '../../../../shared/directives/image-sign.directive';
+import { ImageLightboxDirective } from '../../../../shared/directives/image-lightbox.directive';
 import { GiscusComponent } from '../../components/giscus.component';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
@@ -69,6 +70,7 @@ import {
 		LocalizedDatePipe,
 		ImageSignContainerDirective,
 		ImageSignDirective,
+		ImageLightboxDirective,
 	],
 	template: `
 		<div class="max-w-4xl mx-auto">
@@ -186,8 +188,8 @@ import {
 
 					<article
 						#articleEl
-						class="prose prose-invert max-w-none mt-8 break-words"
-						[innerHTML]="html()" appImageSignContainer
+						class="prose prose-invert max-w-none mt-8 break-words [&_img]:cursor-zoom-in [&_.mermaid]:cursor-zoom-in"
+						[innerHTML]="html()" appImageSignContainer appImageLightbox
 					></article>
 				</div>
 
