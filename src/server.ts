@@ -7,7 +7,7 @@ import {
 import express from 'express';
 import { join } from 'node:path';
 import { environment } from './environments/environment';
-import { buildSitemap, SitemapItem } from './server/sitemap';
+import { SitemapItem, buildLocaleSitemap, buildSitemapIndex, lastModifiedDate } from './server/sitemap';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -22,7 +22,8 @@ const SITEMAP_TTL_MS = 60 * 60 * 1000;
 const SITEMAP_PAGE_SIZE = 50;
 
 interface SitemapCache {
-  xml: string;
+  posts: SitemapItem[];
+  projects: SitemapItem[];
   fetchedAt: number;
 }
 
@@ -69,30 +70,59 @@ async function fetchSearchEntries(path: string): Promise<SitemapItem[]> {
   return items;
 }
 
-async function generateSitemap(): Promise<string> {
-  try {
-    const [posts, projects] = await Promise.all([
-      fetchSearchEntries('/v1/post/search'),
-      fetchSearchEntries('/v1/project/search'),
-    ]);
-
-    return buildSitemap({ siteUrl, posts, projects });
-  } catch {
-    return buildSitemap({ siteUrl, posts: [], projects: [] });
-  }
-}
-
-app.get('/sitemap.xml', async (_req, res) => {
+async function loadSitemapCache(): Promise<SitemapCache> {
   const now = Date.now();
 
   if (!sitemapCache || now - sitemapCache.fetchedAt > SITEMAP_TTL_MS) {
-    sitemapCache = {
-      xml: await generateSitemap(),
-      fetchedAt: now,
-    };
+    try {
+      const [posts, projects] = await Promise.all([
+        fetchSearchEntries('/v1/post/search'),
+        fetchSearchEntries('/v1/project/search'),
+      ]);
+
+      sitemapCache = { posts, projects, fetchedAt: now };
+    } catch {
+      sitemapCache = { posts: [], projects: [], fetchedAt: now };
+    }
   }
 
-  res.type('application/xml').send(sitemapCache.xml);
+  return sitemapCache;
+}
+
+function sharedLastmod(cache: SitemapCache): string {
+  let latest = '';
+
+  for (const item of [...cache.posts, ...cache.projects]) {
+    const date = new Date(item.updatedAt);
+    if (Number.isNaN(date.getTime())) {
+      continue;
+    }
+    if (!latest || date.getTime() > new Date(latest).getTime()) {
+      latest = item.updatedAt;
+    }
+  }
+
+  return latest ? lastModifiedDate(latest) : new Date(cache.fetchedAt).toISOString();
+}
+
+app.get('/sitemap.xml', async (_req, res) => {
+  const cache = await loadSitemapCache();
+
+  res.type('application/xml').send(buildSitemapIndex(siteUrl, sharedLastmod(cache)));
+});
+
+app.get('/:locale/sitemap.xml', async (req, res) => {
+  const locale = req.params['locale'];
+  if (locale !== 'en' && locale !== 'pt') {
+    res.status(404).send('Not found');
+    return;
+  }
+
+  const cache = await loadSitemapCache();
+
+  res
+    .type('application/xml')
+    .send(buildLocaleSitemap(locale, siteUrl, cache.posts, cache.projects, sharedLastmod(cache)));
 });
 
 /**
