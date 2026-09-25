@@ -22,3 +22,19 @@ export function collectTagIds(items: { tagIds?: string[] }[]): string[] {
 export function buildTagMap(tags: TagDto[]): Map<string, TagDto> {
 	return new Map(tags.map(tag => [tag.id, tag]));
 }
+
+export const TAG_BATCH_SIZE = 20;
+
+export function chunkTagIds(ids: string[], size: number = TAG_BATCH_SIZE): string[][] {
+	if (size <= 0) {
+		return [];
+	}
+
+	const chunks: string[][] = [];
+
+	for (let index = 0; index < ids.length; index += size) {
+		chunks.push(ids.slice(index, index + size));
+	}
+
+	return chunks;
+}

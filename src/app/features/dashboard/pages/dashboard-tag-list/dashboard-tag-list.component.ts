@@ -5,12 +5,10 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, filter } from 'rxjs';
 
-import { TuiAppearance, TuiButton, TuiDialogService, TuiInput, TuiTextfield } from '@taiga-ui/core';
+import { TuiButton, TuiCell, TuiDialogService, TuiInput, TuiTextfield, TuiTitle } from '@taiga-ui/core';
 import { TuiSortChange, TuiSortDirection, TuiTable, TuiTablePagination } from '@taiga-ui/addon-table';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import {
-	Delete01Icon,
-	Edit01Icon,
 	Loading03Icon,
 	PlusSignIcon,
 } from '@hugeicons/core-free-icons';
@@ -19,7 +17,7 @@ import { TagDto, TagService } from '../../../tags/data-access/tag.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
-import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
+import { TUI_CONFIRM, TuiStatus, TuiToastService } from '@taiga-ui/kit';
 
 @Component({
 	selector: 'app-dashboard-tag-list',
@@ -32,11 +30,19 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 		TuiTable,
 		TuiTablePagination,
 		HugeiconsIconComponent,
-		TuiAppearance,
 		TuiTextfield,
 		TuiInput,
+		TuiCell,
+		TuiTitle,
 		TranslatePipe,
 	],
+	styles: `
+		[tuiTh],
+		[tuiTd] {
+			border-inline-start: none;
+			border-inline-end: none;
+		}
+	`,
 	template: `
 		<div class="mx-auto px-4 py-8 sm:px-6">
 			<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -72,55 +78,73 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">{{ 'dashboard.tags.list.emptyAttribution' | translate }}</footer>
 				</div>
 			} @else {
-				<table
-					tuiTable
-					[columns]="columns"
-					[tuiSortBy]="sortKey()"
-					[direction]="sortDirection()"
-					(tuiSortChange)="onSort($event)"
-					class="w-full"
-				>
-					<thead>
-						<tr tuiThGroup>
-							<th *tuiHead="'name'" tuiTh tuiSortable [requiredSort]="true">{{ 'dashboard.tags.list.colName' | translate }}</th>
-							<th *tuiHead="'actions'" tuiTh>{{ 'dashboard.tags.list.colActions' | translate }}</th>
-						</tr>
-					</thead>
-
-					<tbody tuiTbody>
-						@for (tag of tags(); track tag.id) {
-							<tr tuiTr>
-								<td *tuiCell="'name'" tuiTd class="font-medium">
-									{{ tagName(tag) }}
-								</td>
-
-								<td *tuiCell="'actions'" tuiTd>
-									<div class="flex items-center gap-2">
-										<a
-											[routerLink]="['/dashboard/tag', tag.id]"
-											tuiButton
-											tuiAppearance="outline"
-											size="s"
-											[attr.aria-label]="'dashboard.tags.list.editAria' | translate"
-										>
-											<hugeicons-icon [icon]="Edit01Icon" [size]="16" [strokeWidth]="1.5" />
-										</a>
-
-										<button
-											tuiButton
-											tuiAppearance="accent"
-											size="s"
-											[attr.aria-label]="'dashboard.tags.list.deleteAria' | translate"
-											(click)="askDeleteOne(tag.id)"
-										>
-											<hugeicons-icon [icon]="Delete01Icon" [size]="16" [strokeWidth]="1.5" />
-										</button>
-									</div>
-								</td>
+				<div class="overflow-x-auto">
+					<table
+						tuiTable
+						size="m"
+						[columns]="columns"
+						[tuiSortBy]="sortKey()"
+						[direction]="sortDirection()"
+						(tuiSortChange)="onSort($event)"
+						class="w-full"
+					>
+						<thead>
+							<tr tuiThGroup>
+								<th *tuiHead="'name'" tuiTh tuiSortable [requiredSort]="true">
+									<div [tuiCell]="size">{{ 'dashboard.tags.list.colName' | translate }}</div>
+								</th>
+								<th *tuiHead="'actions'" tuiTh>
+									<div [tuiCell]="size">{{ 'dashboard.tags.list.colActions' | translate }}</div>
+								</th>
 							</tr>
-						}
-					</tbody>
-				</table>
+						</thead>
+
+						<tbody tuiTbody>
+							@for (tag of tags(); track tag.id) {
+								<tr tuiTr>
+									<td *tuiCell="'name'" tuiTd class="max-w-60">
+										<div [tuiCell]="size" class="min-w-0">
+											<span tuiTitle>
+												<span class="block truncate">{{ tagName(tag) }}</span>
+												<span tuiSubtitle class="truncate">{{ tag.slug }}</span>
+											</span>
+										</div>
+									</td>
+
+									<td *tuiCell="'actions'" tuiTd>
+										<div [tuiCell]="size">
+											<span tuiStatus>
+												<a
+													tuiIconButton
+													appearance="action"
+													size="xs"
+													iconStart="@tui.pencil"
+													type="button"
+													[routerLink]="['/dashboard/tag', tag.id]"
+													[attr.aria-label]="'dashboard.tags.list.editAria' | translate"
+												>
+													Edit
+												</a>
+
+												<button
+													tuiIconButton
+													appearance="action"
+													size="xs"
+													iconStart="@tui.trash"
+													type="button"
+													[attr.aria-label]="'dashboard.tags.list.deleteAria' | translate"
+													(click)="askDeleteOne(tag.id)"
+												>
+													Delete
+												</button>
+											</span>
+										</div>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
 
 				<div class="mt-4">
 					<tui-table-pagination [page]="page()" [total]="totalElements()" (pageChange)="onPage($event)" />
@@ -139,8 +163,7 @@ export class DashboardTagListComponent {
 	private readonly dialogs = inject(TuiDialogService);
 
 	readonly PlusSignIcon = PlusSignIcon;
-	readonly Edit01Icon = Edit01Icon;
-	readonly Delete01Icon = Delete01Icon;
+	readonly size = 'm';
 
 	readonly searchControl = new FormControl('', {
 		nonNullable: true,

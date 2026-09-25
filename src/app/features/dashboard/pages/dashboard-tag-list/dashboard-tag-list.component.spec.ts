@@ -193,4 +193,25 @@ describe('DashboardTagListComponent', () => {
     expect(tagServiceMock.search).toHaveBeenCalled();
     expect(component.page()).toBe(1);
   });
+
+  it('should render the reworked table with name and slug inside a horizontal scroll container', () => {
+    (tagServiceMock.search as any).mockReturnValue(
+      of({ content: [{ id: '1', slug: 'java', translations: { ENGLISH: { name: 'Java' } } }], totalPages: 1, totalElements: 1 })
+    );
+
+    component.load();
+    fixture.detectChanges();
+
+    const html = fixture.nativeElement as HTMLElement;
+    expect(html.querySelector('.overflow-x-auto')).toBeTruthy();
+    expect(html.querySelector('.overflow-x-auto table')).toBeTruthy();
+    expect(html.textContent).toContain('Java');
+    expect(html.textContent).toContain('java');
+
+    const hiddenCells = Array.from(html.querySelectorAll('th, td')).filter(
+      (cell) => cell.classList.contains('hidden'),
+    );
+
+    expect(hiddenCells).toEqual([]);
+  });
 });
