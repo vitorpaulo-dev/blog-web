@@ -4,10 +4,10 @@ import { ProjectEditorComponent } from './project-editor.component';
 import { provideTaiga } from '@taiga-ui/core';
 import { provideRouter, Router, ActivatedRoute } from '@angular/router';
 import { ProjectService } from '../../../projects/data-access/project.service';
-import { TagService } from '../../../tags/data-access/tag.service';
+import { TagDto, TagService } from '../../../tags/data-access/tag.service';
 import { UploadService } from '../../../../core/upload/upload.service';
 import { TuiToastService } from '@taiga-ui/kit';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { PLATFORM_ID } from '@angular/core';
 
 Object.defineProperty(window, 'matchMedia', {
@@ -357,5 +357,145 @@ describe('ProjectEditorComponent', () => {
     const forms = editComponent.translationForms();
     expect(forms.ENGLISH.title.value).toBe('Existing Title');
     expect(forms.PORTUGUESE.title.value).toBe('Título');
+  });
+
+  it('should include selected tag ids in the create payload', () => {
+    const mockResponse = {
+      id: 'new-id',
+      slug: 'new-project',
+      status: 'DRAFT',
+    };
+    (projectServiceMock.create as any).mockReturnValue(of(mockResponse));
+
+    const forms = component.translationForms();
+    forms.ENGLISH.title.setValue('Valid Title');
+    component.form.controls.tagIds.setValue([
+      { id: 'tag-1', slug: 'alpha', translations: { ENGLISH: { name: 'Alpha' } } } as TagDto,
+      { id: 'tag-2', slug: 'beta', translations: { ENGLISH: { name: 'Beta' } } } as TagDto,
+    ]);
+
+    component.save('DRAFT');
+
+    const payload = (projectServiceMock.create as any).mock.calls[0][0];
+    expect(payload.tagIds).toEqual(['tag-1', 'tag-2']);
+  });
+
+  it('should keep selected tags when editing a project and send their ids on save', () => {
+    TestBed.resetTestingModule();
+
+    const tagServiceMock = {
+      search: vi.fn().mockReturnValue(of({ content: [], totalPages: 0, totalElements: 0 })),
+      batch: vi.fn().mockReturnValue(
+        of([{ id: 'tag-1', slug: 'alpha', translations: { ENGLISH: { name: 'Alpha' } } }])
+      ),
+    };
+
+    TestBed.configureTestingModule({
+      imports: [ProjectEditorComponent],
+      providers: [
+        translationProvider(),
+        provideTaiga(),
+        provideRouter([]),
+        { provide: ProjectService, useValue: projectServiceMock },
+        { provide: TagService, useValue: tagServiceMock },
+        { provide: UploadService, useValue: uploadServiceMock },
+        { provide: TuiToastService, useValue: toastServiceMock },
+        { provide: Router, useValue: routerMock },
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: {
+                get: vi.fn().mockReturnValue('test-id'),
+              },
+            },
+          },
+        },
+      ],
+    });
+
+    const mockProject = {
+      id: 'test-id',
+      slug: 'test-project',
+      logoUrl: '',
+      bannerUrl: '',
+      githubUrl: '',
+      websiteUrl: '',
+      status: 'DRAFT',
+      tagIds: ['tag-1', 'tag-2'],
+      translations: {
+        ENGLISH: { title: 'Existing Title', description: 'Desc', summary: '' },
+      },
+    };
+    (projectServiceMock.getById as any).mockReturnValue(of(mockProject));
+    (projectServiceMock.update as any).mockReturnValue(
+      of({ id: 'test-id', slug: 'test-project', status: 'DRAFT' })
+    );
+
+    const editFixture = TestBed.createComponent(ProjectEditorComponent);
+    const editComponent = editFixture.componentInstance;
+
+    editComponent.ngOnInit();
+
+    expect(editComponent.form.controls.tagIds.value.map((tag) => tag.id)).toEqual(['tag-1', 'tag-2']);
+
+    editComponent.save('DRAFT');
+
+    const payload = (projectServiceMock.update as any).mock.calls[0][1];
+    expect(payload.tagIds).toEqual(['tag-1', 'tag-2']);
+  });
+
+  it('should clear the tag loading flag once tag options arrive', () => {
+    TestBed.resetTestingModule();
+
+    const tagSearch$ = new Subject<any>();
+    const tagServiceMock = {
+      search: vi.fn().mockReturnValue(tagSearch$),
+      batch: vi.fn(),
+    };
+
+    TestBed.configureTestingModule({
+      imports: [ProjectEditorComponent],
+      providers: [
+        translationProvider(),
+        provideTaiga(),
+        provideRouter([]),
+        { provide: ProjectService, useValue: projectServiceMock },
+        { provide: TagService, useValue: tagServiceMock },
+        { provide: UploadService, useValue: uploadServiceMock },
+        { provide: TuiToastService, useValue: toastServiceMock },
+        { provide: Router, useValue: routerMock },
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: {
+                get: vi.fn().mockReturnValue(null),
+              },
+            },
+          },
+        },
+      ],
+    });
+
+    const editFixture = TestBed.createComponent(ProjectEditorComponent);
+    const editComponent = editFixture.componentInstance;
+
+    expect(editComponent.tagsLoading()).toBe(true);
+
+    editComponent.ngOnInit();
+
+    expect(editComponent.tagsLoading()).toBe(true);
+
+    tagSearch$.next({
+      content: [{ id: 'tag-1', slug: 'alpha', translations: { ENGLISH: { name: 'Alpha' } } }],
+      totalPages: 1,
+      totalElements: 1,
+    });
+
+    expect(editComponent.tagsLoading()).toBe(false);
+    expect(editComponent.availableTags().map((tag) => tag.id)).toEqual(['tag-1']);
   });
 });
