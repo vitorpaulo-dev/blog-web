@@ -1,9 +1,22 @@
-import { Component, inject, signal, OnInit, PLATFORM_ID } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { TuiButton, TuiTextfield, TuiInput, TuiDropdown, TuiDataList, TuiFilterByInputPipe } from '@taiga-ui/core';
-import { TuiToastService, TuiInputChip, TuiChip, TuiMultiSelect, TuiChevron, TuiDataListWrapper } from '@taiga-ui/kit';
+import {
+	EMPTY,
+	Observable,
+	Subject,
+	catchError,
+	debounceTime,
+	distinctUntilChanged,
+	finalize,
+	merge,
+	switchMap,
+	takeUntil,
+} from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TuiButton, TuiTextfield, TuiInput, TuiDataList } from '@taiga-ui/core';
+import { TuiToastService } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import {
 	ArrowLeft01Icon,
@@ -16,10 +29,11 @@ import {
 	GlobalIcon,
 	WebProgrammingIcon
 } from '@hugeicons/core-free-icons';
-import type { Language } from '../../../posts/data-access/post.service';
+import type { GenericPageableResponse, Language } from '../../../posts/data-access/post.service';
 import { ProjectService } from '../../../projects/data-access/project.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 import { MarkdownWriterComponent } from '../../../../shared/components/markdown-writer/markdown-writer.component';
+import { ItemSelectorComponent } from '../../../../shared/components/item-selector/item-selector.component';
 import { UploadInputComponent } from '../../../../shared/components/upload-input/upload-input.component';
 import { firstTranslation } from '../../../../core/util/text.util';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
@@ -50,14 +64,9 @@ function slugify(text: string): string {
 		TuiButton,
 		TuiTextfield,
 		TuiInput,
-		TuiDropdown,
-		TuiInputChip,
-		TuiMultiSelect,
-		TuiChevron,
 		HugeiconsIconComponent,
-		TuiDataListWrapper,
-		TuiFilterByInputPipe,
 		TranslatePipe,
+		ItemSelectorComponent,
 		MarkdownWriterComponent,
 		UploadInputComponent,
 	],
@@ -174,16 +183,17 @@ function slugify(text: string): string {
 					<input tuiInput formControlName="websiteUrl" [placeholder]="'dashboard.projects.editor.websitePlaceholder' | translate" />
 				</tui-textfield>
 
-			<tui-textfield multi tuiChevron [stringify]="stringifyTag">
-				<label tuiLabel class="flex items-center gap-1.5">
-					<hugeicons-icon [icon]="webProgrammingIcon" [size]="16" [strokeWidth]="2.5" class="flex-shrink-0" />
-					<span>{{ 'dashboard.projects.editor.languagesLabel' | translate }}</span>
-				</label>
-				<input tuiInputChip formControlName="tagIds" [placeholder]="'dashboard.projects.editor.languagesPlaceholder' | translate" />
-				<tui-input-chip *tuiItem />
-				<tui-data-list-wrapper *tuiDropdown tuiMultiSelectGroup [items]="availableTags() | tuiFilterByInput" [itemContent]="tagTemplate" />
-			</tui-textfield>
-			<ng-template #tagTemplate let-tag>{{ stringifyTag(tag) }}</ng-template>
+			<app-item-selector
+				formControlName="tagIds"
+				[label]="'dashboard.projects.editor.languagesLabel' | translate"
+				[labelIcon]="webProgrammingIcon"
+				[items]="availableTags()"
+				[loading]="tagsLoading()"
+				[placeholder]="'dashboard.projects.editor.languagesPlaceholder' | translate"
+				[remoteSearch]="true"
+				[stringify]="stringifyTag"
+				(search)="onTagSearch($event)"
+			/>
 
 				@if (error()) {
 					<p class="text-sm text-red-400" role="alert">{{ error() }}</p>
@@ -264,6 +274,7 @@ export class ProjectEditorComponent implements OnInit {
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly translationService = inject(TranslationService);
 	private readonly toastService = inject(TuiToastService);
+	private readonly destroyRef = inject(DestroyRef);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
 	readonly ArrowLeft01Icon = ArrowLeft01Icon;
@@ -310,23 +321,51 @@ export class ProjectEditorComponent implements OnInit {
 	private projectId: string | null = null;
 
 	availableTags = signal<TagDto[]>([]);
+	tagsLoading = signal(true);
+
+	private readonly tagSearch = new Subject<string>();
 
 	stringifyTag = (tag: TagDto): string => firstTranslation(tag.translations)?.name ?? '';
 
-	ngOnInit(): void {
-		if (!this.isBrowser) return;
+	onTagSearch(term: string): void {
+		this.tagSearch.next(term);
+	}
 
-		this.tagService.search({
-			query: {},
+	private searchTags(name?: string): Observable<GenericPageableResponse<TagDto>> {
+		return this.tagService.search({
+			query: { name },
 			page: 0,
 			size: 5,
 			sort: 'name',
 			direction: 'ASC',
-		}).subscribe({
-			next: (res) => {
-				this.availableTags.set(res.content);
-			},
 		});
+	}
+
+	private wireTagSearch(): void {
+		const initialLoad = this.searchTags().pipe(
+			takeUntil(this.tagSearch),
+			catchError(() => EMPTY),
+			finalize(() => this.tagsLoading.set(false))
+		);
+
+		const searched = this.tagSearch.pipe(
+			debounceTime(300),
+			distinctUntilChanged(),
+			switchMap((term) => this.searchTags(term.trim() || undefined).pipe(catchError(() => EMPTY)))
+		);
+
+		merge(initialLoad, searched)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe((response) => {
+				this.availableTags.set(response.content);
+				this.tagsLoading.set(false);
+			});
+	}
+
+	ngOnInit(): void {
+		if (!this.isBrowser) return;
+
+		this.wireTagSearch();
 
 		const id = this.route.snapshot.paramMap.get('id');
 		if (id) {

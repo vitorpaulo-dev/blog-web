@@ -1,24 +1,29 @@
 import { Component, DestroyRef, effect, inject, PLATFORM_ID, signal } from '@angular/core';
-import { CommonModule, isPlatformBrowser, isPlatformServer } from '@angular/common';
+import { CommonModule, isPlatformServer } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { debounceTime, distinctUntilChanged, filter } from 'rxjs';
+import { debounceTime, distinctUntilChanged, filter, forkJoin } from 'rxjs';
 
-import { TuiAppearance, TuiButton, TuiDialogService, TuiInput, TuiTextfield } from '@taiga-ui/core';
+import {
+	TuiAppearance,
+	TuiButton,
+	TuiCell,
+	TuiDialogService,
+	TuiDropdown,
+	TuiInput,
+	TuiLink,
+	TuiTextfield,
+	TuiTitle,
+} from '@taiga-ui/core';
 
+import { TuiBadge, TuiItemsWithMore, TuiStatus } from '@taiga-ui/kit';
+import { TuiItem } from '@taiga-ui/cdk';
+import { TuiItemGroup } from '@taiga-ui/layout';
 import { TuiSortChange, TuiSortDirection, TuiTable, TuiTablePagination } from '@taiga-ui/addon-table';
 
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import {
-	Calendar01Icon,
-	Delete01Icon,
-	Edit01Icon,
-	Loading03Icon,
-	PlusSignIcon,
-	Search01Icon,
-	SparklesIcon,
-} from '@hugeicons/core-free-icons';
+import { Loading03Icon, PlusSignIcon, SparklesIcon } from '@hugeicons/core-free-icons';
 
 import { PostDto, PostService } from '../../../posts/data-access/post.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
@@ -26,7 +31,7 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { LocalizedDatePipe } from '../../../../core/i18n/localized-date.pipe';
-import { buildTagMap, collectTagIds, tagName as tagNameOfUtil } from '../../../../core/util/tag.util';
+import { buildTagMap, chunkTagIds, collectTagIds, tagName as tagNameOfUtil } from '../../../../core/util/tag.util';
 import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 
 @Component({
@@ -40,12 +45,28 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 		TuiTable,
 		TuiTablePagination,
 		HugeiconsIconComponent,
+		TuiCell,
+		TuiTitle,
+		TuiStatus,
+		TuiBadge,
+		TuiItemsWithMore,
+		TuiItem,
+		TuiItemGroup,
+		TuiDropdown,
+		TuiLink,
 		TuiAppearance,
 		TuiTextfield,
 		TuiInput,
 		TranslatePipe,
 		LocalizedDatePipe,
 	],
+	styles: `
+		[tuiTh],
+		[tuiTd] {
+			border-inline-start: none;
+			border-inline-end: none;
+		}
+	`,
 	template: `
 		<div class="mx-auto px-4 py-8 sm:px-6">
 			<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -64,13 +85,15 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 				</div>
 			</div>
 
-
 			<tui-textfield class="mb-4">
 				<label tuiLabel>{{ 'dashboard.posts.list.searchLabel' | translate }}</label>
-
-				<input tuiInput [formControl]="searchControl" [placeholder]="'dashboard.posts.list.searchPlaceholder' | translate" />
+				<input
+					tuiInput
+					[formControl]="searchControl"
+					[placeholder]="'dashboard.posts.list.searchPlaceholder' | translate"
+				/>
 			</tui-textfield>
-			
+
 			@if (loading()) {
 				<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
 					<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="1.5" />
@@ -87,120 +110,171 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 						"{{ 'posts.emptyQuote' | translate }}"
 					</blockquote>
 
-					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">{{ 'posts.emptyAttribution' | translate }}</footer>
+					<footer class="mt-6 text-sm font-medium tracking-wide text-muted">
+						{{ 'posts.emptyAttribution' | translate }}
+					</footer>
 				</div>
 			} @else {
-				<table
-					tuiTable
-					[columns]="columns"
-					[tuiSortBy]="sortKey()"
-					[direction]="sortDirection()"
-					(tuiSortChange)="onSort($event)"
-					class="w-full"
-				>
-					<thead>
-						<tr tuiThGroup>
-							<th *tuiHead="'title'" tuiTh tuiSortable [requiredSort]="true">{{ 'dashboard.posts.list.colTitle' | translate }}</th>
+				<div class="overflow-x-auto">
+					<table
+						tuiTable
+						size="m"
+						[columns]="columns"
+						[tuiSortBy]="sortKey()"
+						[direction]="sortDirection()"
+						(tuiSortChange)="onSort($event)"
+						class="w-full"
+					>
+						<thead>
+							<tr tuiThGroup>
+								<th *tuiHead="'title'" tuiTh tuiSortable [requiredSort]="true">
+									<div [tuiCell]="size">{{ 'dashboard.posts.list.colTitle' | translate }}</div>
+								</th>
 
-							<th *tuiHead="'status'" tuiTh>{{ 'dashboard.posts.list.colStatus' | translate }}</th>
+								<th *tuiHead="'status'" tuiTh>
+									<div [tuiCell]="size">{{ 'dashboard.posts.list.colStatus' | translate }}</div>
+								</th>
 
-							<th *tuiHead="'createdAt'" tuiTh tuiSortable>{{ 'dashboard.posts.list.colCreated' | translate }}</th>
+								<th *tuiHead="'createdAt'" tuiTh tuiSortable>
+									<div [tuiCell]="size">{{ 'dashboard.posts.list.colCreated' | translate }}</div>
+								</th>
 
-							<th *tuiHead="'viewCount'" tuiTh tuiSortable>{{ 'dashboard.posts.list.colViews' | translate }}</th>
+								<th *tuiHead="'viewCount'" tuiTh tuiSortable>
+									<div [tuiCell]="size">{{ 'dashboard.posts.list.colViews' | translate }}</div>
+								</th>
 
-							<th *tuiHead="'reactionCount'" tuiTh tuiSortable>{{ 'dashboard.posts.list.colReactions' | translate }}</th>
+								<th *tuiHead="'reactionCount'" tuiTh tuiSortable>
+									<div [tuiCell]="size">{{ 'dashboard.posts.list.colReactions' | translate }}</div>
+								</th>
 
-							<th *tuiHead="'authors'" tuiTh>{{ 'dashboard.posts.list.colAuthors' | translate }}</th>
+								<th *tuiHead="'authors'" tuiTh>
+									<div [tuiCell]="size">{{ 'dashboard.posts.list.colAuthors' | translate }}</div>
+								</th>
 
-							<th *tuiHead="'tags'" tuiTh>{{ 'dashboard.posts.list.colTags' | translate }}</th>
+								<th *tuiHead="'tags'" tuiTh>
+									<div [tuiCell]="size">{{ 'dashboard.posts.list.colTags' | translate }}</div>
+								</th>
 
-							<th *tuiHead="'actions'" tuiTh>{{ 'dashboard.posts.list.colActions' | translate }}</th>
-						</tr>
-					</thead>
-
-					<tbody tuiTbody>
-						@for (post of posts(); track post.id) {
-							<tr tuiTr>
-								
-								<td *tuiCell="'title'" tuiTd class="font-medium truncate max-w-60">
-									{{ postTitle(post) }}
-								</td>
-
-								
-								<td *tuiCell="'status'" tuiTd>
-									<span
-										class="rounded-full border px-2 py-0.5 text-xs"
-										[class.bg-green-500/20]="post.status === 'PUBLISHED'"
-										[class.bg-yellow-500/20]="post.status === 'DRAFT'"
-									>
-										{{ post.status }}
-									</span>
-								</td>
-
-								
-								<td *tuiCell="'createdAt'" tuiTd>
-									<span class="inline-flex items-center gap-1 text-xs">
-										<hugeicons-icon [icon]="Calendar01Icon" [size]="12" [strokeWidth]="1.5" />
-
-										{{ post.createdAt | localizedDate: 'dd MMM yyyy' }}
-									</span>
-								</td>
-								
-								<td *tuiCell="'viewCount'" tuiTd>
-									{{ post.viewCount }}
-								</td>
-
-								<td *tuiCell="'reactionCount'" tuiTd>
-									{{ post.reactionCount }}
-								</td>
-								
-								<td *tuiCell="'authors'" tuiTd>
-									<div class="flex flex-wrap gap-1">
-										@for (author of post.authors; track author.id) {
-											<span class="text-xs">
-												{{ author.name }}
-											</span>
-										}
-									</div>
-								</td>
-
-								
-								<td *tuiCell="'tags'" tuiTd>
-									<div class="flex flex-wrap gap-1">
-										@for (tag of postTagsById(post); track tag.id) {
-											<span class="text-xs"> #{{ tagNameOf(tag) }} </span>
-										}
-									</div>
-								</td>
-
-								
-								<td *tuiCell="'actions'" tuiTd>
-									<div class="flex items-center gap-2">
-										<a
-											[routerLink]="['/dashboard/post', post.id]"
-											tuiButton
-											tuiAppearance="outline"
-											size="s"
-											[attr.aria-label]="'dashboard.posts.list.editAria' | translate"
-										>
-											<hugeicons-icon [icon]="Edit01Icon" [size]="16" [strokeWidth]="1.5" />
-										</a>
-
-										<button
-											tuiButton
-											tuiAppearance="accent"
-											size="s"
-											[attr.aria-label]="'dashboard.posts.list.deleteAria' | translate"
-											(click)="askDeleteOne(post.id)"
-										>
-											<hugeicons-icon [icon]="Delete01Icon" [size]="16" [strokeWidth]="1.5" />
-										</button>
-									</div>
-								</td>
+								<th *tuiHead="'actions'" tuiTh>
+									<div [tuiCell]="size">{{ 'dashboard.posts.list.colActions' | translate }}</div>
+								</th>
 							</tr>
-						}
-					</tbody>
-				</table>
+						</thead>
+
+						<tbody tuiTbody>
+							@for (post of posts(); track post.id) {
+								<tr tuiTr>
+									<td *tuiCell="'title'" tuiTd class="max-w-60">
+										<div [tuiCell]="size" class="min-w-0">
+											<span tuiTitle>
+												<span class="block truncate">{{ postTitle(post) }}</span>
+												<span tuiSubtitle class="truncate">{{ post.slug }}</span>
+											</span>
+										</div>
+									</td>
+
+									<td *tuiCell="'status'" tuiTd>
+										<span [tuiStatus]="statusColor(post.status)">{{
+											statusLabel(post.status)
+										}}</span>
+									</td>
+
+									<td *tuiCell="'createdAt'" tuiTd>
+										<div [tuiCell]="size">
+											<span tuiTitle>
+												{{ post.createdAt | localizedDate: 'dd MMM yyyy' }}
+												<span tuiSubtitle>{{ post.createdAt | localizedDate: 'EEEE' }}</span>
+											</span>
+										</div>
+									</td>
+
+									<td *tuiCell="'viewCount'" tuiTd>
+										<div [tuiCell]="size">{{ post.viewCount }}</div>
+									</td>
+
+									<td *tuiCell="'reactionCount'" tuiTd>
+										<div [tuiCell]="size">{{ post.reactionCount }}</div>
+									</td>
+
+									<td *tuiCell="'authors'" tuiTd>
+										<div [tuiCell]="size">
+											<div class="flex flex-wrap gap-1">
+												@for (author of post.authors; track author.id) {
+													<span class="text-xs">
+														{{ author.name }}
+													</span>
+												}
+											</div>
+										</div>
+									</td>
+
+									<td *tuiCell="'tags'" tuiTd>
+										<tui-items-with-more>
+											@for (tag of postTagsById(post); track tag.id) {
+												<div *tuiItem tuiBadge>#{{ tagNameOf(tag) }}</div>
+											}
+											<ng-template let-number tuiMore>
+												<button
+													appearance="action-grayscale"
+													tuiDropdownAlign="end"
+													tuiDropdownAuto
+													tuiLink
+													type="button"
+													class="text-xs"
+													[style.text-decoration-style]="'dashed'"
+													[tuiDropdown]="tagDropdown"
+												>
+													+ {{ postTagsById(post).length - number - 1 }}
+												</button>
+												<ng-template #tagDropdown>
+													<div tuiItemGroup [style.padding]="'1rem 0.75rem 0.75rem 1rem'">
+														@for (
+															tag of postTagsById(post);
+															track tag.id;
+															let tagIndex = $index
+														) {
+															@if (tagIndex > number) {
+																<div tuiBadge>#{{ tagNameOf(tag) }}</div>
+															}
+														}
+													</div>
+												</ng-template>
+											</ng-template>
+										</tui-items-with-more>
+									</td>
+
+									<td *tuiCell="'actions'" tuiTd>
+										<span tuiStatus>
+											<a
+												tuiIconButton
+												appearance="action"
+												size="xs"
+												iconStart="@tui.pencil"
+												type="button"
+												[routerLink]="['/dashboard/post', post.id]"
+												[attr.aria-label]="'dashboard.posts.list.editAria' | translate"
+											>
+												Edit
+											</a>
+
+											<button
+												tuiIconButton
+												appearance="action"
+												size="xs"
+												iconStart="@tui.trash"
+												type="button"
+												[attr.aria-label]="'dashboard.posts.list.deleteAria' | translate"
+												(click)="askDeleteOne(post.id)"
+											>
+												Delete
+											</button>
+										</span>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
 
 				<div class="mt-4">
 					<tui-table-pagination [page]="page()" [total]="totalElements()" (pageChange)="onPage($event)" />
@@ -220,18 +294,14 @@ export class DashboardPostListComponent {
 	private readonly dialogs = inject(TuiDialogService);
 
 	readonly PlusSignIcon = PlusSignIcon;
-	readonly Edit01Icon = Edit01Icon;
-	readonly Delete01Icon = Delete01Icon;
-	readonly Calendar01Icon = Calendar01Icon;
-
-	readonly searchControl = new FormControl('', {
-		nonNullable: true,
-	});
+	readonly size = 'm';
 
 	readonly posts = signal<PostDto[]>([]);
 	readonly loading = signal(true);
 	readonly error = signal<string | null>(null);
 	readonly tagMap = signal<Map<string, TagDto>>(new Map());
+
+	readonly searchControl = new FormControl('', { nonNullable: true });
 
 	readonly page = signal(0);
 	readonly totalPages = signal(1);
@@ -274,11 +344,35 @@ export class DashboardPostListComponent {
 
 	postTagsById(post: PostDto): TagDto[] {
 		const tags = this.tagMap();
-		return (post.tagIds ?? []).map(id => tags.get(id)).filter((t): t is TagDto => !!t);
+		return (post.tagIds ?? []).map((id) => tags.get(id)).filter((t): t is TagDto => !!t);
 	}
 
 	tagNameOf(tag: TagDto): string {
 		return tagNameOfUtil(tag, this.languageService.language());
+	}
+
+	statusLabel(status: string): string {
+		if (status === 'PUBLISHED') {
+			return this.translationService.translate('common.statusPublished');
+		}
+
+		if (status === 'DRAFT') {
+			return this.translationService.translate('common.statusDraft');
+		}
+
+		return status;
+	}
+
+	statusColor(status: string): string {
+		if (status === 'PUBLISHED') {
+			return 'var(--tui-status-positive)';
+		}
+
+		if (status === 'DRAFT') {
+			return 'var(--tui-status-warning)';
+		}
+
+		return 'var(--tui-status-neutral)';
 	}
 
 	load(): void {
@@ -288,7 +382,6 @@ export class DashboardPostListComponent {
 
 		this.loading.set(true);
 		this.error.set(null);
-
 		const query = this.searchControl.value.trim();
 
 		const direction = this.sortDirection() === TuiSortDirection.Asc ? 'ASC' : 'DESC';
@@ -296,7 +389,7 @@ export class DashboardPostListComponent {
 		this.postService
 			.search({
 				query: {
-					query: query || undefined
+					query: query || undefined,
 				},
 				page: this.page(),
 				size: 10,
@@ -322,14 +415,22 @@ export class DashboardPostListComponent {
 
 	private loadTags(posts: PostDto[]): void {
 		const ids = collectTagIds(posts);
+
 		if (ids.length === 0) {
 			this.tagMap.set(new Map());
 			return;
 		}
-		this.tagService.batch(ids).subscribe({
-			next: (tags) => this.tagMap.set(buildTagMap(tags)),
-			error: () => this.tagMap.set(new Map()),
-		});
+
+		forkJoin(chunkTagIds(ids).map((chunk) => this.tagService.batch(chunk)))
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: (chunks) => {
+					this.tagMap.set(buildTagMap(chunks.flat()));
+				},
+				error: () => {
+					this.tagMap.set(new Map());
+				},
+			});
 	}
 
 	onPage(page: number): void {
@@ -342,7 +443,6 @@ export class DashboardPostListComponent {
 	}
 
 	onSort(event: TuiSortChange<any>): void {
-		console.log('onSort', event);
 		if (!event.sortKey) {
 			return;
 		}
@@ -387,19 +487,23 @@ export class DashboardPostListComponent {
 			.subscribe(() => {
 				this.postService.delete([id]).subscribe({
 					next: () => {
-						this.toastService.open(this.translationService.translate('dashboard.posts.list.deleted'), {
-							appearance: 'success',
-							autoClose: 3000,
-							data: '@tui.check',
-						}).subscribe();
+						this.toastService
+							.open(this.translationService.translate('dashboard.posts.list.deleted'), {
+								appearance: 'success',
+								autoClose: 3000,
+								data: '@tui.check',
+							})
+							.subscribe();
 						this.load();
 					},
 					error: () => {
-						this.toastService.open(this.translationService.translate('dashboard.posts.list.deleteFailed'), {
-							appearance: 'error',
-							autoClose: 5000,
-							data: '@tui.circle-x',
-						}).subscribe();
+						this.toastService
+							.open(this.translationService.translate('dashboard.posts.list.deleteFailed'), {
+								appearance: 'error',
+								autoClose: 5000,
+								data: '@tui.circle-x',
+							})
+							.subscribe();
 					},
 				});
 			});
@@ -427,19 +531,28 @@ export class DashboardPostListComponent {
 				this.postService.delete(ids).subscribe({
 					next: () => {
 						this.selected.set(new Set());
-						this.toastService.open(this.translationService.translate('dashboard.posts.list.deletedMultiple', { count: ids.length }), {
-							appearance: 'success',
-							autoClose: 3000,
-							data: '@tui.check',
-						}).subscribe();
+						this.toastService
+							.open(
+								this.translationService.translate('dashboard.posts.list.deletedMultiple', {
+									count: ids.length,
+								}),
+								{
+									appearance: 'success',
+									autoClose: 3000,
+									data: '@tui.check',
+								}
+							)
+							.subscribe();
 						this.load();
 					},
 					error: () => {
-						this.toastService.open(this.translationService.translate('dashboard.posts.list.deleteMultipleFailed'), {
-							appearance: 'error',
-							autoClose: 5000,
-							data: '@tui.circle-x',
-						}).subscribe();
+						this.toastService
+							.open(this.translationService.translate('dashboard.posts.list.deleteMultipleFailed'), {
+								appearance: 'error',
+								autoClose: 5000,
+								data: '@tui.circle-x',
+							})
+							.subscribe();
 					},
 				});
 			});

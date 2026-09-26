@@ -16,7 +16,9 @@
 		"reactionFailed": "Your reaction could not be registered. Please try again.",
 		"share": "Share",
 		"linkCopied": "Link copied to clipboard!",
-		"failedToCopy": "Failed to copy link"
+		"failedToCopy": "Failed to copy link",
+		"statusPublished": "Published",
+		"statusDraft": "Draft"
 	},
 	"home": {
 		"recentPosts": "Recent posts",
@@ -209,6 +211,7 @@
 				"colViews": "Views",
 				"colReactions": "Reactions",
 				"colAuthors": "Authors",
+				"colTags": "Tags",
 				"colActions": "Actions",
 				"editAria": "Edit project",
 				"deleteAria": "Delete project",

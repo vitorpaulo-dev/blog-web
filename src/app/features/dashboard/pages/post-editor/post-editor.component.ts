@@ -18,19 +18,24 @@ import {
 } from '@angular/forms';
 import {
 	TuiButton,
-	TuiDropdown,
-	TuiFilterByInputPipe,
 	TuiInput,
 	TuiTextfield,
 } from '@taiga-ui/core';
-import {
-	TuiChevron,
-	TuiChip,
-	TuiDataListWrapper, TuiInputChipComponent, TuiInputChipDirective,
-	TuiMultiSelect,
-	TuiToastService,
-} from '@taiga-ui/kit';
+import { TuiToastService } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
+import {
+	EMPTY,
+	Observable,
+	Subject,
+	catchError,
+	debounceTime,
+	distinctUntilChanged,
+	finalize,
+	merge,
+	switchMap,
+	takeUntil,
+} from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
 	ArrowLeft01Icon,
 	Edit01Icon,
@@ -47,14 +52,17 @@ import {
 
 import {
 	AudioType,
+	GenericPageableResponse,
 	Language,
 	PostAudioDto,
 	PostService,
+	ProjectDto,
 } from '../../../posts/data-access/post.service';
 import { AudioArtifactDto, AudioService } from '../../../posts/data-access/audio.service';
 import { ProjectService } from '../../../projects/data-access/project.service';
-import { TagService } from '../../../tags/data-access/tag.service';
+import { TagDto, TagService } from '../../../tags/data-access/tag.service';
 import { MarkdownWriterComponent } from '../../../../shared/components/markdown-writer/markdown-writer.component';
+import { ItemSelectorComponent } from '../../../../shared/components/item-selector/item-selector.component';
 import { UploadInputComponent } from '../../../../shared/components/upload-input/upload-input.component';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
@@ -95,18 +103,10 @@ const AUDIO_LANGUAGES: Language[] = ['ENGLISH', 'PORTUGUESE'];
 		FormsModule,
 		TuiButton,
 		TuiTextfield,
-		TuiDropdown,
-		TuiMultiSelect,
-		TuiChevron,
-		TuiChip,
-		HugeiconsIconComponent,
 		TuiInput,
-		TuiDataListWrapper,
-		TuiFilterByInputPipe,
-		TuiChevron,
-		TuiInputChipComponent,
-		TuiInputChipDirective,
+		HugeiconsIconComponent,
 		TranslatePipe,
+		ItemSelectorComponent,
 		MarkdownWriterComponent,
 		UploadInputComponent,
 	],
@@ -209,56 +209,29 @@ const AUDIO_LANGUAGES: Language[] = ['ENGLISH', 'PORTUGUESE'];
 					/>
 				</div>
 
-				<!-- Tags -->
-				<tui-textfield multi tuiChevron [stringify]="stringifyTag">
-					<label tuiLabel class="flex items-center gap-1.5">
-						<hugeicons-icon [icon]="tagsIcon" [size]="16" [strokeWidth]="2.5" />
-						<span>{{ 'dashboard.posts.editor.tagsLabel' | translate }}</span>
-					</label>
+				<app-item-selector
+					formControlName="tags"
+					[label]="'dashboard.posts.editor.tagsLabel' | translate"
+					[labelIcon]="tagsIcon"
+					[items]="availableTags()"
+					[loading]="tagsLoading()"
+					[placeholder]="'dashboard.posts.editor.tagsPlaceholder' | translate"
+					[remoteSearch]="true"
+					[stringify]="stringifyTag"
+					(search)="onTagSearch($event)"
+				/>
 
-					<input tuiInputChip formControlName="tags" [placeholder]="'dashboard.posts.editor.tagsPlaceholder' | translate" />
-
-					<tui-input-chip *tuiItem />
-
-					<tui-data-list-wrapper
-						*tuiDropdown
-						tuiMultiSelectGroup
-						[items]="availableTags() | tuiFilterByInput"
-						[itemContent]="tagTemplate"
-					/>
-				</tui-textfield>
-
-				<ng-template #tagTemplate let-tag>
-					{{ tag.name }}
-				</ng-template>
-
-				<!-- Projects -->
-				<tui-textfield multi tuiChevron [stringify]="stringifyProject">
-					<label tuiLabel class="flex items-center gap-1.5">
-						<hugeicons-icon [icon]="projectsIcon" [size]="16" [strokeWidth]="2.5" />
-						<span>{{ 'dashboard.posts.editor.projectsLabel' | translate }}</span>
-					</label>
-
-					<input
-						tuiInputChip
-						formControlName="projects"
-						[placeholder]="'dashboard.posts.editor.projectsPlaceholder' | translate"
-						(input)="onProjectSearchInput($event)"
-					/>
-
-					<tui-input-chip *tuiItem />
-
-					<tui-data-list-wrapper
-						*tuiDropdown
-						tuiMultiSelectGroup
-						[items]="filteredProjects()"
-						[itemContent]="projectTemplate"
-					/>
-				</tui-textfield>
-
-				<ng-template #projectTemplate let-project>
-					{{ project.title }}
-				</ng-template>
+				<app-item-selector
+					formControlName="projects"
+					[label]="'dashboard.posts.editor.projectsLabel' | translate"
+					[labelIcon]="projectsIcon"
+					[items]="availableProjects()"
+					[loading]="projectsLoading()"
+					[placeholder]="'dashboard.posts.editor.projectsPlaceholder' | translate"
+					[remoteSearch]="true"
+					[stringify]="stringifyProject"
+					(search)="onProjectSearch($event)"
+				/>
 
 				@if (error()) {
 					<p class="text-sm text-red-400" role="alert">
@@ -441,8 +414,12 @@ export class PostEditorComponent implements OnInit {
 	readonly error = signal<string | null>(null);
 
 	readonly availableTags = signal<TagOption[]>([]);
+	readonly tagsLoading = signal(true);
 	readonly availableProjects = signal<ProjectOption[]>([]);
-	readonly projectSearchText = signal('');
+	readonly projectsLoading = signal(true);
+
+	private readonly tagSearch = new Subject<string>();
+	private readonly projectSearch = new Subject<string>();
 
 	readonly audio = signal<PostAudioDto | undefined>(undefined);
 	readonly artifacts = computed<AudioArtifactDto[]>(() => {
@@ -479,16 +456,6 @@ export class PostEditorComponent implements OnInit {
 
 	readonly bannerUrl = computed(() => this.form.controls.bannerUrl.value);
 
-	readonly filteredProjects = computed(() => {
-		const search = this.projectSearchText().trim().toLowerCase();
-
-		if (!search) {
-			return this.availableProjects();
-		}
-
-		return this.availableProjects().filter((project) => project.title.toLowerCase().includes(search));
-	});
-
 	private postId: string | null = null;
 
 	ngOnInit(): void {
@@ -496,8 +463,8 @@ export class PostEditorComponent implements OnInit {
 			return;
 		}
 
-		this.loadTags();
-		this.loadProjects();
+		this.wireTagSearch();
+		this.wireProjectSearch();
 		this.loadPostIfEditing();
 	}
 
@@ -518,45 +485,79 @@ export class PostEditorComponent implements OnInit {
 		};
 	}
 
-	private loadTags(): void {
-		this.tagService
-			.search({
-				query: {},
-				page: 0,
-				size: 5,
-				sort: 'name',
-				direction: 'ASC',
-			})
-			.subscribe({
-				next: (response) => {
-					this.availableTags.set(
-						response.content.map((tag) => ({
-							id: tag.id,
-							name: this.getTranslationValue(tag.translations, 'name', tag.id),
-						}))
-					);
-				},
+	private searchTags(name?: string): Observable<GenericPageableResponse<TagDto>> {
+		return this.tagService.search({
+			query: { name },
+			page: 0,
+			size: 5,
+			sort: 'name',
+			direction: 'ASC',
+		});
+	}
+
+	private toTagOptions(response: GenericPageableResponse<TagDto>): TagOption[] {
+		return response.content.map((tag) => ({
+			id: tag.id,
+			name: this.getTranslationValue(tag.translations, 'name', tag.id),
+		}));
+	}
+
+	private searchProjects(query?: string): Observable<GenericPageableResponse<ProjectDto>> {
+		return this.projectService.search({
+			query: { query },
+			page: 0,
+			size: 5,
+			sort: 'createdAt',
+			direction: 'DESC',
+		});
+	}
+
+	private toProjectOptions(response: GenericPageableResponse<ProjectDto>): ProjectOption[] {
+		return response.content.map((project) => ({
+			id: project.id,
+			title: this.getTranslationValue(project.translations, 'title', project.id),
+		}));
+	}
+
+	private wireTagSearch(): void {
+		const initialLoad = this.searchTags().pipe(
+			takeUntil(this.tagSearch),
+			catchError(() => EMPTY),
+			finalize(() => this.tagsLoading.set(false))
+		);
+
+		const searched = this.tagSearch.pipe(
+			debounceTime(300),
+			distinctUntilChanged(),
+			switchMap((term) => this.searchTags(term.trim() || undefined).pipe(catchError(() => EMPTY)))
+		);
+
+		merge(initialLoad, searched)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe((response) => {
+				this.availableTags.set(this.toTagOptions(response));
+				this.tagsLoading.set(false);
 			});
 	}
 
-	private loadProjects(): void {
-		this.projectService
-			.search({
-				query: {},
-				page: 0,
-				size: 5,
-				sort: 'createdAt',
-				direction: 'DESC',
-			})
-			.subscribe({
-				next: (response) => {
-					this.availableProjects.set(
-						response.content.map((project) => ({
-							id: project.id,
-							title: this.getTranslationValue(project.translations, 'title', project.id),
-						}))
-					);
-				},
+	private wireProjectSearch(): void {
+		const initialLoad = this.searchProjects().pipe(
+			takeUntil(this.projectSearch),
+			catchError(() => EMPTY),
+			finalize(() => this.projectsLoading.set(false))
+		);
+
+		const searched = this.projectSearch.pipe(
+			debounceTime(300),
+			distinctUntilChanged(),
+			switchMap((term) => this.searchProjects(term.trim() || undefined).pipe(catchError(() => EMPTY)))
+		);
+
+		merge(initialLoad, searched)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe((response) => {
+				this.availableProjects.set(this.toProjectOptions(response));
+				this.projectsLoading.set(false);
 			});
 	}
 
@@ -722,10 +723,12 @@ export class PostEditorComponent implements OnInit {
 
 	stringifyProject = (project: ProjectOption): string => project.title;
 
-	onProjectSearchInput(event: Event): void {
-		const input = event.target as HTMLInputElement;
+	onTagSearch(term: string): void {
+		this.tagSearch.next(term);
+	}
 
-		this.projectSearchText.set(input.value);
+	onProjectSearch(term: string): void {
+		this.projectSearch.next(term);
 	}
 
 	save(status: PostStatus): void {

@@ -16,7 +16,9 @@
 		"reactionFailed": "Não foi possível registrar sua reação. Tente novamente.",
 		"share": "Compartilhar",
 		"linkCopied": "Link copiado!",
-		"failedToCopy": "Falha ao copiar link"
+		"failedToCopy": "Falha ao copiar link",
+		"statusPublished": "Publicado",
+		"statusDraft": "Rascunho"
 	},
 	"home": {
 		"recentPosts": "Posts recentes",
@@ -209,6 +211,7 @@
 				"colViews": "Visualizações",
 				"colReactions": "Reações",
 				"colAuthors": "Autores",
+				"colTags": "Tags",
 				"colActions": "Ações",
 				"editAria": "Editar projeto",
 				"deleteAria": "Excluir projeto",
