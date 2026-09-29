@@ -2,23 +2,10 @@ import { ApplicationRef, createComponent, ElementRef, EnvironmentInjector, injec
 import { Marked, MarkedExtension, Tokens } from 'marked';
 import DOMPurify from 'dompurify';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import {
-	Alert01Icon,
-	Alert02Icon,
-	BiohazardIcon,
-	BulbIcon,
-	ExclamationMarkBigIcon,
-	InformationCircleIcon,
-	NoteIcon,
-} from '@hugeicons/core-free-icons';
+import { Alert02Icon, BiohazardIcon, BulbIcon, ExclamationMarkBigIcon, NoteIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 
-export type CalloutType =
-	| 'note'
-	| 'tip'
-	| 'important'
-	| 'warning'
-	| 'caution';
+export type CalloutType = 'note' | 'tip' | 'important' | 'warning' | 'caution';
 
 export const getCalloutIcon = (type: CalloutType) => {
 	const icons: Record<CalloutType, typeof NoteIcon> = {
@@ -40,12 +27,10 @@ interface CalloutToken extends Tokens.Generic {
 	raw: string;
 }
 
-const CALLOUT_RE =
-	/^ {0,3}>[ \t]*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)][ \t]*([^\n]*)\n((?:>.*(?:\n|$))*)/i;
+const CALLOUT_RE = /^ {0,3}>[ \t]*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)][ \t]*([^\n]*)\n((?:>.*(?:\n|$))*)/i;
 
 @Injectable({ providedIn: 'root' })
 export class MarkdownService {
-
 	private readonly sanitizer = inject(DomSanitizer);
 	private readonly appRef = inject(ApplicationRef);
 	private readonly environmentInjector = inject(EnvironmentInjector);
@@ -108,9 +93,7 @@ export class MarkdownService {
 
 		renderer.use({
 			gfm: true,
-			extensions: [
-				...this.callouts().extensions!,
-			],
+			extensions: [...this.callouts().extensions!],
 		});
 
 		return renderer;
@@ -135,7 +118,7 @@ export class MarkdownService {
 		}
 
 		return this.sanitizer.bypassSecurityTrustHtml(
-			DOMPurify.sanitize(raw, { ADD_ATTR: ['class', 'data-mermaid', 'id'] }),
+			DOMPurify.sanitize(raw, { ADD_ATTR: ['class', 'data-mermaid', 'id'] })
 		);
 	}
 
@@ -158,8 +141,76 @@ export class MarkdownService {
 		const { default: mermaid } = await import('mermaid');
 		mermaid.initialize({
 			startOnLoad: false,
-			theme: 'dark',
 			securityLevel: 'strict',
+			theme: 'base',
+			look: 'classic',
+			layout: 'dagre',
+
+			themeVariables: {
+				darkMode: true,
+				background: '#08070b',
+				fontFamily: "'Geist', system-ui, sans-serif",
+				fontSize: '14px',
+
+				textColor: '#f5f3fa',
+				lineColor: '#8b849b',
+
+				primaryColor: '#121018',
+				primaryTextColor: '#f5f3fa',
+				primaryBorderColor: '#7c3aed',
+
+				secondaryColor: '#1a1622',
+				secondaryTextColor: '#f5f3fa',
+				secondaryBorderColor: '#5b21b6',
+
+				tertiaryColor: '#0f0d14',
+				tertiaryTextColor: '#b9b4c7',
+				tertiaryBorderColor: '#272230',
+
+				mainBkg: '#121018',
+				nodeBorder: '#7c3aed',
+				nodeTextColor: '#f5f3fa',
+				clusterBkg: '#0f0d14',
+				clusterBorder: '#272230',
+				titleColor: '#f5f3fa',
+				labelTextColor: '#f5f3fa',
+				edgeLabelBackground: '#08070b',
+
+				noteBkgColor: '#1a1622',
+				noteTextColor: '#f5f3fa',
+				noteBorderColor: '#272230',
+
+				actorBkg: '#121018',
+				actorBorder: '#7c3aed',
+				actorTextColor: '#f5f3fa',
+				actorLineColor: '#3a3448',
+				signalColor: '#8b849b',
+				signalTextColor: '#f5f3fa',
+				labelBoxBkgColor: '#1a1622',
+				labelBoxBorderColor: '#272230',
+				activationBkgColor: '#1a1622',
+				activationBorderColor: '#7c3aed',
+			},
+
+			flowchart: {
+				htmlLabels: true,
+				curve: 'basis',
+				padding: 14,
+				nodeSpacing: 40,
+				rankSpacing: 50,
+			},
+
+			themeCSS: `
+				.node rect { rx: 3px; ry: 3px; }
+				.cluster rect { rx: 3px; ry: 3px; }
+		
+				.flowchart-link { stroke-width: 2px; }
+				.edgeLabel, .edgeLabel p {
+					background-color: #08070b;
+					color: #b9b4c7;
+				}
+				.edgeLabel p { border-radius: 3px; padding: 2px 6px; }
+			`,
 		});
 
 		for (const node of nodes) {
@@ -177,9 +228,7 @@ export class MarkdownService {
 	}
 
 	async renderIcons(container: HTMLElement): Promise<void> {
-		const nodes = container.querySelectorAll<HTMLElement>(
-			'.markdown-callout__icon[data-icon]',
-		);
+		const nodes = container.querySelectorAll<HTMLElement>('.markdown-callout__icon[data-icon]');
 		if (nodes.length === 0) {
 			return;
 		}
@@ -235,13 +284,11 @@ export class MarkdownService {
 						const explicitTitle = match[2].trim();
 						const body = match[3]
 							.split('\n')
-							.map(line => line.replace(/^>[ \t]?/, ''))
+							.map((line) => line.replace(/^>[ \t]?/, ''))
 							.join('\n')
 							.trim();
 
-						const title =
-							explicitTitle ||
-							calloutType.charAt(0).toUpperCase() + calloutType.slice(1);
+						const title = explicitTitle || calloutType.charAt(0).toUpperCase() + calloutType.slice(1);
 
 						const token: CalloutToken = {
 							type: 'callout',
