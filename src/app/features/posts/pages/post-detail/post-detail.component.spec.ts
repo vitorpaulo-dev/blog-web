@@ -7,7 +7,7 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { translationProvider } from '../../../../core/i18n/testing';
 import { MarkdownService } from '../../data-access/markdown.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { TuiToastService } from '@taiga-ui/kit';
 import { signal } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
@@ -423,5 +423,45 @@ describe('PostDetailComponent', () => {
 
     const buttons = fixture.nativeElement.querySelectorAll('aside nav button');
     expect(buttons).toHaveLength(0);
+  });
+
+  it('keeps the loading announcement available while rendering skeleton layout', () => {
+    (postServiceMock.getBySlug as any).mockReturnValue(new Subject());
+
+    fixture.detectChanges();
+
+    const announcement: HTMLElement = fixture.nativeElement.querySelector('p.sr-only');
+    expect(announcement.textContent?.trim()).toBe('Loading...');
+
+    const skeletonRegion = fixture.nativeElement.querySelector('[tuiSkeleton]');
+    expect(skeletonRegion).toBeTruthy();
+    expect(skeletonRegion.closest('[aria-hidden="true"]')).toBeTruthy();
+
+    const reactionsRegion = fixture.nativeElement.querySelector('div[aria-hidden="true"] section');
+    expect(reactionsRegion).toBeTruthy();
+    expect(reactionsRegion.querySelectorAll('[tuiSkeleton]')).toHaveLength(5);
+    expect(reactionsRegion.querySelector('button')).toBeNull();
+
+    expect(fixture.nativeElement.querySelector('article')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it('replaces skeletons with the loaded layout once the post arrives', async () => {
+    (postServiceMock.getBySlug as any).mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-post',
+        translations: { ENGLISH: { title: 'Test', content: 'plain text' } },
+      }),
+    );
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await vi.waitFor(() => expect(component.loading()).toBe(false));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll('[tuiSkeleton]')).toHaveLength(0);
+    expect(fixture.nativeElement.querySelector('p.sr-only')).toBeNull();
+    expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain('Test');
   });
 });

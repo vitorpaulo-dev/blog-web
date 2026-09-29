@@ -7,7 +7,7 @@ import { TagService } from '../../../tags/data-access/tag.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { translationProvider } from '../../../../core/i18n/testing';
 import { TuiToastService } from '@taiga-ui/kit';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { SeoService } from '../../../../core/seo/seo.service';
 
@@ -203,5 +203,37 @@ describe('ProjectListComponent', () => {
     expect(cards[0].chips.length).toBe(2);
     expect(cards[0].chips[0].label).toBe('TypeScript');
     expect(cards[0].chips[1].label).toBe('Angular');
+  });
+
+  it('renders skeleton cards instead of content cards while loading', () => {
+    (projectServiceMock.search as any).mockReturnValue(new Subject());
+
+    fixture.detectChanges();
+
+    expect(component.loading()).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll('[tuiSkeleton]').length).toBeGreaterThan(0);
+    expect(fixture.nativeElement.querySelector('app-content-card')).toBeNull();
+  });
+
+  it('renders content cards and removes skeletons after projects load', () => {
+    (projectServiceMock.search as any).mockReturnValue(
+      of({
+        content: [
+          {
+            id: '1',
+            slug: 'proj-1',
+            translations: { ENGLISH: { title: 'My Project', description: 'Description' } },
+          },
+        ],
+        totalPages: 1,
+        totalElements: 1,
+      }),
+    );
+
+    component.load();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll('[tuiSkeleton]')).toHaveLength(0);
+    expect(fixture.nativeElement.querySelector('app-content-card')).toBeTruthy();
   });
 });

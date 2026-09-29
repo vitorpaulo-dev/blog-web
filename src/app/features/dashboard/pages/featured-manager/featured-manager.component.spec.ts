@@ -6,7 +6,7 @@ import { provideRouter } from '@angular/router';
 import { PostService } from '../../../posts/data-access/post.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TuiToastService } from '@taiga-ui/kit';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { PLATFORM_ID } from '@angular/core';
 import { signal } from '@angular/core';
 
@@ -171,5 +171,26 @@ describe('FeaturedManagerComponent', () => {
 
 		expect(component.error()).toBe('Failed to load featured posts');
 		expect(component.loading()).toBe(false);
+	});
+
+	it('renders skeleton rows matching the list layout while loading', () => {
+		(postServiceMock.getFeatured as any).mockReturnValue(new Subject());
+
+		fixture.detectChanges();
+
+		const html = fixture.nativeElement as HTMLElement;
+		expect(component.loading()).toBe(true);
+		expect(html.querySelectorAll('.featured-table[aria-hidden="true"] > .featured-row')).toHaveLength(5);
+		expect(html.querySelectorAll('[tuiSkeleton]').length).toBeGreaterThan(0);
+		expect(html.querySelector('tui-tiles')).toBeNull();
+	});
+
+	it('replaces skeleton rows with the editable list once featured posts load', () => {
+		fixture.detectChanges();
+
+		const html = fixture.nativeElement as HTMLElement;
+		expect(component.loading()).toBe(false);
+		expect(html.querySelectorAll('[tuiSkeleton]')).toHaveLength(0);
+		expect(html.querySelectorAll('tui-tile')).toHaveLength(2);
 	});
 });

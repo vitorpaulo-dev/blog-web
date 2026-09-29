@@ -7,7 +7,6 @@ import {
 	ArrowRight01Icon,
 	Database01Icon,
 	GithubIcon,
-	Loading03Icon,
 	Mail01Icon,
 	RssConnected01Icon,
 	SparklesIcon,
@@ -20,7 +19,7 @@ import { Frequency as SubscriberFrequency, NewsletterService } from '../../../da
 import { RouterLink } from '@angular/router';
 import { CommonModule, isPlatformServer } from '@angular/common';
 import { TuiCardLarge } from '@taiga-ui/layout';
-import { TuiChevron, TuiDataListWrapper, TuiSelect, TuiToastService } from '@taiga-ui/kit';
+import { TuiChevron, TuiDataListWrapper, TuiSelect, TuiSkeleton, TuiToastService } from '@taiga-ui/kit';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../core/util/tag.util';
 import { LanguageService, Language } from '../../../../core/i18n/language.service';
@@ -46,6 +45,7 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 		TuiDropdown,
 		TuiDataListWrapper,
 		TuiAppearance,
+		TuiSkeleton,
 		ContentCardComponent,
 		TranslatePipe,
 	],
@@ -85,8 +85,32 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 					</button>
 				</div>
 				@if (postsLoading()) {
-					<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
-						<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="2.5" />
+					<div class="flex flex-col" aria-hidden="true">
+						@for (row of skeletonRows; track row; let last = $last) {
+							<div class="flex flex-col md:flex-row items-center w-full gap-3 p-3 rounded-lg">
+								<div class="w-full md:w-56 lg:w-64 shrink-0 aspect-video rounded-xl" [tuiSkeleton]="true"></div>
+
+								<div class="flex flex-col justify-center gap-1.5 min-w-0 flex-1 w-full">
+									<div class="h-4 w-40 rounded" [tuiSkeleton]="true"></div>
+									<div class="h-6 w-2/3 rounded" [tuiSkeleton]="true"></div>
+									<div class="h-3 w-full rounded" [tuiSkeleton]="true"></div>
+									<div class="h-3 w-11/12 rounded" [tuiSkeleton]="true"></div>
+									<div class="h-3 w-3/5 rounded" [tuiSkeleton]="true"></div>
+								</div>
+
+								<div class="flex flex-row md:flex-col flex-wrap items-end justify-end gap-1.5 shrink-0">
+									<div class="h-6 w-16 rounded-full" [tuiSkeleton]="true"></div>
+									<div class="h-6 w-16 rounded-full" [tuiSkeleton]="true"></div>
+									<div class="h-6 w-16 rounded-full" [tuiSkeleton]="true"></div>
+								</div>
+							</div>
+
+							@if (!last) {
+								<div class="py-4">
+									<hr />
+								</div>
+							}
+						}
 					</div>
 				} @else if (posts().length === 0) {
 					<div
@@ -336,6 +360,8 @@ export class HomePageComponent {
 	postsLoading = signal(true);
 	featured = signal<PostDto[]>([]);
 	tagMap = signal<Map<string, TagDto>>(new Map());
+
+	protected readonly skeletonRows = [1, 2, 3];
 	readonly lang = this.languageService.language.asReadonly();
 	readonly postListLink = computed(() => this.languageService.prefixed('/post'));
 
@@ -474,7 +500,6 @@ export class HomePageComponent {
 	}
 
 	protected readonly ArrowRight01Icon = ArrowRight01Icon;
-	protected readonly Loading03Icon = Loading03Icon;
 	protected readonly SparklesIcon = SparklesIcon;
 	protected readonly GithubIcon = GithubIcon;
 	protected readonly Mail01Icon = Mail01Icon;

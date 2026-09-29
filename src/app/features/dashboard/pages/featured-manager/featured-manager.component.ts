@@ -11,9 +11,9 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TuiAppearance, TuiButton, TuiFilterByInputPipe, TuiTextfield } from '@taiga-ui/core';
-import { TuiChevron, TuiDataListWrapper, TuiInputChipComponent, TuiInputChipDirective, TuiMultiSelect, TuiTiles, TuiToastService } from '@taiga-ui/kit';
+import { TuiChevron, TuiDataListWrapper, TuiInputChipComponent, TuiInputChipDirective, TuiMultiSelect, TuiSkeleton, TuiTiles, TuiToastService } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { ArrowLeft01Icon, Delete01Icon, GripVerticalIcon, Loading03Icon, SaveIcon, SparklesIcon } from '@hugeicons/core-free-icons';
+import { ArrowLeft01Icon, Delete01Icon, GripVerticalIcon, SaveIcon, SparklesIcon } from '@hugeicons/core-free-icons';
 
 import {
 	FeaturePostPayload,
@@ -47,6 +47,7 @@ interface PostOption {
 		TuiDataListWrapper,
 		TuiFilterByInputPipe,
 		TuiTiles,
+		TuiSkeleton,
 		HugeiconsIconComponent,
 		TranslatePipe,
 		TuiAppearance,
@@ -70,8 +71,18 @@ interface PostOption {
 			</div>
 
 			@if (loading()) {
-				<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
-					<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="2.5" />
+				<div class="featured-table" aria-hidden="true">
+					@for (row of skeletonRows; track row) {
+						<div class="featured-row">
+							<span class="flex w-8 shrink-0 items-center justify-center">
+								<span class="h-4 w-4 rounded" [tuiSkeleton]="true"></span>
+							</span>
+							<span class="h-4 w-3/4 rounded" [tuiSkeleton]="true"></span>
+							<span class="flex w-8 shrink-0 items-center justify-center">
+								<span class="h-6 w-6 rounded-full" [tuiSkeleton]="true"></span>
+							</span>
+						</div>
+					}
 				</div>
 			} @else {
 				<div class="flex flex-col gap-5">
@@ -247,9 +258,10 @@ export class FeaturedManagerComponent implements OnInit {
 	readonly ArrowLeft01Icon = ArrowLeft01Icon;
 	readonly SparklesIcon = SparklesIcon;
 	readonly SaveIcon = SaveIcon;
-	readonly Loading03Icon = Loading03Icon;
 	readonly Delete01Icon = Delete01Icon;
 	readonly GripVerticalIcon = GripVerticalIcon;
+
+	protected readonly skeletonRows = [1, 2, 3, 4, 5];
 
 	readonly selection = new FormControl<PostOption[]>([], { nonNullable: true });
 

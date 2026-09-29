@@ -23,7 +23,7 @@ import {
 } from '@hugeicons/core-free-icons';
 
 import { TuiAppearance, TuiButton } from '@taiga-ui/core';
-import { TuiChip, TuiToastService } from '@taiga-ui/kit';
+import { TuiChip, TuiSkeleton, TuiToastService } from '@taiga-ui/kit';
 
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { ImageSignDirective } from '../../../../shared/directives/image-sign.directive';
@@ -40,7 +40,7 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 @Component({
 	selector: 'app-project-detail',
 	standalone: true,
-	imports: [CommonModule, RouterLink, TuiButton, HugeiconsIconComponent, TuiAppearance, TuiChip, TranslatePipe, LocalizedDatePipe, ImageSignDirective],
+	imports: [CommonModule, RouterLink, TuiButton, HugeiconsIconComponent, TuiAppearance, TuiChip, TuiSkeleton, TranslatePipe, LocalizedDatePipe, ImageSignDirective],
 	template: `
 		<div class="max-w-4xl mx-auto">
 			<a [routerLink]="projectListLink()" tuiButton tuiAppearance="flat" size="s" class="mb-6 gap-1">
@@ -50,7 +50,45 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 			</a>
 
 			@if (loading()) {
-				<p class="text-muted">{{ 'common.loading' | translate }}</p>
+				<p class="sr-only">{{ 'common.loading' | translate }}</p>
+
+				<div class="flex flex-col" aria-hidden="true">
+					<div class="mb-6 w-full aspect-video rounded-xl" [tuiSkeleton]="true"></div>
+
+					<div class="flex items-center gap-4">
+						<div class="size-16 shrink-0 rounded-xl" [tuiSkeleton]="true"></div>
+
+						<div class="flex flex-1 flex-col gap-3">
+							<div class="h-9 w-2/3 rounded" [tuiSkeleton]="true"></div>
+
+							<div class="flex flex-wrap gap-2">
+								<div class="h-8 w-24 rounded" [tuiSkeleton]="true"></div>
+								<div class="h-8 w-24 rounded" [tuiSkeleton]="true"></div>
+							</div>
+						</div>
+					</div>
+
+					<div class="mt-4 flex flex-wrap items-center gap-3">
+						<div class="h-4 w-24 rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-20 rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-24 rounded" [tuiSkeleton]="true"></div>
+					</div>
+
+					<div class="mt-3 flex flex-wrap gap-2">
+						<div class="h-7 w-28 rounded-full" [tuiSkeleton]="true"></div>
+						<div class="h-7 w-24 rounded-full" [tuiSkeleton]="true"></div>
+						<div class="h-7 w-24 rounded-full" [tuiSkeleton]="true"></div>
+					</div>
+
+					<div class="mt-8 flex flex-col gap-3">
+						<div class="h-4 w-full rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-full rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-11/12 rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-3/4 rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-full rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-2/3 rounded" [tuiSkeleton]="true"></div>
+					</div>
+				</div>
 			} @else if (error()) {
 				<p class="text-red-400" role="alert">
 					{{ error() }}

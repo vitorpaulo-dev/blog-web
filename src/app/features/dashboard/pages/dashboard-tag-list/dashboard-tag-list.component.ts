@@ -8,16 +8,13 @@ import { debounceTime, distinctUntilChanged, filter } from 'rxjs';
 import { TuiButton, TuiCell, TuiDialogService, TuiInput, TuiTextfield, TuiTitle } from '@taiga-ui/core';
 import { TuiSortChange, TuiSortDirection, TuiTable, TuiTablePagination } from '@taiga-ui/addon-table';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import {
-	Loading03Icon,
-	PlusSignIcon,
-} from '@hugeicons/core-free-icons';
+import { PlusSignIcon } from '@hugeicons/core-free-icons';
 
 import { TagDto, TagService } from '../../../tags/data-access/tag.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
-import { TUI_CONFIRM, TuiStatus, TuiToastService } from '@taiga-ui/kit';
+import { TUI_CONFIRM, TuiSkeleton, TuiStatus, TuiToastService } from '@taiga-ui/kit';
 
 @Component({
 	selector: 'app-dashboard-tag-list',
@@ -34,6 +31,7 @@ import { TUI_CONFIRM, TuiStatus, TuiToastService } from '@taiga-ui/kit';
 		TuiInput,
 		TuiCell,
 		TuiTitle,
+		TuiSkeleton,
 		TranslatePipe,
 	],
 	styles: `
@@ -60,8 +58,19 @@ import { TUI_CONFIRM, TuiStatus, TuiToastService } from '@taiga-ui/kit';
 			</tui-textfield>
 
 			@if (loading()) {
-				<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
-					<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="2.5" />
+				<div class="overflow-x-auto" aria-hidden="true">
+					<div class="w-full">
+						@for (row of skeletonRows; track row) {
+							<div class="flex items-center gap-4 border-t border-border px-2 py-4">
+								<div class="flex min-w-0 flex-1 flex-col gap-1.5">
+									<div class="h-4 w-2/3 rounded" [tuiSkeleton]="true"></div>
+									<div class="h-3 w-1/3 rounded" [tuiSkeleton]="true"></div>
+								</div>
+
+								<div class="h-7 w-24 shrink-0 rounded" [tuiSkeleton]="true"></div>
+							</div>
+						}
+					</div>
 				</div>
 			} @else if (tags().length === 0) {
 				<div class="relative rounded-xl border border-border bg-surface px-8 pt-10 pb-3 text-center shadow-sm">
@@ -164,6 +173,8 @@ export class DashboardTagListComponent {
 
 	readonly PlusSignIcon = PlusSignIcon;
 	readonly size = 'm';
+
+	protected readonly skeletonRows = [1, 2, 3, 4, 5];
 
 	readonly searchControl = new FormControl('', {
 		nonNullable: true,
@@ -296,6 +307,4 @@ export class DashboardTagListComponent {
 				});
 			});
 	}
-
-	protected readonly Loading03Icon = Loading03Icon;
 }

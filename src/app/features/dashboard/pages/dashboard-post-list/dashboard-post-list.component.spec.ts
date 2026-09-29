@@ -8,7 +8,7 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { translationProvider } from '../../../../core/i18n/testing';
 import { TuiToastService } from '@taiga-ui/kit';
 import { TuiDialogService } from '@taiga-ui/core';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { PLATFORM_ID } from '@angular/core';
 import { signal } from '@angular/core';
 
@@ -294,5 +294,45 @@ describe('DashboardPostListComponent', () => {
 			autoClose: 5000,
 			data: '@tui.circle-x',
 		});
+	});
+
+	it('renders five skeleton rows instead of the table while loading', () => {
+		(postServiceMock.search as any).mockReturnValue(new Subject());
+
+		fixture.detectChanges();
+
+		const html = fixture.nativeElement as HTMLElement;
+		expect(component.loading()).toBe(true);
+		expect(html.querySelectorAll('[aria-hidden="true"] > div > div')).toHaveLength(5);
+		expect(html.querySelectorAll('[tuiSkeleton]').length).toBeGreaterThan(0);
+		expect(html.querySelector('table')).toBeNull();
+	});
+
+	it('removes skeleton rows once posts load', () => {
+		(postServiceMock.search as any).mockReturnValue(
+			of({
+				content: [
+					{
+						id: '1',
+						slug: 'post-1',
+						status: 'PUBLISHED',
+						createdAt: '2025-01-01T00:00:00Z',
+						viewCount: 1,
+						reactionCount: 2,
+						authors: [],
+						tagIds: [],
+						translations: { ENGLISH: { title: 'Hello' } },
+					},
+				],
+				totalPages: 1,
+				totalElements: 1,
+			})
+		);
+
+		component.load();
+		fixture.detectChanges();
+
+		expect(fixture.nativeElement.querySelectorAll('[tuiSkeleton]')).toHaveLength(0);
+		expect((fixture.nativeElement as HTMLElement).querySelector('table')).toBeTruthy();
 	});
 });

@@ -5,10 +5,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, filter } from 'rxjs';
 
 import { TuiButton, TuiDialogService, TuiDropdown, TuiInput, TuiTextfield } from '@taiga-ui/core';
-import { TuiChevron, TuiDataListWrapper, TuiSelect, TuiToastService } from '@taiga-ui/kit';
+import { TuiChevron, TuiDataListWrapper, TuiSelect, TuiSkeleton, TuiToastService } from '@taiga-ui/kit';
 import { TuiTable, TuiTablePagination } from '@taiga-ui/addon-table';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Loading03Icon, UserXIcon } from '@hugeicons/core-free-icons';
+import { UserXIcon } from '@hugeicons/core-free-icons';
 
 
 import {
@@ -54,6 +54,7 @@ const FREQUENCY_LABELS: Record<Frequency, string> = {
 		TuiChevron,
 		TuiDropdown,
 		TuiDataListWrapper,
+		TuiSkeleton,
 		TranslatePipe,
 	],
 	template: `
@@ -85,8 +86,24 @@ const FREQUENCY_LABELS: Record<Frequency, string> = {
 			</div>
 
 			@if (loading()) {
-				<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
-					<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="2.5" />
+				<div class="overflow-x-auto" aria-hidden="true">
+					<div class="w-full">
+						@for (row of skeletonRows; track row) {
+							<div class="flex items-center gap-4 border-t border-border px-2 py-4">
+								<div class="h-4 w-2/5 min-w-0 rounded" [tuiSkeleton]="true"></div>
+
+								<div class="h-4 w-20 shrink-0 rounded" [tuiSkeleton]="true"></div>
+
+								<div class="h-4 w-24 shrink-0 rounded" [tuiSkeleton]="true"></div>
+
+								<div class="h-4 w-16 shrink-0 rounded" [tuiSkeleton]="true"></div>
+
+								<div class="h-4 w-20 shrink-0 rounded" [tuiSkeleton]="true"></div>
+
+								<div class="h-8 w-16 shrink-0 rounded" [tuiSkeleton]="true"></div>
+							</div>
+						}
+					</div>
 				</div>
 			} @else if (subscribers().length === 0) {
 				<div class="relative rounded-xl border border-border bg-surface px-8 py-10 text-center shadow-sm text-muted text-sm">
@@ -169,6 +186,8 @@ export class DashboardSubscriberListComponent {
 	readonly subscribers = signal<SubscriberDto[]>([]);
 	readonly loading = signal(true);
 	readonly error = signal<string | null>(null);
+
+	protected readonly skeletonRows = [1, 2, 3, 4, 5];
 
 	readonly page = signal(0);
 	readonly totalElements = signal(0);
@@ -302,6 +321,5 @@ export class DashboardSubscriberListComponent {
 			});
 	}
 
-	protected readonly Loading03Icon = Loading03Icon;
 	protected readonly UserXIcon = UserXIcon;
 }

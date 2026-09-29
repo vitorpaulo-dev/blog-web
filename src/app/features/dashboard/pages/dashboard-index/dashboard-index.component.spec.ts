@@ -6,7 +6,7 @@ import { DashboardService, DashboardStats, Top } from '../../data-access/dashboa
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { translationProvider } from '../../../../core/i18n/testing';
 import { ClerkService } from '../../../../core/auth/clerk.service';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { PLATFORM_ID, signal } from '@angular/core';
 
 Object.defineProperty(window, 'matchMedia', {
@@ -226,5 +226,27 @@ describe('DashboardIndexComponent', () => {
 
     expect(buttons[2].getAttribute('data-appearance')).toBe('primary');
     expect(buttons[2].getAttribute('routerLink')).toBe('/dashboard/post/new');
+  });
+
+  it('renders six stat-card and four chart-card skeletons while loading', () => {
+    component.loading.set(true);
+    fixture.detectChanges();
+
+    const html = fixture.nativeElement as HTMLElement;
+    const regions = html.querySelectorAll('[aria-hidden="true"]');
+
+    expect(regions).toHaveLength(2);
+    expect(regions[0].children).toHaveLength(6);
+    expect(regions[1].children).toHaveLength(4);
+    expect(html.querySelectorAll('[tuiSkeleton]').length).toBeGreaterThan(0);
+    expect(html.querySelector('canvas')).toBeNull();
+  });
+
+  it('removes skeletons once dashboard stats load', () => {
+    fixture.detectChanges();
+
+    expect(component.loading()).toBe(false);
+    expect(fixture.nativeElement.querySelectorAll('[tuiSkeleton]')).toHaveLength(0);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Total posts');
   });
 });
