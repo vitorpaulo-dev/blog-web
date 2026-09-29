@@ -8,7 +8,7 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { translationProvider } from '../../../../core/i18n/testing';
 import { throwError } from 'rxjs';
 import { TuiToastService } from '@taiga-ui/kit';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { signal } from '@angular/core';
 import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 import { SeoService } from '../../../../core/seo/seo.service';
@@ -235,5 +235,39 @@ describe('HomePageComponent', () => {
     resolveToken('captcha-token');
     await firstCall;
     expect(component.subscribeBusy()).toBe(false);
+  });
+
+  it('renders three skeleton cards instead of content cards while recent posts load', () => {
+    (postServiceMock.search as any).mockReturnValue(new Subject());
+
+    fixture.detectChanges();
+
+    const html = fixture.nativeElement as HTMLElement;
+    expect(component.postsLoading()).toBe(true);
+    expect(html.querySelectorAll('[aria-hidden="true"] [tuiSkeleton]').length).toBeGreaterThan(0);
+    expect(html.querySelectorAll('[tuiSkeleton].aspect-video')).toHaveLength(3);
+    expect(html.querySelector('app-content-card')).toBeNull();
+  });
+
+  it('removes skeletons and renders content cards after recent posts load', () => {
+    (postServiceMock.search as any).mockReturnValue(
+      of({
+        content: [
+          {
+            id: '1',
+            slug: 'test-post',
+            tagIds: [],
+            translations: { ENGLISH: { title: 'Test Post', content: 'Content' } },
+          },
+        ],
+        totalPages: 1,
+        totalElements: 1,
+      }),
+    );
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll('[tuiSkeleton]')).toHaveLength(0);
+    expect(fixture.nativeElement.querySelector('app-content-card')).toBeTruthy();
   });
 });

@@ -1,12 +1,7 @@
 import { Component, computed, effect, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TuiPagination, TuiToastService } from '@taiga-ui/kit';
-import { HugeiconsIconComponent } from '@hugeicons/angular';
-import {
-	Loading03Icon,
-	Tag01Icon,
-	Timer02Icon,
-} from '@hugeicons/core-free-icons';
+import { TuiPagination, TuiSkeleton, TuiToastService } from '@taiga-ui/kit';
+import { Tag01Icon, Timer02Icon } from '@hugeicons/core-free-icons';
 import { PostDto, PostService } from '../../data-access/post.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 import { CommonModule, isPlatformServer } from '@angular/common';
@@ -24,8 +19,8 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 	imports: [
 		CommonModule,
 		FormsModule,
-		HugeiconsIconComponent,
 		TuiPagination,
+		TuiSkeleton,
 		ContentCardComponent,
 		TranslatePipe,
 	],
@@ -34,8 +29,32 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 			<h1 class="text-3xl font-bold tracking-tight">{{ 'posts.title' | translate }}</h1>
 
 			@if (loading()) {
-				<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
-					<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="2.5" />
+				<div class="flex flex-col" aria-hidden="true">
+					@for (row of skeletonRows; track row; let last = $last) {
+						<div class="flex flex-col md:flex-row items-center w-full gap-3 p-3 rounded-lg">
+							<div class="w-full md:w-56 lg:w-64 shrink-0 aspect-video rounded-xl" [tuiSkeleton]="true"></div>
+
+							<div class="flex flex-col justify-center gap-1.5 min-w-0 flex-1 w-full">
+								<div class="h-4 w-40 rounded" [tuiSkeleton]="true"></div>
+								<div class="h-6 w-2/3 rounded" [tuiSkeleton]="true"></div>
+								<div class="h-3 w-full rounded" [tuiSkeleton]="true"></div>
+								<div class="h-3 w-11/12 rounded" [tuiSkeleton]="true"></div>
+								<div class="h-3 w-3/5 rounded" [tuiSkeleton]="true"></div>
+							</div>
+
+							<div class="flex flex-row md:flex-col flex-wrap items-end justify-end gap-1.5 shrink-0">
+								<div class="h-6 w-16 rounded-full" [tuiSkeleton]="true"></div>
+								<div class="h-6 w-16 rounded-full" [tuiSkeleton]="true"></div>
+								<div class="h-6 w-16 rounded-full" [tuiSkeleton]="true"></div>
+							</div>
+						</div>
+
+						@if (!last) {
+							<div class="py-4">
+								<hr />
+							</div>
+						}
+					}
 				</div>
 			} @else if (posts().length === 0) {
 				<div class="relative rounded-xl border border-border bg-surface px-8 pt-10 pb-3 text-center shadow-sm">
@@ -76,6 +95,8 @@ export class PostListComponent {
 	posts = signal<PostDto[]>([]);
 	loading = signal(false);
 	tagMap = signal<Map<string, TagDto>>(new Map());
+
+	protected readonly skeletonRows = [1, 2, 3, 4, 5];
 
 	page = signal(0);
 	totalPages = signal(1);
@@ -157,6 +178,4 @@ export class PostListComponent {
 			error: () => this.tagMap.set(new Map()),
 		});
 	}
-
-	protected readonly Loading03Icon = Loading03Icon;
 }

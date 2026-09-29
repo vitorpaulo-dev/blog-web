@@ -33,7 +33,7 @@ import {
 } from '@hugeicons/core-free-icons';
 
 import { TuiAppearance, TuiButton } from '@taiga-ui/core';
-import { TuiChip, TuiToastService } from '@taiga-ui/kit';
+import { TuiChip, TuiSkeleton, TuiToastService } from '@taiga-ui/kit';
 
 import { MarkdownService } from '../../data-access/markdown.service';
 import { AudioPlayerComponent } from '../../components/audio-player.component';
@@ -63,6 +63,7 @@ import {
 		HugeiconsIconComponent,
 		TuiAppearance,
 		TuiChip,
+		TuiSkeleton,
 		GiscusComponent,
 		AudioPlayerComponent,
 		ContentCardComponent,
@@ -81,7 +82,49 @@ import {
 			</a>
 
 			@if (loading()) {
-				<p class="text-muted">{{ 'common.loading' | translate }}</p>
+				<p class="sr-only">{{ 'common.loading' | translate }}</p>
+
+				<div class="flex flex-col" aria-hidden="true">
+					<div class="w-full aspect-video rounded-xl mb-6" [tuiSkeleton]="true"></div>
+
+					<div class="h-10 w-3/4 rounded" [tuiSkeleton]="true"></div>
+					<div class="mt-2 h-10 w-1/2 rounded" [tuiSkeleton]="true"></div>
+
+					<div class="mt-4 flex flex-wrap items-center gap-3">
+						<div class="h-4 w-24 rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-20 rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-20 rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-24 rounded" [tuiSkeleton]="true"></div>
+					</div>
+
+					<div class="mt-3 flex flex-wrap gap-2">
+						<div class="h-7 w-28 rounded-full" [tuiSkeleton]="true"></div>
+						<div class="h-7 w-24 rounded-full" [tuiSkeleton]="true"></div>
+						<div class="h-7 w-24 rounded-full" [tuiSkeleton]="true"></div>
+					</div>
+
+					<div class="mt-8 flex flex-col gap-3">
+						<div class="h-4 w-full rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-full rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-11/12 rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-4/5 rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-full rounded" [tuiSkeleton]="true"></div>
+						<div class="h-4 w-2/3 rounded" [tuiSkeleton]="true"></div>
+					</div>
+
+					<hr class="my-8" />
+
+					<section class="flex flex-wrap items-center justify-between gap-2">
+						<div class="flex flex-wrap gap-2">
+							<div class="h-9 w-36 rounded-full" [tuiSkeleton]="true"></div>
+							<div class="h-9 w-36 rounded-full" [tuiSkeleton]="true"></div>
+							<div class="h-9 w-36 rounded-full" [tuiSkeleton]="true"></div>
+							<div class="h-9 w-36 rounded-full" [tuiSkeleton]="true"></div>
+						</div>
+
+						<div class="h-9 w-28 rounded-full" [tuiSkeleton]="true"></div>
+					</section>
+				</div>
 			} @else if (error()) {
 				<p class="text-red-400" role="alert">
 					{{ error() }}

@@ -7,7 +7,7 @@ import { ProjectService } from '../../data-access/project.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { translationProvider } from '../../../../core/i18n/testing';
 import { TuiToastService } from '@taiga-ui/kit';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
 import { SeoService } from '../../../../core/seo/seo.service';
@@ -288,5 +288,37 @@ describe('ProjectDetailComponent', () => {
 
     expect((projectServiceMock as any).reactTo).toHaveBeenCalledTimes(1);
     expect(component.reactionBusy()).toBe(true);
+  });
+
+  it('keeps the loading announcement available while rendering skeleton layout', () => {
+    (projectServiceMock.getBySlug as any).mockReturnValue(new Subject());
+
+    fixture.detectChanges();
+
+    const announcement: HTMLElement = fixture.nativeElement.querySelector('p.sr-only');
+    expect(announcement.textContent?.trim()).toBe('Loading...');
+
+    const skeletonRegion = fixture.nativeElement.querySelector('[tuiSkeleton]');
+    expect(skeletonRegion).toBeTruthy();
+    expect(skeletonRegion.closest('[aria-hidden="true"]')).toBeTruthy();
+
+    expect(fixture.nativeElement.querySelector('article')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it('replaces skeletons with the loaded layout once the project arrives', () => {
+    (projectServiceMock.getBySlug as any).mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-project',
+        translations: { ENGLISH: { title: 'My Project', description: 'Project description' } },
+      }),
+    );
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll('[tuiSkeleton]')).toHaveLength(0);
+    expect(fixture.nativeElement.querySelector('p.sr-only')).toBeNull();
+    expect(fixture.nativeElement.querySelector('article')).toBeTruthy();
   });
 });

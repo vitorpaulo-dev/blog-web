@@ -6,8 +6,9 @@ import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2
 import { ChartConfiguration } from 'chart.js';
 
 import { TuiButton } from '@taiga-ui/core';
+import { TuiSkeleton } from '@taiga-ui/kit';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Loading03Icon, PlusSignIcon, Mail01Icon } from '@hugeicons/core-free-icons';
+import { PlusSignIcon, Mail01Icon } from '@hugeicons/core-free-icons';
 
 import { DashboardService, DashboardStats, Top, TopItem } from '../../data-access/dashboard.service';
 import { ClerkService } from '../../../../core/auth/clerk.service';
@@ -27,7 +28,7 @@ function greetingForHour(hour: number): string {
 @Component({
 	selector: 'app-dashboard-index',
 	standalone: true,
-	imports: [CommonModule, RouterLink, TuiButton, TranslatePipe, HugeiconsIconComponent, BaseChartDirective],
+	imports: [CommonModule, RouterLink, TuiButton, TuiSkeleton, TranslatePipe, HugeiconsIconComponent, BaseChartDirective],
 	providers: [provideCharts(withDefaultRegisterables())],
 	template: `
 		<div class="mx-auto px-4 py-8 sm:px-6">
@@ -78,13 +79,22 @@ function greetingForHour(hour: number): string {
 			</div>
 
 			@if (loading()) {
-				<div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-					<div class="h-28 rounded-xl border border-border bg-surface animate-pulse"></div>
-					<div class="h-28 rounded-xl border border-border bg-surface animate-pulse"></div>
-					<div class="h-28 rounded-xl border border-border bg-surface animate-pulse"></div>
-					<div class="h-28 rounded-xl border border-border bg-surface animate-pulse"></div>
-					<div class="h-28 rounded-xl border border-border bg-surface animate-pulse"></div>
-					<div class="h-28 rounded-xl border border-border bg-surface animate-pulse"></div>
+				<div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6" aria-hidden="true">
+					@for (card of skeletonStatCards; track card) {
+						<div class="rounded-xl border border-border bg-surface p-4 shadow-sm">
+							<div class="h-3 w-2/3 rounded" [tuiSkeleton]="true"></div>
+							<div class="mt-2 h-8 w-1/2 rounded" [tuiSkeleton]="true"></div>
+						</div>
+					}
+				</div>
+
+				<div class="grid grid-cols-1 gap-6 lg:grid-cols-2" aria-hidden="true">
+					@for (card of skeletonChartCards; track card) {
+						<div class="rounded-xl border border-border bg-surface p-4 shadow-sm">
+							<div class="h-5 w-40 rounded" [tuiSkeleton]="true"></div>
+							<div class="mt-3 h-64 w-full rounded" [tuiSkeleton]="true"></div>
+						</div>
+					}
 				</div>
 			} @else if (error()) {
 				<div class="relative rounded-xl border border-border bg-surface px-8 py-10 text-center shadow-sm text-muted text-sm">
@@ -193,6 +203,9 @@ export class DashboardIndexComponent {
 	readonly loading = signal(true);
 	readonly error = signal<string | null>(null);
 
+	protected readonly skeletonStatCards = [1, 2, 3, 4, 5, 6];
+	protected readonly skeletonChartCards = [1, 2, 3, 4];
+
 	readonly isBrowser = isPlatformBrowser(this.platformId);
 
 	readonly greetingKey = signal('dashboard.index.greetingMorning');
@@ -258,7 +271,6 @@ export class DashboardIndexComponent {
 
 	protected readonly PlusSignIcon = PlusSignIcon;
 	protected readonly Mail01Icon = Mail01Icon;
-	protected readonly Loading03Icon = Loading03Icon;
 }
 
 function buildChart(items: TopItem[]) {

@@ -17,13 +17,13 @@ import {
 	TuiTitle,
 } from '@taiga-ui/core';
 
-import { TuiBadge, TuiItemsWithMore, TuiStatus } from '@taiga-ui/kit';
+import { TuiBadge, TuiItemsWithMore, TuiSkeleton, TuiStatus } from '@taiga-ui/kit';
 import { TuiItem } from '@taiga-ui/cdk';
 import { TuiItemGroup } from '@taiga-ui/layout';
 import { TuiSortChange, TuiSortDirection, TuiTable, TuiTablePagination } from '@taiga-ui/addon-table';
 
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Loading03Icon, PlusSignIcon, SparklesIcon } from '@hugeicons/core-free-icons';
+import { PlusSignIcon, SparklesIcon } from '@hugeicons/core-free-icons';
 
 import { PostDto, PostService } from '../../../posts/data-access/post.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
@@ -50,6 +50,7 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 		TuiStatus,
 		TuiBadge,
 		TuiItemsWithMore,
+		TuiSkeleton,
 		TuiItem,
 		TuiItemGroup,
 		TuiDropdown,
@@ -95,8 +96,34 @@ import { TUI_CONFIRM, TuiToastService } from '@taiga-ui/kit';
 			</tui-textfield>
 
 			@if (loading()) {
-				<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
-					<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="2.5" />
+				<div class="overflow-x-auto" aria-hidden="true">
+					<div class="w-full">
+						@for (row of skeletonRows; track row) {
+							<div class="flex items-center gap-4 border-t border-border px-2 py-4">
+								<div class="flex min-w-0 flex-1 flex-col gap-1.5">
+									<div class="h-4 w-3/4 rounded" [tuiSkeleton]="true"></div>
+									<div class="h-3 w-1/2 rounded" [tuiSkeleton]="true"></div>
+								</div>
+
+								<div class="h-6 w-20 shrink-0 rounded-full" [tuiSkeleton]="true"></div>
+
+								<div class="flex w-28 shrink-0 flex-col gap-1">
+									<div class="h-4 w-full rounded" [tuiSkeleton]="true"></div>
+									<div class="h-3 w-1/2 rounded" [tuiSkeleton]="true"></div>
+								</div>
+
+								<div class="h-4 w-12 shrink-0 rounded" [tuiSkeleton]="true"></div>
+
+								<div class="h-4 w-14 shrink-0 rounded" [tuiSkeleton]="true"></div>
+
+								<div class="h-4 w-24 shrink-0 rounded" [tuiSkeleton]="true"></div>
+
+								<div class="h-5 w-32 shrink-0 rounded" [tuiSkeleton]="true"></div>
+
+								<div class="h-7 w-16 shrink-0 rounded" [tuiSkeleton]="true"></div>
+							</div>
+						}
+					</div>
 				</div>
 			} @else if (posts().length === 0) {
 				<div class="relative rounded-xl border border-border bg-surface px-8 pt-10 pb-3 text-center shadow-sm">
@@ -295,6 +322,8 @@ export class DashboardPostListComponent {
 
 	readonly PlusSignIcon = PlusSignIcon;
 	readonly size = 'm';
+
+	protected readonly skeletonRows = [1, 2, 3, 4, 5];
 
 	readonly posts = signal<PostDto[]>([]);
 	readonly loading = signal(true);
@@ -558,6 +587,5 @@ export class DashboardPostListComponent {
 			});
 	}
 
-	protected readonly Loading03Icon = Loading03Icon;
 	protected readonly SparklesIcon = SparklesIcon;
 }

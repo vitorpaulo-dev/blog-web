@@ -7,7 +7,7 @@ import { TagService } from '../../../tags/data-access/tag.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { translationProvider } from '../../../../core/i18n/testing';
 import { TuiToastService } from '@taiga-ui/kit';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { PLATFORM_ID, signal } from '@angular/core';
 
 Object.defineProperty(window, 'matchMedia', {
@@ -337,5 +337,45 @@ describe('DashboardProjectListComponent', () => {
 		} as any;
 
 		expect(component.projectTitle(project)).toBe('English Title');
+	});
+
+	it('renders five skeleton rows instead of the table while loading', () => {
+		(projectServiceMock.search as any).mockReturnValue(new Subject());
+
+		fixture.detectChanges();
+
+		const html = fixture.nativeElement as HTMLElement;
+		expect(component.loading()).toBe(true);
+		expect(html.querySelectorAll('[aria-hidden="true"] > div > div')).toHaveLength(5);
+		expect(html.querySelectorAll('[tuiSkeleton]').length).toBeGreaterThan(0);
+		expect(html.querySelector('table')).toBeNull();
+	});
+
+	it('removes skeleton rows once projects load', () => {
+		(projectServiceMock.search as any).mockReturnValue(
+			of({
+				content: [
+					{
+						id: '1',
+						slug: 'proj-1',
+						status: 'DRAFT',
+						createdAt: '2025-01-01T00:00:00Z',
+						viewCount: 1,
+						reactionCount: 2,
+						authors: [],
+						tagIds: [],
+						translations: { ENGLISH: { title: 'Hello' } },
+					},
+				],
+				totalPages: 1,
+				totalElements: 1,
+			})
+		);
+
+		component.load();
+		fixture.detectChanges();
+
+		expect(fixture.nativeElement.querySelectorAll('[tuiSkeleton]')).toHaveLength(0);
+		expect((fixture.nativeElement as HTMLElement).querySelector('table')).toBeTruthy();
 	});
 });
