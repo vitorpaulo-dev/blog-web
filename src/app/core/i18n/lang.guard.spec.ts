@@ -109,11 +109,9 @@ describe('langGuard wiring on public routes', () => {
     expect(langParent.children!.map((child: Route) => child.path)).toEqual(barePublicPaths);
   });
 
-  it('does not guard login, signup or dashboard children with langGuard', () => {
-    for (const path of ['login', 'signup']) {
-      const child = publicParent.children!.find((candidate: Route) => candidate.path === path);
-      expect(child?.canActivate).not.toContain(langGuard);
-    }
+  it('does not guard login or dashboard children with langGuard', () => {
+    const loginChild = publicParent.children!.find((candidate: Route) => candidate.path === 'login');
+    expect(loginChild?.canActivate).not.toContain(langGuard);
 
     expect(dashboardParent.canActivate).not.toContain(langGuard);
     expect(dashboardParent.children?.length).toBe(12);

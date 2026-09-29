@@ -47,8 +47,6 @@ export class TurnstileService {
       return null;
     }
 
-    // Coalesced acquisition: parallel callers share a single in-flight
-    // attempt loop instead of racing parallel resets/retries.
     if (!this.acquisition) {
       this.acquisition = this.acquire().finally(() => {
         this.acquisition = null;
@@ -85,8 +83,6 @@ export class TurnstileService {
         return token;
       }
 
-      // Failure, timeout or expired token: clear the token, reset the
-      // widget and wait for the success callback before the next attempt.
       this.pendingToken = null;
       this.reset();
       if (attempt < TurnstileService.MAX_TOKEN_ATTEMPTS - 1) {

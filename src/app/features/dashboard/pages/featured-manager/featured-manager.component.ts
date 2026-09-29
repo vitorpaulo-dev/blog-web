@@ -62,7 +62,7 @@ interface PostOption {
 					size="s"
 					class="inline-flex cursor-pointer items-center gap-1 mb-4 text-sm text-accent"
 				>
-					<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" />
+					<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="2.5" />
 					{{ 'dashboard.featured.backToPosts' | translate }}
 				</a>
 
@@ -71,7 +71,7 @@ interface PostOption {
 
 			@if (loading()) {
 				<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
-					<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="1.5" />
+					<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="2.5" />
 				</div>
 			} @else {
 				<div class="flex flex-col gap-5">
@@ -124,7 +124,7 @@ interface PostOption {
 												<hugeicons-icon
 													[icon]="GripVerticalIcon"
 													[size]="16"
-													[strokeWidth]="1.5"
+													[strokeWidth]="2.5"
 													tuiTileHandle
 													class="featured-handle"
 													[attr.aria-label]="'dashboard.featured.reorderAria' | translate"
@@ -143,7 +143,7 @@ interface PostOption {
 													[attr.aria-label]="'dashboard.featured.deleteAria' | translate"
 													(click)="remove(post.id)"
 												>
-													<hugeicons-icon [icon]="Delete01Icon" [size]="16" [strokeWidth]="1.5" />
+													<hugeicons-icon [icon]="Delete01Icon" [size]="16" [strokeWidth]="2.5" />
 												</button>
 											</span>
 										</div>

@@ -18,10 +18,10 @@
 					<tui-search-history [popular]="popular" />
 					<ng-template let-item>
  						<a tuiCell [href]="languageService.prefixed('/post/' + item.slug)">
-							<hugeicons-icon [icon]="StickyNote01Icon" [size]="28" [strokeWidth]="1.5" />
+							<hugeicons-icon [icon]="StickyNote01Icon" [size]="28" [strokeWidth]="2.5" />
 							<span tuiTitle>
 								{{ item.translations[languageService.language()]?.title }}
-								<span tuiSubtitle>{{ item.translations[languageService.language()]?.content }}</span>
+								<span tuiSubtitle>{{ item.translations[languageService.language()]?.summary }}</span>
 							</span>
 						</a>
 					</ng-template>
@@ -32,7 +32,7 @@
 
 	<section class="pr-4 pt-1.5 md:pr-16 inline-flex items-center gap-4">
 		<a class="p-1 block md:hidden text-muted hover:text-accent h-full" (click)="open.set(true)">
-			<hugeicons-icon [icon]="Search01Icon" [size]="28" [strokeWidth]="1.5" />
+			<hugeicons-icon [icon]="Search01Icon" [size]="28" [strokeWidth]="2.5" />
 		</a>
 
 	<button
@@ -64,11 +64,11 @@
 	</ng-template>
 
 		<a class="text-muted hover:text-accent h-full" target="_blank" href="https://www.linkedin.com/in/vitor-paulo-910186164/">
-			<hugeicons-icon [icon]="Linkedin01Icon" [size]="28" [strokeWidth]="1.5" />
+			<hugeicons-icon [icon]="Linkedin01Icon" [size]="28" [strokeWidth]="2.5" />
 		</a>
 
 		<a class="text-muted hover:text-accent" target="_blank" href="https://github.com/vitorpaulo.dev">
-			<hugeicons-icon [icon]="Github01Icon" [size]="28" [strokeWidth]="1.5" />
+			<hugeicons-icon [icon]="Github01Icon" [size]="28" [strokeWidth]="2.5" />
 		</a>
 	</section>
 </header>

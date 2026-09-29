@@ -44,7 +44,7 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 	template: `
 		<div class="max-w-4xl mx-auto">
 			<a [routerLink]="projectListLink()" tuiButton tuiAppearance="flat" size="s" class="mb-6 gap-1">
-				<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" />
+				<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="2.5" />
 
 				{{ 'projects.backToList' | translate }}
 			</a>
@@ -83,13 +83,13 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 							<div class="mb-6 flex flex-wrap gap-2 md:mb-0">
 								@if (p.githubUrl) {
 									<a tuiButton tuiAppearance="outline" size="m" [href]="p.githubUrl" target="_blank" rel="noopener noreferrer" class="gap-2">
-										<hugeicons-icon [icon]="githubIcon" [size]="16" [strokeWidth]="1.5" />
+										<hugeicons-icon [icon]="githubIcon" [size]="16" [strokeWidth]="2.5" />
 										{{ 'projects.github' | translate }}
 									</a>
 								}
 								@if (p.websiteUrl) {
 									<a tuiButton tuiAppearance="outline" size="m" [href]="p.websiteUrl" target="_blank" rel="noopener noreferrer" class="gap-2">
-										<hugeicons-icon [icon]="websiteIcon" [size]="16" [strokeWidth]="1.5" />
+										<hugeicons-icon [icon]="websiteIcon" [size]="16" [strokeWidth]="2.5" />
 										{{ 'projects.website' | translate }}
 									</a>
 								}
@@ -98,21 +98,21 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 
 						<div class="flex flex-wrap items-center gap-3 text-sm text-muted">
 							<span class="inline-flex items-center gap-1">
-								<hugeicons-icon [icon]="Calendar01Icon" [size]="16" [strokeWidth]="1.5" />
+								<hugeicons-icon [icon]="Calendar01Icon" [size]="16" [strokeWidth]="2.5" />
 							{{ p.createdAt | localizedDate: 'dd MMM yyyy' }}
 						</span>
 
 						<span>·</span>
 
 						<span class="inline-flex items-center gap-1">
-							<hugeicons-icon [icon]="EyeIcon" [size]="16" [strokeWidth]="1.5" />
+							<hugeicons-icon [icon]="EyeIcon" [size]="16" [strokeWidth]="2.5" />
 							{{ p.viewCount }} {{ 'common.views' | translate }}
 						</span>
 
 						<span>·</span>
 
 						<span class="inline-flex items-center gap-1">
-							<hugeicons-icon [icon]="SmilePlusIcon" [size]="16" [strokeWidth]="1.5" />
+							<hugeicons-icon [icon]="SmilePlusIcon" [size]="16" [strokeWidth]="2.5" />
 							{{ p.reactionCount }} {{ 'common.reactions' | translate }}
 						</span>
 						</div>
@@ -131,7 +131,7 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 					
 					@for (tag of projectTags(); track tag.id) {
 						<p tuiChip>
-							<hugeicons-icon [icon]="SourceCodeIcon" [size]="12" [strokeWidth]="1.5" />
+							<hugeicons-icon [icon]="SourceCodeIcon" [size]="12" [strokeWidth]="2.5" />
 	
 							{{ tagNameOf(tag) }}
 						</p>
@@ -248,14 +248,16 @@ export class ProjectDetailComponent {
 				this.setPageMeta(project);
 				this.loadTags(project);
 			},
-			error: () => {
+			error: (error: unknown) => {
 				this.loading.set(false);
-				this.toastService.open(this.translationService.translate('projects.failedToLoad'), {
-					appearance: 'error',
-					autoClose: 5000,
-					data: '@tui.circle-x',
-				}).subscribe();
-				void this.router.navigate(['']);
+				const code = (error as { error?: { code?: string } } | null)?.error?.code;
+
+				if (code === 'PROJECT_SLUG_NOT_FOUND') {
+					this.error.set(this.translationService.translate('projects.notFound'));
+					return;
+				}
+
+				this.error.set(this.translationService.translate('projects.failedToLoad'));
 			},
 		});
 	}
@@ -332,9 +334,7 @@ export class ProjectDetailComponent {
 	}
 
 	private copyToClipboard(text: string): void {
-		navigator.clipboard.writeText(text).then(() => {
-			console.log('Link copied to clipboard');
-		}).catch(() => {
+		navigator.clipboard.writeText(text).catch(() => {
 			const textarea = document.createElement('textarea');
 			textarea.value = text;
 			document.body.appendChild(textarea);

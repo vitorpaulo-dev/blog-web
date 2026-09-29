@@ -59,6 +59,7 @@
 		"failedToLoad": "Failed to load posts. Please try again.",
 		"relatedProjects": "Related Projects",
 		"failedToRender": "Sorry, this post could not be rendered.",
+		"notFound": "This post could not be found.",
 		"comments": "Comments",
 		"toc": "On this page",
 		"audio": {
@@ -91,6 +92,7 @@
 		"emptyQuote": "No project is too small to teach you something valuable.",
 		"emptyAttribution": "Dev Wisdom",
 		"failedToLoad": "Failed to load projects. Please try again.",
+		"notFound": "This project could not be found.",
 		"github": "GitHub",
 		"website": "Website"
 	},

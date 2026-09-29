@@ -46,7 +46,7 @@ function greetingForHour(hour: number): string {
 						rel="noopener noreferrer"
 					>
 						<span class="flex items-center gap-2">
-							<hugeicons-icon [icon]="Mail01Icon" [size]="16" [strokeWidth]="1.5" />
+							<hugeicons-icon [icon]="Mail01Icon" [size]="16" [strokeWidth]="2.5" />
 							{{ 'dashboard.index.sendNewsletter' | translate }}
 						</span>
 					</a>
@@ -58,7 +58,7 @@ function greetingForHour(hour: number): string {
 						routerLink="/dashboard/project/new"
 					>
 						<span class="flex items-center gap-2">
-							<hugeicons-icon [icon]="PlusSignIcon" [size]="16" [strokeWidth]="1.5" />
+							<hugeicons-icon [icon]="PlusSignIcon" [size]="16" [strokeWidth]="2.5" />
 							{{ 'dashboard.index.newProject' | translate }}
 						</span>
 					</a>
@@ -70,7 +70,7 @@ function greetingForHour(hour: number): string {
 						routerLink="/dashboard/post/new"
 					>
 						<span class="flex items-center gap-2">
-							<hugeicons-icon [icon]="PlusSignIcon" [size]="16" [strokeWidth]="1.5" />
+							<hugeicons-icon [icon]="PlusSignIcon" [size]="16" [strokeWidth]="2.5" />
 							{{ 'dashboard.index.newPost' | translate }}
 						</span>
 					</a>

@@ -141,17 +141,75 @@ describe('PostDetailComponent', () => {
     expect(seoServiceMock.setArticleTags).toHaveBeenCalledWith(['Angular']);
   });
 
-  it('should show error toast and redirect on API error', () => {
-    (postServiceMock.getBySlug as any).mockReturnValue(throwError(() => new Error('Not found')));
+  it('renders the not-found state for POST_SLUG_NOT_FOUND without redirecting', () => {
+    (postServiceMock.getBySlug as any).mockReturnValue(
+      throwError(() => ({ error: { code: 'POST_SLUG_NOT_FOUND' } })),
+    );
 
     fixture.detectChanges();
+    fixture.detectChanges();
 
-    expect(toastServiceMock.open).toHaveBeenCalledWith('Failed to load posts. Please try again.', {
-      appearance: 'error',
-      autoClose: 5000,
-      data: '@tui.circle-x',
+    expect(component.error()).toBe('This post could not be found.');
+    expect(routerMock.navigate).not.toHaveBeenCalled();
+    expect(component.loading()).toBe(false);
+    const alert: HTMLElement = fixture.nativeElement.querySelector('[role="alert"]');
+    expect(alert.textContent?.trim()).toBe('This post could not be found.');
+  });
+
+  it('renders the generic error state for load failures without redirecting', () => {
+    (postServiceMock.getBySlug as any).mockReturnValue(throwError(() => new Error('boom')));
+
+    fixture.detectChanges();
+    fixture.detectChanges();
+
+    expect(component.error()).toBe('Failed to load posts. Please try again.');
+    expect(routerMock.navigate).not.toHaveBeenCalled();
+    expect(component.loading()).toBe(false);
+  });
+
+  it('binds untrusted plain html on the server platform instead of bypassing', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [PostDetailComponent],
+      providers: [
+        provideTaiga(),
+        provideRouter([]),
+        { provide: PostService, useValue: postServiceMock },
+        { provide: LanguageService, useValue: languageServiceMock },
+        translationProvider(),
+        { provide: MarkdownService, useValue: markdownServiceMock },
+        { provide: Router, useValue: routerMock },
+        { provide: TuiToastService, useValue: toastServiceMock },
+        { provide: SeoService, useValue: seoServiceMock },
+        { provide: TagService, useValue: tagServiceMock },
+        { provide: PLATFORM_ID, useValue: 'server' },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: { get: vi.fn().mockReturnValue('test-post') },
+            },
+          },
+        },
+      ],
     });
-    expect(routerMock.navigate).toHaveBeenCalledWith(['']);
+
+    (postServiceMock.getBySlug as any).mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-post',
+        translations: {
+          ENGLISH: { title: 'Test', content: '# Test', summary: 's' },
+        },
+      }),
+    );
+
+    const serverFixture = TestBed.createComponent(PostDetailComponent);
+    serverFixture.detectChanges();
+    await serverFixture.whenStable();
+
+    expect(markdownServiceMock.renderMarkdown).toHaveBeenCalledWith('# Test', false);
+    expect(typeof serverFixture.componentInstance.html()).toBe('string');
   });
 
   it('should show error toast when markdown rendering fails', async () => {
@@ -250,13 +308,10 @@ describe('PostDetailComponent', () => {
       { id: 'nested-part', text: 'Nested Part', level: 3 },
     ]);
 
-    const links = Array.from(
-      fixture.nativeElement.querySelectorAll('aside nav a') as HTMLAnchorElement[],
+    const tocItems = Array.from(
+      fixture.nativeElement.querySelectorAll('aside nav li p') as HTMLElement[],
     );
-    expect(links.map((link) => link.getAttribute('href'))).toEqual([
-      '#my-section',
-      '#nested-part',
-    ]);
+    expect(tocItems.map((item) => item.textContent?.trim())).toEqual(['My Section', 'Nested Part']);
     expect(fixture.nativeElement.textContent).toContain('On this page');
   });
 
@@ -328,8 +383,8 @@ describe('PostDetailComponent', () => {
     const scrollSpy = vi.fn();
     heading.scrollIntoView = scrollSpy;
 
-    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('aside nav a');
-    link.dispatchEvent(new MouseEvent('click', { cancelable: true }));
+    const tocItem: HTMLElement = fixture.nativeElement.querySelector('aside nav li p');
+    tocItem.dispatchEvent(new MouseEvent('click', { cancelable: true }));
 
     expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'smooth' });
   });
@@ -353,19 +408,18 @@ describe('PostDetailComponent', () => {
     await vi.waitFor(() => expect(component.toc().length).toBe(3));
     fixture.detectChanges();
 
-    const links = Array.from(
-      fixture.nativeElement.querySelectorAll('aside nav a') as HTMLAnchorElement[],
+    const items = Array.from(
+      fixture.nativeElement.querySelectorAll('aside nav li') as HTMLLIElement[],
     );
-    expect(links.map((link) => link.getAttribute('href'))).toEqual([
-      '#alpha',
-      '#beta',
-      '#gamma',
+    expect(items.map((item) => item.querySelector('p')?.textContent?.trim())).toEqual([
+      'Alpha',
+      'Beta',
+      'Gamma',
     ]);
 
-    const itemClasses = links.map((link) => link.parentElement?.className ?? '');
-    expect(itemClasses[0]).not.toContain('ml-4');
-    expect(itemClasses[1]).toContain('ml-4');
-    expect(itemClasses[2]).toContain('ml-8');
+    expect(items[0].className).not.toContain('ml-4');
+    expect(items[1].className).toContain('ml-4');
+    expect(items[2].className).toContain('ml-8');
 
     const buttons = fixture.nativeElement.querySelectorAll('aside nav button');
     expect(buttons).toHaveLength(0);

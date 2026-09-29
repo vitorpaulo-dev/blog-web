@@ -114,7 +114,7 @@ const AUDIO_LANGUAGES: Language[] = ['ENGLISH', 'PORTUGUESE'];
 		<div class="mx-auto px-4 py-8 sm:px-6">
 			<div class="mb-6 flex items-center justify-between">
 				<a (click)="goBack()" class="inline-flex cursor-pointer items-center gap-1 text-sm text-accent">
-					<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" />
+					<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="2.5" />
 					{{ 'common.backToDashboard' | translate }}
 				</a>
 
@@ -135,7 +135,6 @@ const AUDIO_LANGUAGES: Language[] = ['ENGLISH', 'PORTUGUESE'];
 			</h1>
 
 			<form [formGroup]="form" class="flex flex-col gap-5" (ngSubmit)="onSave()">
-				<!-- Language tabs -->
 				<div class="flex gap-1 border-b border-border">
 					@for (lang of languages; track lang) {
 						<button
@@ -152,7 +151,6 @@ const AUDIO_LANGUAGES: Language[] = ['ENGLISH', 'PORTUGUESE'];
 					}
 				</div>
 
-				<!-- Translation -->
 				@for (lang of languages; track lang) {
 					@if (activeLang() === lang) {
 						<div class="flex flex-col gap-5">
@@ -194,7 +192,6 @@ const AUDIO_LANGUAGES: Language[] = ['ENGLISH', 'PORTUGUESE'];
 					}
 				}
 
-				<!-- Banner -->
 				<div class="flex flex-col gap-2">
 					<label class="flex items-center gap-1.5 text-sm font-medium">
 						<hugeicons-icon [icon]="bannerIcon" [size]="16" [strokeWidth]="2.5" />
@@ -239,7 +236,6 @@ const AUDIO_LANGUAGES: Language[] = ['ENGLISH', 'PORTUGUESE'];
 					</p>
 				}
 
-				<!-- Actions -->
 				<div class="flex flex-wrap gap-3">
 					@if (!isEdit()) {
 						<button
@@ -307,7 +303,6 @@ const AUDIO_LANGUAGES: Language[] = ['ENGLISH', 'PORTUGUESE'];
 				</div>
 			</form>
 
-			<!-- Audio artifacts -->
 			@if (isEdit()) {
 				<section class="mt-10">
 					<h2 class="mb-4 flex items-center gap-2 text-lg font-semibold">
@@ -664,13 +659,6 @@ export class PostEditorComponent implements OnInit {
 		});
 	}
 
-	/**
-	 * Returns the requested language when available.
-	 *
-	 * Falls back to the first available translation.
-	 *
-	 * Only uses the fallback value when no translation exists.
-	 */
 	private getTranslationValue<T>(
 		translations: Record<Language, T> | undefined,
 		field: keyof T & string,
@@ -837,9 +825,7 @@ export class PostEditorComponent implements OnInit {
 			.subscribe();
 	}
 
-	onSave(): void {
-		// Save is handled explicitly by the action buttons.
-	}
+	onSave(): void {}
 
 	goBack(): void {
 		void this.router.navigate(['/dashboard/post']);

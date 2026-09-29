@@ -86,7 +86,7 @@ const FREQUENCY_LABELS: Record<Frequency, string> = {
 
 			@if (loading()) {
 				<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
-					<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="1.5" />
+					<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="2.5" />
 				</div>
 			} @else if (subscribers().length === 0) {
 				<div class="relative rounded-xl border border-border bg-surface px-8 py-10 text-center shadow-sm text-muted text-sm">
@@ -121,7 +121,7 @@ const FREQUENCY_LABELS: Record<Frequency, string> = {
 										[attr.aria-label]="'dashboard.subscribers.unsubscribe' | translate"
 										(click)="askUnsubscribe(subscriber.id)"
 									>
-										<hugeicons-icon [icon]="UserXIcon" [size]="16" [strokeWidth]="1.5" />
+										<hugeicons-icon [icon]="UserXIcon" [size]="16" [strokeWidth]="2.5" />
 									</button>
 								</td>
 							</tr>

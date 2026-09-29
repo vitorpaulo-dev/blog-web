@@ -87,7 +87,8 @@ describe('ProjectListComponent', () => {
   it('sets list meta on init', () => {
     expect(seoServiceMock.setPageMeta).toHaveBeenCalledWith({
       title: 'Projects',
-      description: 'All projects on vitorpaulo.dev. Explore software projects and open source work.',
+      description:
+        'I write about programming, technology, and the projects I build, sharing things I learn, experiments I try, and ideas I find interesting along the way.',
     });
   });
 
