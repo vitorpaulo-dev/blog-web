@@ -59,7 +59,6 @@ function setSignedImage(
 		return;
 	}
 
-	// Skeleton remains until the signed image fires `load`.
 	img.src = url;
 }
 
@@ -69,7 +68,6 @@ function startSigning(img: HTMLImageElement, key: string): void {
 
 	prepareImage(img);
 
-	// Keep the image element valid while signing.
 	img.src = TRANSPARENT_IMAGE;
 }
 

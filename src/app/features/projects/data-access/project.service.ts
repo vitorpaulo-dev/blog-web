@@ -13,7 +13,6 @@ import {
 	type ReactionResponse,
 	type ReactionType,
 } from '../../posts/data-access/post.service';
-import { TuiToastService } from '@taiga-ui/kit';
 import { LanguageService } from '../../../core/i18n/language.service';
 
 export type { ProjectDto, ProjectContentDto, ReactionResponse, ReactionType };
@@ -50,7 +49,7 @@ export class ProjectService {
 	private readonly languageService = inject(LanguageService);
 	private readonly turnstile = inject(TurnstileService);
 	private readonly base = `${environment.apiBaseUrl}/v1/project`;
-	private reactInFlight = false; // single in-flight react submission guard
+	private reactInFlight = false;
 
 	create(payload: CreateProjectPayload): Observable<ProjectDto> {
 		return this.http.post<ProjectDto>(this.base, payload);
@@ -83,7 +82,6 @@ export class ProjectService {
 	}
 
 	async reactTo(slug: string, reactionType: ReactionType): Promise<ReactionResponse> {
-		// Never double-POST: a second call while a react request is pending is rejected.
 		if (this.reactInFlight) {
 			throw new Error('Reaction request already in progress');
 		}

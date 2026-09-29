@@ -79,7 +79,8 @@
 			"paused": "Pausado",
 			"stopped": "Player de áudio",
 			"error": "Falha na reprodução do áudio."
-		}
+		},
+		"notFound": "Este post não pôde ser encontrado."
 	},
 	"lightbox": {
 		"close": "Fechar",
@@ -92,7 +93,8 @@
 		"emptyAttribution": "Sabedoria Dev",
 		"failedToLoad": "Falha ao carregar projetos. Tente novamente.",
 		"github": "GitHub",
-		"website": "Site"
+		"website": "Site",
+		"notFound": "Este projeto não pôde ser encontrado."
 	},
 	"dashboard": {
 		"index": {

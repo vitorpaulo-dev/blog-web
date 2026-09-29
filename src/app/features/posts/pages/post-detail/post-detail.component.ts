@@ -75,7 +75,7 @@ import {
 	template: `
 		<div class="max-w-4xl mx-auto">
 			<a [routerLink]="postListLink()" tuiButton tuiAppearance="flat" size="s" class="mb-4 gap-1">
-				<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" />
+				<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="2.5" />
 
 				{{ 'posts.backToList' | translate }}
 			</a>
@@ -101,7 +101,7 @@ import {
 				
 				<div class="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted">
 					<span class="inline-flex items-center gap-1">
-						<hugeicons-icon [icon]="Calendar01Icon" [size]="16" [strokeWidth]="1.5" />
+						<hugeicons-icon [icon]="Calendar01Icon" [size]="16" [strokeWidth]="2.5" />
 
 						{{ p.createdAt | localizedDate: 'dd MMM yyyy' }}
 					</span>
@@ -109,7 +109,7 @@ import {
 					<span>·</span>
 
 					<span class="inline-flex items-center gap-1">
-						<hugeicons-icon [icon]="Timer02Icon" [size]="16" [strokeWidth]="1.5" />
+						<hugeicons-icon [icon]="Timer02Icon" [size]="16" [strokeWidth]="2.5" />
 
 						{{ p.estimatedReading || 5 }} {{ 'common.min' | translate }}
 					</span>
@@ -117,7 +117,7 @@ import {
 					<span>·</span>
 
 					<span class="inline-flex items-center gap-1">
-						<hugeicons-icon [icon]="EyeIcon" [size]="16" [strokeWidth]="1.5" />
+						<hugeicons-icon [icon]="EyeIcon" [size]="16" [strokeWidth]="2.5" />
 
 						{{ p.viewCount }} {{ 'common.views' | translate }}
 					</span>
@@ -125,7 +125,7 @@ import {
 					<span>·</span>
 
 					<span class="inline-flex items-center gap-1">
-						<hugeicons-icon [icon]="SmilePlusIcon" [size]="16" [strokeWidth]="1.5" />
+						<hugeicons-icon [icon]="SmilePlusIcon" [size]="16" [strokeWidth]="2.5" />
 
 						{{ p.reactionCount }} {{ 'common.reactions' | translate }}
 					</span>
@@ -142,7 +142,7 @@ import {
 
 					@for (tag of postTags(); track tag.id) {
 						<span tuiChip>
-							<hugeicons-icon [icon]="Tag01Icon" [size]="12" [strokeWidth]="1.5" />
+							<hugeicons-icon [icon]="Tag01Icon" [size]="12" [strokeWidth]="2.5" />
 		
 							{{ tagNameOf(tag, lang()) }}
 						</span>
@@ -197,7 +197,7 @@ import {
 					<hr class="my-8" />
 					<section>
 						<h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
-							<hugeicons-icon [icon]="projectsIcon" [size]="20" [strokeWidth]="1.5" />
+							<hugeicons-icon [icon]="projectsIcon" [size]="20" [strokeWidth]="2.5" />
 							{{ 'posts.relatedProjects' | translate }}
 						</h3>
 						<div class="flex flex-col gap-4">
@@ -373,16 +373,16 @@ export class PostDetailComponent implements AfterViewInit {
 					});
 				}
 			},
-			error: () => {
+			error: (error: unknown) => {
 				this.loading.set(false);
-				this.toastService
-					.open(this.translationService.translate('posts.failedToLoad'), {
-						appearance: 'error',
-						autoClose: 5000,
-						data: '@tui.circle-x',
-					})
-					.subscribe();
-				void this.router.navigate(['']);
+				const code = (error as { error?: { code?: string } } | null)?.error?.code;
+
+				if (code === 'POST_SLUG_NOT_FOUND') {
+					this.error.set(this.translationService.translate('posts.notFound'));
+					return;
+				}
+
+				this.error.set(this.translationService.translate('posts.failedToLoad'));
 			},
 		});
 	}
@@ -479,7 +479,11 @@ export class PostDetailComponent implements AfterViewInit {
 		try {
 			const rendered = await this.markdownService.renderMarkdown(content, this.isBrowser);
 			const htmlWithIds = withHeadingIds(this.asHtmlString(rendered));
-			this.html.set(this.sanitizer.bypassSecurityTrustHtml(htmlWithIds));
+			this.html.set(
+				this.isBrowser
+					? this.sanitizer.bypassSecurityTrustHtml(htmlWithIds)
+					: htmlWithIds,
+			);
 			this.toc.set(extractToc(htmlWithIds));
 			this.loading.set(false);
 		} catch (error) {

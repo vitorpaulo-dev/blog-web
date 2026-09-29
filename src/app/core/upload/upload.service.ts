@@ -12,12 +12,21 @@ export interface PresignResponse {
 	key: string;
 }
 
+interface CachedSignedUrl {
+	url: string;
+	expiresAt: number;
+}
+
+const SIGNED_URL_EXPIRY_MS = 60 * 60 * 1000;
+
+const SIGNED_URL_CACHE_TTL_MS = SIGNED_URL_EXPIRY_MS - 5 * 60 * 1000;
+
 @Injectable({ providedIn: 'root' })
 export class UploadService {
 	private readonly http = inject(HttpClient);
 	private readonly base = `${environment.apiBaseUrl}/v1/upload`;
 
-	private readonly cache = new Map<string, string>();
+	private readonly cache = new Map<string, CachedSignedUrl>();
 
 	presign(folder: UploadFolder, subfolder: UploadSubfolder, fileName: string): Observable<PresignResponse> {
 		return this.http.post<PresignResponse>(`${this.base}/presign`, { folder, subfolder, fileName });
@@ -36,22 +45,43 @@ export class UploadService {
 	}
 
 	sign(keys: string[]): Observable<Record<string, string>> {
-		const missing = [...new Set(keys)].filter((key) => key && !this.cache.has(key));
+		const missing = [...new Set(keys)].filter((key) => key && !this.isFresh(key));
 
 		const request$ =
 			missing.length === 0
 				? of({})
 				: this.http
 					.post<Record<string, string>>(`${this.base}/sign`, { keys: missing })
-					.pipe(tap((urls) => Object.entries(urls).forEach(([key, url]) => this.cache.set(key, url))));
+					.pipe(
+						tap((urls) =>
+							Object.entries(urls).forEach(([key, url]) =>
+								this.cache.set(key, { url, expiresAt: Date.now() + SIGNED_URL_CACHE_TTL_MS })
+							)
+						)
+					);
 
 		return request$.pipe(map(() => this.lookup(keys)));
+	}
+
+	private isFresh(key: string): boolean {
+		const entry = this.cache.get(key);
+
+		if (!entry) {
+			return false;
+		}
+
+		if (entry.expiresAt <= Date.now()) {
+			this.cache.delete(key);
+			return false;
+		}
+
+		return true;
 	}
 
 	private lookup(keys: string[]): Record<string, string> {
 		const result: Record<string, string> = {};
 		for (const key of keys) {
-			result[key] = this.cache.get(key) ?? '';
+			result[key] = this.isFresh(key) ? this.cache.get(key)!.url : '';
 		}
 		return result;
 	}

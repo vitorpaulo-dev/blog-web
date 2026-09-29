@@ -36,14 +36,13 @@ interface TranslationForm {
 		<div class="mx-auto max-w-3xl px-6 py-8">
 			<div class="flex items-center justify-between mb-6">
 				<a (click)="goBack()" class="inline-flex items-center gap-1 text-sm text-accent cursor-pointer">
-					<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="1.5" /> {{ 'common.backToDashboard' | translate }}
+					<hugeicons-icon [icon]="ArrowLeft01Icon" [size]="16" [strokeWidth]="2.5" /> {{ 'common.backToDashboard' | translate }}
 				</a>
 			</div>
 
 			<h1 class="text-2xl font-bold mb-2">{{ (isEdit() ? 'dashboard.tags.editor.editHeading' : 'dashboard.tags.editor.newHeading') | translate }}</h1>
 
 			<form [formGroup]="form" class="flex flex-col gap-5" (ngSubmit)="onSave()">
-				<!-- Language Tabs -->
 				<div class="flex gap-1 border-b border-border">
 					@for (lang of languages; track lang) {
 						<button
@@ -60,7 +59,6 @@ interface TranslationForm {
 					}
 				</div>
 
-				<!-- Translation fields for active language -->
 				@for (lang of languages; track lang) {
 					@if (activeLang() === lang) {
 						<div class="flex flex-col gap-5">
@@ -217,9 +215,7 @@ export class TagEditorComponent implements OnInit {
 		});
 	}
 
-	onSave(): void {
-		/* handled by save button */
-	}
+	onSave(): void {}
 
 	goBack(): void {
 		this.router.navigate(['/dashboard/tag']);

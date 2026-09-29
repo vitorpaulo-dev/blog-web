@@ -156,17 +156,29 @@ describe('ProjectDetailComponent', () => {
     expect(component.loading()).toBe(false);
   });
 
-  it('should show error toast and redirect on API error', () => {
-    (projectServiceMock.getBySlug as any).mockReturnValue(throwError(() => new Error('Not found')));
+  it('renders the not-found state for PROJECT_SLUG_NOT_FOUND without redirecting', () => {
+    (projectServiceMock.getBySlug as any).mockReturnValue(
+      throwError(() => ({ error: { code: 'PROJECT_SLUG_NOT_FOUND' } })),
+    );
 
     fixture.detectChanges();
+    fixture.detectChanges();
 
-    expect(toastServiceMock.open).toHaveBeenCalledWith('Failed to load projects. Please try again.', {
-      appearance: 'error',
-      autoClose: 5000,
-      data: '@tui.circle-x',
-    });
-    expect(routerMock.navigate).toHaveBeenCalledWith(['']);
+    expect(component.error()).toBe('This project could not be found.');
+    expect(routerMock.navigate).not.toHaveBeenCalled();
+    expect(component.loading()).toBe(false);
+    const alert: HTMLElement = fixture.nativeElement.querySelector('[role="alert"]');
+    expect(alert.textContent?.trim()).toBe('This project could not be found.');
+  });
+
+  it('renders the generic error state for load failures without redirecting', () => {
+    (projectServiceMock.getBySlug as any).mockReturnValue(throwError(() => new Error('boom')));
+
+    fixture.detectChanges();
+    fixture.detectChanges();
+
+    expect(component.error()).toBe('Failed to load projects. Please try again.');
+    expect(routerMock.navigate).not.toHaveBeenCalled();
     expect(component.loading()).toBe(false);
   });
 

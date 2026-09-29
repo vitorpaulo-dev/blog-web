@@ -64,4 +64,47 @@ describe('UploadService', () => {
 
 		expect(second).toEqual({ 'post/banner/a.jpg': 'https://signed/a' });
 	});
+
+	it('sign re-requests urls once the cache safety window elapsed', () => {
+		vi.useFakeTimers();
+		try {
+			service.sign(['post/banner/a.jpg']).subscribe();
+
+			const first = http.expectOne(`${api}/v1/upload/sign`);
+			first.flush({ 'post/banner/a.jpg': 'https://signed/a' });
+
+			vi.advanceTimersByTime(56 * 60 * 1000);
+
+			let result: unknown;
+			service.sign(['post/banner/a.jpg']).subscribe((r) => (result = r));
+
+			const second = http.expectOne(`${api}/v1/upload/sign`);
+			expect(second.request.body).toEqual({ keys: ['post/banner/a.jpg'] });
+			second.flush({ 'post/banner/a.jpg': 'https://signed/b' });
+
+			expect(result).toEqual({ 'post/banner/a.jpg': 'https://signed/b' });
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it('sign keeps cached urls inside the one-hour expiry safety margin', () => {
+		vi.useFakeTimers();
+		try {
+			service.sign(['post/banner/a.jpg']).subscribe();
+
+			const first = http.expectOne(`${api}/v1/upload/sign`);
+			first.flush({ 'post/banner/a.jpg': 'https://signed/a' });
+
+			vi.advanceTimersByTime(54 * 60 * 1000);
+
+			let result: unknown;
+			service.sign(['post/banner/a.jpg']).subscribe((r) => (result = r));
+
+			http.expectNone(`${api}/v1/upload/sign`);
+			expect(result).toEqual({ 'post/banner/a.jpg': 'https://signed/a' });
+		} finally {
+			vi.useRealTimers();
+		}
+	});
 });

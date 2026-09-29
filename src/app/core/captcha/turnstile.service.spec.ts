@@ -74,10 +74,8 @@ describe('TurnstileService', () => {
 
       const acquisition = service.getToken();
       await new Promise(resolve => setTimeout(resolve, 250));
-      // Reset happened while waiting for the next success callback.
       expect(widget.reset).toHaveBeenCalledTimes(1);
       expect(widget.reset).toHaveBeenCalledWith(widgetId);
-      // Simulating widget completion after the reset resolves the acquisition.
       widget.params!.callback!('tok-after-retry');
 
       await expect(acquisition).resolves.toBe('tok-after-retry');
@@ -91,7 +89,6 @@ describe('TurnstileService', () => {
 
       const acquisition = service.getToken();
       await new Promise(resolve => setTimeout(resolve, 250));
-      // Token expired after reset: callback yields nothing and the loop retries.
       widget.params!['expired-callback']!();
       widget.params!.callback!('tok-once');
 
@@ -107,7 +104,6 @@ describe('TurnstileService', () => {
       const second = service.getToken();
       await new Promise(resolve => setTimeout(resolve, 250));
 
-      // One reset per acquisition attempt, not one per caller.
       expect(widget.reset).toHaveBeenCalledTimes(1);
 
       widget.params!.callback!('tok-shared');
@@ -122,7 +118,6 @@ describe('TurnstileService', () => {
       service = TestBed.inject(TurnstileService);
 
       await expect(service.getToken()).resolves.toBeNull();
-      // One reset per attempted response, none after the final attempt.
       expect(widget.reset).toHaveBeenCalledTimes(3);
       expect(widget.getResponse).toHaveBeenCalledTimes(3);
     });

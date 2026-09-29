@@ -49,7 +49,7 @@ import { TUI_CONFIRM, TuiStatus, TuiToastService } from '@taiga-ui/kit';
 				<h1 class="text-2xl font-bold">{{ 'dashboard.tags.list.title' | translate }}</h1>
 
 				<a routerLink="/dashboard/tag/new" tuiButton tuiAppearance="primary" size="m" class="gap-1">
-					<hugeicons-icon [icon]="PlusSignIcon" [size]="22" [strokeWidth]="1.5" />
+					<hugeicons-icon [icon]="PlusSignIcon" [size]="22" [strokeWidth]="2.5" />
 					{{ 'dashboard.tags.list.new' | translate }}
 				</a>
 			</div>
@@ -61,7 +61,7 @@ import { TUI_CONFIRM, TuiStatus, TuiToastService } from '@taiga-ui/kit';
 
 			@if (loading()) {
 				<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
-					<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="1.5" />
+					<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="2.5" />
 				</div>
 			} @else if (tags().length === 0) {
 				<div class="relative rounded-xl border border-border bg-surface px-8 pt-10 pb-3 text-center shadow-sm">

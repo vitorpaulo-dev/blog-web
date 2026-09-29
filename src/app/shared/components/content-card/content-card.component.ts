@@ -54,11 +54,11 @@ export interface ContentCardItem {
 			<div class="flex flex-col justify-center gap-1.5 min-w-0 flex-1 w-full">
 				<div
 					class="flex items-center gap-2 text-xs text-muted font-mono group-hover:text-muted/50 transition-all">
-					<hugeicons-icon [icon]="Calendar01Icon" [size]="14" [strokeWidth]="1.5" />
+					<hugeicons-icon [icon]="Calendar01Icon" [size]="14" [strokeWidth]="2.5" />
 					<span>{{ item().date | localizedDate: 'dd MMM yyyy' }}</span>
 					<span aria-hidden="true">·</span>
 					@if (item().metaIcon) {
-						<hugeicons-icon [icon]="item().metaIcon" [size]="16" [strokeWidth]="1.5" />
+						<hugeicons-icon [icon]="item().metaIcon" [size]="16" [strokeWidth]="2.5" />
 					}
 					<span class="truncate">{{ item().metaText }}</span>
 				</div>
@@ -76,7 +76,7 @@ export interface ContentCardItem {
 				<div class="flex flex-row md:flex-col flex-wrap items-end justify-end gap-1.5 shrink-0">
 					@for (chip of item().chips; track chip.label) {
 						<span tuiChip>
-						    <hugeicons-icon [icon]="chip.icon" [size]="12" [strokeWidth]="1.5" />
+						    <hugeicons-icon [icon]="chip.icon" [size]="12" [strokeWidth]="2.5" />
 							{{ chip.label }}
 						</span>
 					}

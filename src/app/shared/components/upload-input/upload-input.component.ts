@@ -39,7 +39,6 @@ import { ImageSignDirective } from '../../directives/image-sign.directive';
 				class="group relative w-full overflow-hidden rounded-xl border border-border bg-surface text-left transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
 			>
 				@if (localPreview(); as blobUrl) {
-				<!-- Local blob preview while uploading -->
 				<div class="relative aspect-video w-full overflow-hidden bg-black/20">
 					<img
 						[src]="blobUrl"
@@ -70,14 +69,13 @@ import { ImageSignDirective } from '../../directives/image-sign.directive';
 							class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
 						/>
 
-						<!-- Image hover overlay -->
 						<div
 							class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/0 transition-colors duration-200 group-hover:bg-black/50"
 						>
 							<span
 								class="flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-all duration-200 group-hover:opacity-100"
 							>
-								<hugeicons-icon [icon]="ImageEdit01Icon" [size]="22" [strokeWidth]="1.8" />
+								<hugeicons-icon [icon]="ImageEdit01Icon" [size]="22" [strokeWidth]="2.5" />
 							</span>
 
 							<span
@@ -87,7 +85,6 @@ import { ImageSignDirective } from '../../directives/image-sign.directive';
 							</span>
 						</div>
 
-						<!-- Upload loading state -->
 						@if (uploading()) {
 							<div
 								class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 text-white"
@@ -104,14 +101,13 @@ import { ImageSignDirective } from '../../directives/image-sign.directive';
 						}
 					</div>
 				} @else {
-					<!-- Empty state -->
 					<div
 						class="flex aspect-video w-full flex-col items-center justify-center gap-3 text-muted transition-colors group-hover:text-foreground"
 					>
 						<span
 							class="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-background transition-colors group-hover:border-accent group-hover:text-accent"
 						>
-							<hugeicons-icon [icon]="CloudUploadIcon" [size]="24" [strokeWidth]="1.8" />
+							<hugeicons-icon [icon]="CloudUploadIcon" [size]="24" [strokeWidth]="2.5" />
 						</span>
 
 						<div class="text-center">
@@ -181,7 +177,6 @@ export class UploadInputComponent implements ControlValueAccessor {
 		const input = event.target as HTMLInputElement;
 		const file = input.files?.[0];
 
-		// Allow selecting the same file again.
 		input.value = '';
 
 		this.onTouched();

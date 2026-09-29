@@ -59,13 +59,13 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 						class="group rounded-xl border border-accent bg-surface transition-all hover:opacity-80 px-2 md:px-4 py-3 flex flex-row md:items-center justify-between gap-3"
 					>
 						<div class="text-sm inline-flex items-center font-mono">
-							<hugeicons-icon [icon]="SparklesIcon" [size]="26" [strokeWidth]="1.5" />
+							<hugeicons-icon [icon]="SparklesIcon" [size]="26" [strokeWidth]="2.5" />
 							<p class="ml-2 text-foreground font-bold truncate max-w-60 md:max-w-5xl">
 								{{ firstTranslation(post.translations)?.title }}
 							</p>
 						</div>
 
-						<hugeicons-icon [icon]="ArrowRight01Icon" [size]="22" [strokeWidth]="1.5" />
+						<hugeicons-icon [icon]="ArrowRight01Icon" [size]="22" [strokeWidth]="2.5" />
 					</a>
 				}
 			</section>
@@ -81,12 +81,12 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 						[disabled]="postsLoading() || posts().length === 0"
 					>
 						{{ 'home.allPosts' | translate }}
-						<hugeicons-icon [icon]="ArrowRight01Icon" [size]="16" [strokeWidth]="1.5" />
+						<hugeicons-icon [icon]="ArrowRight01Icon" [size]="16" [strokeWidth]="2.5" />
 					</button>
 				</div>
 				@if (postsLoading()) {
 					<div class="text-muted text-sm w-full inline-flex justify-center items-center h-full">
-						<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="1.5" />
+						<hugeicons-icon [icon]="Loading03Icon" [size]="32" [strokeWidth]="2.5" />
 					</div>
 				} @else if (posts().length === 0) {
 					<div
@@ -136,7 +136,6 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 				class="border-t border-border py-16 sm:py-20 lg:py-24"
 			>
 				<div class="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start lg:gap-16">
-					<!-- Copy -->
 					<div class="lg:col-span-7">
 						<p class="mb-3 font-mono text-xs font-medium uppercase tracking-wide text-accent">
 							{{ 'home.newsletterEyebrow' | translate }}
@@ -152,13 +151,12 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 						</p>
 					</div>
 
-					<!-- Form card -->
-				<div class="relative lg:col-span-5">
+					<div class="relative lg:col-span-5">
 					<div aria-hidden="true" class="pointer-events-none absolute -top-16 right-6 size-44 rounded-full bg-accent/10 blur-3xl"></div>
 					<div class="relative rounded-xl border border-border bg-surface p-6 sm:p-8">
 						<div class="flex items-center gap-3 border-b border-border/60 pb-5">
 							<span class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent/40 bg-accent/10 text-accent">
-								<hugeicons-icon [icon]="Mail01Icon" [size]="18" [strokeWidth]="1.5" />
+								<hugeicons-icon [icon]="Mail01Icon" [size]="18" [strokeWidth]="2.5" />
 							</span>
 							<h3
 								id="newsletter-form-heading"
@@ -209,7 +207,7 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 									<hugeicons-icon
 										[icon]="ArrowRight01Icon"
 										[size]="18"
-										[strokeWidth]="1.5"
+										[strokeWidth]="2.5"
 										class="transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none"
 									/>
 								}
@@ -271,12 +269,12 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 
 				<a tuiButton routerLink="/post/i-didn-t-build-this-blog-alone-my-ai-squad-did" class="mt-4 mr-4">
 					{{ 'home.howItWorks' | translate }}
-					<hugeicons-icon [icon]="ArrowRight01Icon" [size]="22" [strokeWidth]="1.5" />
+					<hugeicons-icon [icon]="ArrowRight01Icon" [size]="22" [strokeWidth]="2.5" />
 				</a>
 
 				<a tuiButton href="https://github.com/vitorpaulo-dev/" class="mt-4" tuiAppearance="outline">
 					{{ 'home.viewSource' | translate }}
-					<hugeicons-icon [icon]="GithubIcon" [size]="22" [strokeWidth]="1.5" />
+					<hugeicons-icon [icon]="GithubIcon" [size]="22" [strokeWidth]="2.5" />
 				</a>
 			</section>
 

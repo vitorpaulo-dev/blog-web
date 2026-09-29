@@ -199,7 +199,7 @@ export const STICKY_TOP = '1.25rem';
                         <hugeicons-icon
                             [icon]="HeadsetIcon"
                             [size]="17"
-                            [strokeWidth]="2.4"
+                            [strokeWidth]="2.5"
                             class="shrink-0 text-accent"
                         />
 
@@ -226,7 +226,7 @@ export const STICKY_TOP = '1.25rem';
                                     [attr.aria-pressed]="type === currentType()"
                                     (click)="selectType(type)"
                                 >
-                                    <hugeicons-icon [icon]="typeIconOf(type)" [size]="14" [strokeWidth]="2.2" />
+                                    <hugeicons-icon [icon]="typeIconOf(type)" [size]="14" [strokeWidth]="2.5" />
                                     {{ typeLabelOf(type) | translate }}
                                 </button>
                             }
@@ -708,7 +708,11 @@ export class AudioPlayerComponent {
 
 		const duration = element.duration;
 
-		if (!Number.isFinite(duration) || duration <= 0) {
+		if (
+			element.getAttribute('data-key') !== this.currentKey() ||
+			!Number.isFinite(duration) ||
+			duration <= 0
+		) {
 			this.pendingSeekFraction = Math.min(1, Math.max(0, fraction));
 			return;
 		}

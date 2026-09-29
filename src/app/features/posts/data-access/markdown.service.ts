@@ -124,14 +124,19 @@ export class MarkdownService {
 		return this.markdownRendererPromise;
 	}
 
-	async renderMarkdown(content: string, isBrowser: boolean): Promise<SafeHtml> {
+	async renderMarkdown(content: string, isBrowser: boolean): Promise<SafeHtml | string> {
 		const renderer = await this.getMarkdownRenderer();
 		const raw = await renderer.parse(content, {
 			async: true,
 		});
 
-		const sanitized = isBrowser? DOMPurify.sanitize(raw, { ADD_ATTR: ['class', 'data-mermaid', 'id'], }) : raw;
-		return this.sanitizer.bypassSecurityTrustHtml(sanitized);
+		if (!isBrowser) {
+			return raw;
+		}
+
+		return this.sanitizer.bypassSecurityTrustHtml(
+			DOMPurify.sanitize(raw, { ADD_ATTR: ['class', 'data-mermaid', 'id'] }),
+		);
 	}
 
 	async renderArticle(articleEl: ElementRef<HTMLElement> | undefined): Promise<void> {
@@ -192,7 +197,7 @@ export class MarkdownService {
 
 			componentRef.setInput('icon', icon);
 			componentRef.setInput('size', 22);
-			componentRef.setInput('strokeWidth', 1.5);
+			componentRef.setInput('strokeWidth', 2.5);
 
 			this.appRef.attachView(componentRef.hostView);
 			componentRef.changeDetectorRef.detectChanges();

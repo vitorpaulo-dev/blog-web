@@ -54,10 +54,12 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
 
     this.clerkService.mountSignIn(this.signInContainer.nativeElement, {
       forceRedirectUrl: redirectUrl,
-      signUpUrl: '/signup',
       appearance: {
         layout: {
           safeArea: true,
+        },
+        elements: {
+          footerAction__signIn: { display: 'none' },
         },
       },
     });

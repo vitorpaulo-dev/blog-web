@@ -142,7 +142,7 @@ export class PostService {
 	private readonly languageService = inject(LanguageService);
 	private readonly turnstile = inject(TurnstileService);
 	private readonly base = `${environment.apiBaseUrl}/v1/post`;
-	private reactInFlight = false; // single in-flight react submission guard
+	private reactInFlight = false;
 
 	create(payload: CreatePostPayload): Observable<PostDto> {
 		return this.http.post<PostDto>(this.base, payload);
@@ -179,7 +179,6 @@ export class PostService {
 	}
 
 	async reactTo(slug: string, reactionType: ReactionType): Promise<ReactionResponse> {
-		// Never double-POST: a second call while a react request is pending is rejected.
 		if (this.reactInFlight) {
 			throw new Error('Reaction request already in progress');
 		}

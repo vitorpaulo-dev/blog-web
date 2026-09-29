@@ -75,10 +75,6 @@ export class ClerkService {
 		this.clerk?.openSignIn(props);
 	}
 
-	openSignUp(props?: Parameters<Clerk['openSignUp']>[0]): void {
-		this.clerk?.openSignUp(props);
-	}
-
 	openUserProfile(props?: Parameters<Clerk['openUserProfile']>[0]): void {
 		this.clerk?.openUserProfile(props);
 	}
@@ -93,14 +89,6 @@ export class ClerkService {
 
 	unmountSignIn(node: HTMLDivElement): void {
 		this.clerk?.unmountSignIn(node);
-	}
-
-	mountSignUp(node: HTMLDivElement, props?: Parameters<Clerk['mountSignUp']>[1]): void {
-		this.clerk?.mountSignUp(node, props);
-	}
-
-	unmountSignUp(node: HTMLDivElement): void {
-		this.clerk?.unmountSignUp(node);
 	}
 
 	mountUserButton(node: HTMLDivElement, props?: Parameters<Clerk['mountUserButton']>[1]): void {
