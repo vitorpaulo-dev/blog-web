@@ -285,6 +285,11 @@ a {
 	padding: 0.1em 0.35em;
 }
 
+tui-modal[data-tui-version]:has(tui-preview-dialog):before {
+	-webkit-backdrop-filter: brightness(0.25) blur(0.5rem) !important;
+	backdrop-filter: brightness(0.25) blur(0.5rem) !important;
+}
+
 /* ── Milkdown dark mode overrides ────────────────────────────────────────────
    Force dark mode for Milkdown editor regardless of system preference.
 */
