@@ -231,7 +231,7 @@ import {
 
 					<article
 						#articleEl
-						class="prose prose-invert max-w-none mt-8 break-words [&_img]:cursor-zoom-in [&_.mermaid]:cursor-zoom-in"
+						class="prose prose-invert markdown-content max-w-none mt-8 break-words [&_img]:cursor-zoom-in [&_.mermaid]:cursor-zoom-in"
 						[innerHTML]="html()" appImageSignContainer appImageLightbox
 					></article>
 				</div>

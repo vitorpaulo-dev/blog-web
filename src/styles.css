@@ -254,6 +254,37 @@ a {
 	}
 }
 
+.markdown-content > p {
+	margin-top: 0.75em;
+	margin-bottom: 0.75em;
+}
+
+.markdown-content > :first-child {
+	margin-top: 0;
+}
+
+.markdown-content > :last-child {
+	margin-bottom: 0;
+}
+
+.markdown-content blockquote p:first-of-type::before,
+.markdown-content blockquote p:last-of-type::after {
+	content: none;
+}
+
+.markdown-content :not(pre) > code::before,
+.markdown-content :not(pre) > code::after {
+	content: none;
+}
+
+.markdown-content :not(pre) > code {
+	font-weight: 500;
+	background-color: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	padding: 0.1em 0.35em;
+}
+
 /* ── Milkdown dark mode overrides ────────────────────────────────────────────
    Force dark mode for Milkdown editor regardless of system preference.
 */
