@@ -108,7 +108,7 @@ describe('PostDetailComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('sets meta and article tags from the loaded post', () => {
+  it('sets meta and article tags from the loaded post', async () => {
     (postServiceMock.getBySlug as any).mockReturnValue(
       of({
         id: '1',
@@ -128,6 +128,7 @@ describe('PostDetailComponent', () => {
     );
 
     fixture.detectChanges();
+    await fixture.whenStable();
 
     expect(seoServiceMock.setPageMeta).toHaveBeenCalledWith({
       title: 'My Post',
@@ -141,12 +142,13 @@ describe('PostDetailComponent', () => {
     expect(seoServiceMock.setArticleTags).toHaveBeenCalledWith(['Angular']);
   });
 
-  it('renders the not-found state for POST_SLUG_NOT_FOUND without redirecting', () => {
+  it('renders the not-found state for POST_SLUG_NOT_FOUND without redirecting', async () => {
     (postServiceMock.getBySlug as any).mockReturnValue(
       throwError(() => ({ error: { code: 'POST_SLUG_NOT_FOUND' } })),
     );
 
     fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(component.error()).toBe('This post could not be found.');
@@ -156,60 +158,16 @@ describe('PostDetailComponent', () => {
     expect(alert.textContent?.trim()).toBe('This post could not be found.');
   });
 
-  it('renders the generic error state for load failures without redirecting', () => {
+  it('renders the generic error state for load failures without redirecting', async () => {
     (postServiceMock.getBySlug as any).mockReturnValue(throwError(() => new Error('boom')));
 
     fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(component.error()).toBe('Failed to load posts. Please try again.');
     expect(routerMock.navigate).not.toHaveBeenCalled();
     expect(component.loading()).toBe(false);
-  });
-
-  it('binds untrusted plain html on the server platform instead of bypassing', async () => {
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      imports: [PostDetailComponent],
-      providers: [
-        provideTaiga(),
-        provideRouter([]),
-        { provide: PostService, useValue: postServiceMock },
-        { provide: LanguageService, useValue: languageServiceMock },
-        translationProvider(),
-        { provide: MarkdownService, useValue: markdownServiceMock },
-        { provide: Router, useValue: routerMock },
-        { provide: TuiToastService, useValue: toastServiceMock },
-        { provide: SeoService, useValue: seoServiceMock },
-        { provide: TagService, useValue: tagServiceMock },
-        { provide: PLATFORM_ID, useValue: 'server' },
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            snapshot: {
-              paramMap: { get: vi.fn().mockReturnValue('test-post') },
-            },
-          },
-        },
-      ],
-    });
-
-    (postServiceMock.getBySlug as any).mockReturnValue(
-      of({
-        id: '1',
-        slug: 'test-post',
-        translations: {
-          ENGLISH: { title: 'Test', content: '# Test', summary: 's' },
-        },
-      }),
-    );
-
-    const serverFixture = TestBed.createComponent(PostDetailComponent);
-    serverFixture.detectChanges();
-    await serverFixture.whenStable();
-
-    expect(markdownServiceMock.renderMarkdown).toHaveBeenCalledWith('# Test', false);
-    expect(typeof serverFixture.componentInstance.html()).toBe('string');
   });
 
   it('should show error toast when markdown rendering fails', async () => {
@@ -463,5 +421,110 @@ describe('PostDetailComponent', () => {
     expect(fixture.nativeElement.querySelectorAll('[tuiSkeleton]')).toHaveLength(0);
     expect(fixture.nativeElement.querySelector('p.sr-only')).toBeNull();
     expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain('Test');
+  });
+});
+
+describe('PostDetailComponent (server platform)', () => {
+  let fixture: ComponentFixture<PostDetailComponent>;
+  let component: PostDetailComponent;
+  let getBySlug: ReturnType<typeof vi.fn>;
+  let renderMarkdown: ReturnType<typeof vi.fn>;
+  let setPageMeta: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    getBySlug = vi.fn();
+    renderMarkdown = vi.fn().mockResolvedValue('<p>Rendered</p>');
+    setPageMeta = vi.fn();
+
+    TestBed.configureTestingModule({
+      imports: [PostDetailComponent],
+      providers: [
+        provideTaiga(),
+        provideRouter([]),
+        { provide: PostService, useValue: { getBySlug } },
+        {
+          provide: LanguageService,
+          useValue: {
+            language: signal('ENGLISH'),
+            setLanguage: vi.fn(),
+            prefixed: (path: string) => path,
+          },
+        },
+        translationProvider(),
+        { provide: MarkdownService, useValue: { renderMarkdown, renderArticle: vi.fn() } },
+        { provide: Router, useValue: { navigate: vi.fn() } },
+        { provide: TuiToastService, useValue: { open: vi.fn().mockReturnValue(of(true)) } },
+        { provide: SeoService, useValue: { setPageMeta, setArticleTags: vi.fn(), setTitle: vi.fn() } },
+        { provide: TagService, useValue: { batch: vi.fn().mockReturnValue(of([])) } },
+        { provide: PLATFORM_ID, useValue: 'server' },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: { get: () => 'test-post' },
+            },
+          },
+        },
+      ],
+    });
+
+    fixture = TestBed.createComponent(PostDetailComponent);
+    component = fixture.componentInstance;
+  });
+
+  it('binds untrusted plain html on the server platform instead of bypassing', async () => {
+    getBySlug.mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-post',
+        translations: {
+          ENGLISH: { title: 'Test', content: '# Test', summary: 's' },
+        },
+      }),
+    );
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(renderMarkdown).toHaveBeenCalledWith('# Test', false);
+    expect(typeof component.html()).toBe('string');
+  });
+
+  it('delivers the content branch on the server with SEO meta from the fetched post', async () => {
+    getBySlug.mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-post',
+        createdAt: '2026-01-15T00:00:00Z',
+        updatedAt: '2026-02-20T00:00:00Z',
+        translations: { ENGLISH: { title: 'Test', content: '# Hello', summary: 'My summary' } },
+      }),
+    );
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.loading()).toBe(false);
+    expect(fixture.nativeElement.querySelector('p.sr-only')).toBeNull();
+    expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain('Test');
+    expect(fixture.nativeElement.querySelector('article')?.innerHTML).toContain('Rendered');
+    expect(setPageMeta).toHaveBeenCalledTimes(1);
+  });
+
+  it('delivers the error branch on the server when the fetch fails', async () => {
+    getBySlug.mockReturnValue(throwError(() => ({ error: { code: 'POST_SLUG_NOT_FOUND' } })));
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.loading()).toBe(false);
+    expect(component.error()).toBe('This post could not be found.');
+    expect(fixture.nativeElement.querySelector('p.sr-only')).toBeNull();
+
+    const alert: HTMLElement = fixture.nativeElement.querySelector('[role="alert"]');
+    expect(alert.textContent?.trim()).toBe('This post could not be found.');
+    expect(setPageMeta).not.toHaveBeenCalled();
   });
 });
