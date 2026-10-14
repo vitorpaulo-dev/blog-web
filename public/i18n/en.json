@@ -342,7 +342,38 @@
 			"editTab": "Edit",
 			"previewTab": "Preview",
 			"dropImage": "Drop image here",
-			"nothingToPreview": "Nothing to preview"
+			"nothingToPreview": "Nothing to preview",
+			"toolbar": {
+				"bold": "Bold",
+				"italic": "Italic",
+				"strikethrough": "Strikethrough",
+				"inlineCode": "Inline code",
+				"codeBlock": "Code block",
+				"link": "Link",
+				"callout": "Callout",
+				"quote": "Quote",
+				"bulletList": "Bullet list",
+				"numberedList": "Numbered list",
+				"table": "Table",
+				"calloutNote": "Note",
+				"calloutTip": "Tip",
+				"calloutImportant": "Important",
+				"calloutWarning": "Warning",
+				"calloutCaution": "Caution",
+				"hint": {
+					"bold": "Wraps the selection in **bold**",
+					"italic": "Wraps the selection in *italic*",
+					"strikethrough": "Wraps the selection in ~~strikethrough~~",
+					"inlineCode": "Wraps the selection in `code`",
+					"codeBlock": "Inserts a fenced ``` code block",
+					"link": "Inserts a [text](url) link",
+					"callout": "Inserts a > [!NOTE] callout block",
+					"quote": "Inserts a > quote block",
+					"bulletList": "Inserts a - bullet list item",
+					"numberedList": "Inserts a 1. numbered list item",
+					"table": "Inserts a markdown table"
+				}
+			}
 		}
 	}
 }
