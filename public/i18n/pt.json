@@ -342,7 +342,38 @@
 			"editTab": "Editar",
 			"previewTab": "Visualizar",
 			"dropImage": "Solte a imagem aqui",
-			"nothingToPreview": "Nada para visualizar"
+			"nothingToPreview": "Nada para visualizar",
+			"toolbar": {
+				"bold": "Negrito",
+				"italic": "Itálico",
+				"strikethrough": "Tachado",
+				"inlineCode": "Código inline",
+				"codeBlock": "Bloco de código",
+				"link": "Link",
+				"callout": "Destaque",
+				"quote": "Citação",
+				"bulletList": "Lista com marcadores",
+				"numberedList": "Lista numerada",
+				"table": "Tabela",
+				"calloutNote": "Nota",
+				"calloutTip": "Dica",
+				"calloutImportant": "Importante",
+				"calloutWarning": "Aviso",
+				"calloutCaution": "Cuidado",
+				"hint": {
+					"bold": "Envolve a seleção com **negrito**",
+					"italic": "Envolve a seleção com *itálico*",
+					"strikethrough": "Envolve a seleção com ~~tachado~~",
+					"inlineCode": "Envolve a seleção com `código`",
+					"codeBlock": "Insere um bloco de código ```",
+					"link": "Insere um link [texto](url)",
+					"callout": "Insere um bloco de destaque > [!NOTE]",
+					"quote": "Insere uma citação > texto",
+					"bulletList": "Insere um item de lista -",
+					"numberedList": "Insere um item de lista numerada 1.",
+					"table": "Insere uma tabela em markdown"
+				}
+			}
 		}
 	}
 }

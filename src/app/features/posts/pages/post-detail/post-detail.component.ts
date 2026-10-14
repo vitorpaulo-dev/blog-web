@@ -5,11 +5,13 @@ import {
 	effect,
 	ElementRef,
 	inject,
+	PendingTasks,
 	PLATFORM_ID,
 	SecurityContext,
 	signal,
 	ViewChild,
 } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { type SafeHtml, DomSanitizer } from '@angular/platform-browser';
@@ -313,6 +315,7 @@ export class PostDetailComponent implements AfterViewInit {
 	private readonly toastService = inject(TuiToastService);
 	private readonly seoService = inject(SeoService);
 	private readonly sanitizer = inject(DomSanitizer);
+	private readonly pendingTasks = inject(PendingTasks);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
 
@@ -397,26 +400,13 @@ export class PostDetailComponent implements AfterViewInit {
 
 	private loadPost(slug: string): void {
 		this.loading.set(true);
-		this.postService.getBySlug(slug).subscribe({
-			next: (post) => {
-				this.post.set(post);
-				const c = this.content();
-				if (c) {
-					void this.renderMarkdown(c.content);
-				}
-				this.setPageMeta(post);
-				this.loadTags(post);
-				if (post.projectIds && post.projectIds.length > 0) {
-					this.projectService.getByIds(post.projectIds, this.lang()).subscribe({
-						next: (projects) => {
-							this.projects.set(projects);
-							this.loadProjectTags(projects);
-						},
-						error: () => this.projects.set([]),
-					});
-				}
-			},
-			error: (error: unknown) => {
+
+		this.pendingTasks.run(async () => {
+			let post: PostDto;
+
+			try {
+				post = await firstValueFrom(this.postService.getBySlug(slug));
+			} catch (error: unknown) {
 				this.loading.set(false);
 				const code = (error as { error?: { code?: string } } | null)?.error?.code;
 
@@ -426,8 +416,31 @@ export class PostDetailComponent implements AfterViewInit {
 				}
 
 				this.error.set(this.translationService.translate('posts.failedToLoad'));
-			},
+				return;
+			}
+
+			this.post.set(post);
+			this.setPageMeta(post);
+
+			const content = this.content();
+			const render = content ? this.renderMarkdown(content.content) : Promise.resolve();
+
+			await Promise.all([render, this.loadTags(post), this.loadProjects(post)]);
 		});
+	}
+
+	private async loadProjects(post: PostDto): Promise<void> {
+		if (!post.projectIds || post.projectIds.length === 0) {
+			return;
+		}
+
+		try {
+			const projects = await firstValueFrom(this.projectService.getByIds(post.projectIds, this.lang()));
+			this.projects.set(projects);
+			await this.loadProjectTags(projects);
+		} catch {
+			this.projects.set([]);
+		}
 	}
 
 	private setPageMeta(post: PostDto): void {
@@ -444,34 +457,40 @@ export class PostDetailComponent implements AfterViewInit {
 		});
 	}
 
-	private loadTags(post: PostDto): void {
+	private async loadTags(post: PostDto): Promise<void> {
 		const ids = collectTagIds([post]);
+
 		if (ids.length === 0) {
 			this.tagMap.set(new Map());
 			this.seoService.setArticleTags([]);
 			return;
 		}
-		this.tagService.batch(ids).subscribe({
-			next: (tags) => {
-				this.tagMap.set(buildTagMap(tags));
-				this.seoService.setArticleTags(
-					tags.map((tag) => tagNameOfUtil(tag, this.lang())).filter((name) => name.length > 0),
-				);
-			},
-			error: () => this.tagMap.set(new Map()),
-		});
+
+		try {
+			const tags = await firstValueFrom(this.tagService.batch(ids));
+			this.tagMap.set(buildTagMap(tags));
+			this.seoService.setArticleTags(
+				tags.map((tag) => tagNameOfUtil(tag, this.lang())).filter((name) => name.length > 0),
+			);
+		} catch {
+			this.tagMap.set(new Map());
+		}
 	}
 
-	private loadProjectTags(projects: ProjectDto[]): void {
+	private async loadProjectTags(projects: ProjectDto[]): Promise<void> {
 		const ids = collectTagIds(projects);
+
 		if (ids.length === 0) {
 			this.projectTagMap.set(new Map());
 			return;
 		}
-		this.tagService.batch(ids).subscribe({
-			next: (tags) => this.projectTagMap.set(buildTagMap(tags)),
-			error: () => this.projectTagMap.set(new Map()),
-		});
+
+		try {
+			const tags = await firstValueFrom(this.tagService.batch(ids));
+			this.projectTagMap.set(buildTagMap(tags));
+		} catch {
+			this.projectTagMap.set(new Map());
+		}
 	}
 
 	readonly onReact = async (reactionType: ReactionType): Promise<void> => {
