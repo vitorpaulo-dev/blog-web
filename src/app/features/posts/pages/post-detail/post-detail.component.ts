@@ -256,9 +256,6 @@ import {
 				<hr class="my-8" />
 
 				<section class="flex flex-wrap items-center justify-between gap-2">
-					@if (reactionError(); as reactionErrorText) {
-						<p class="w-full text-red-400" role="alert">{{ reactionErrorText }}</p>
-					}
 					<div class="flex flex-wrap gap-2">
 						<button tuiChip class="inline-flex items-center gap-2" [disabled]="reactionBusy()" (click)="onReact('LOVE')">
 							<img loading="lazy" src="/reactions/red-heart.png" [alt]="'common.reactionLovedIt' | translate" class="w-5" />
@@ -342,7 +339,6 @@ export class PostDetailComponent implements AfterViewInit {
 	readonly tagMap = signal<Map<string, TagDto>>(new Map());
 	readonly projectTagMap = signal<Map<string, TagDto>>(new Map());
 	readonly reactionBusy = signal(false);
-	readonly reactionError = signal<string | null>(null);
 	readonly lang = this.languageService.language.asReadonly();
 	readonly postListLink = computed(() => this.languageService.prefixed('/post'));
 	readonly projectListLink = computed(() => this.languageService.prefixed('/project'));
@@ -498,14 +494,12 @@ export class PostDetailComponent implements AfterViewInit {
 		if (!this.isBrowser || !post || this.reactionBusy()) return;
 
 		this.reactionBusy.set(true);
-		this.reactionError.set(null);
 
 		try {
 			const result = await this.postService.reactTo(this.slug!, reactionType);
 			this.applyReactionCounts(post, result);
 		} catch {
 			const message = this.translationService.translate('common.reactionFailed');
-			this.reactionError.set(message);
 			this.toastService.open(message, {
 				appearance: 'error',
 				autoClose: 5000,
