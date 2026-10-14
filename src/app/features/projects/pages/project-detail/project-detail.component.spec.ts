@@ -322,3 +322,79 @@ describe('ProjectDetailComponent', () => {
     expect(fixture.nativeElement.querySelector('article')).toBeTruthy();
   });
 });
+
+describe('ProjectDetailComponent (server platform)', () => {
+  let fixture: ComponentFixture<ProjectDetailComponent>;
+  let component: ProjectDetailComponent;
+  let getBySlug: ReturnType<typeof vi.fn>;
+  let setPageMeta: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    getBySlug = vi.fn();
+    setPageMeta = vi.fn();
+
+    TestBed.configureTestingModule({
+      imports: [ProjectDetailComponent],
+      providers: [
+        provideTaiga(),
+        provideRouter([]),
+        { provide: ProjectService, useValue: { getBySlug } },
+        {
+          provide: LanguageService,
+          useValue: {
+            language: signal('ENGLISH'),
+            setLanguage: vi.fn(),
+            prefixed: (path: string) => path,
+          },
+        },
+        translationProvider(),
+        { provide: Router, useValue: { navigate: vi.fn() } },
+        { provide: TuiToastService, useValue: { open: vi.fn().mockReturnValue(of(true)) } },
+        { provide: TagService, useValue: { batch: vi.fn().mockReturnValue(of([])) } },
+        { provide: SeoService, useValue: { setPageMeta, setArticleTags: vi.fn(), setTitle: vi.fn() } },
+        { provide: PLATFORM_ID, useValue: 'server' },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: { get: () => 'test-project' },
+            },
+          },
+        },
+      ],
+    });
+
+    fixture = TestBed.createComponent(ProjectDetailComponent);
+    component = fixture.componentInstance;
+  });
+
+  it('renders the content branch on the server with SEO meta written from the fetched project', () => {
+    getBySlug.mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-project',
+        translations: { ENGLISH: { title: 'My Project', description: 'Project description' } },
+      }),
+    );
+
+    fixture.detectChanges();
+
+    expect(component.loading()).toBe(false);
+    expect(fixture.nativeElement.querySelector('p.sr-only')).toBeNull();
+    expect(fixture.nativeElement.querySelector('article')).toBeTruthy();
+    expect(setPageMeta).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders the error branch on the server when the fetch fails', () => {
+    getBySlug.mockReturnValue(throwError(() => ({ error: { code: 'PROJECT_SLUG_NOT_FOUND' } })));
+
+    fixture.detectChanges();
+    fixture.detectChanges();
+
+    expect(component.loading()).toBe(false);
+    expect(component.error()).toBe('This project could not be found.');
+
+    const alert: HTMLElement = fixture.nativeElement.querySelector('[role="alert"]');
+    expect(alert.textContent?.trim()).toBe('This project could not be found.');
+  });
+});
