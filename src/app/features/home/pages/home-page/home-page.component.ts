@@ -21,6 +21,7 @@ import { CommonModule, isPlatformServer } from '@angular/common';
 import { TuiCardLarge } from '@taiga-ui/layout';
 import { TuiChevron, TuiDataListWrapper, TuiSelect, TuiSkeleton, TuiToastService } from '@taiga-ui/kit';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
+import { formatReadingTime } from '../../../../core/util/reading-time.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../core/util/tag.util';
 import { LanguageService, Language } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
@@ -376,7 +377,7 @@ export class HomePageComponent {
 			date: post.createdAt,
 			routePrefix: this.postListLink(),
 			metaIcon: Timer02Icon,
-			metaText: `${post.estimatedReading || 5} ${this.translationService.translate('common.min', undefined, lang)}`,
+			metaText: formatReadingTime(post.estimatedReading),
 			chips: (post.tagIds ?? []).map(id => ({
 				icon: Tag01Icon,
 				label: tagNameOf(tags.get(id), lang),
