@@ -48,6 +48,7 @@ import { TranslationService } from '../../../../core/i18n/translation.service';
 import { LocalizedDatePipe } from '../../../../core/i18n/localized-date.pipe';
 import { SeoService } from '../../../../core/seo/seo.service';
 import { excerpt, extractToc, firstTranslation, TocItem, withHeadingIds } from '../../../../core/util/text.util';
+import { formatReadingTime } from '../../../../core/util/reading-time.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOfUtil } from '../../../../core/util/tag.util';
 import {
 	ContentCardComponent,
@@ -156,7 +157,7 @@ import {
 					<span class="inline-flex items-center gap-1">
 						<hugeicons-icon [icon]="Timer02Icon" [size]="16" [strokeWidth]="2.5" />
 
-						{{ p.estimatedReading || 5 }} {{ 'common.min' | translate }}
+						{{ formatReadingTime(p.estimatedReading) }}
 					</span>
 
 					<span>·</span>
@@ -642,4 +643,5 @@ export class PostDetailComponent implements AfterViewInit {
 	protected readonly websiteIcon = GlobalIcon;
 	protected readonly SourceCodeIcon = SourceCodeIcon;
 	protected readonly excerpt = excerpt;
+	protected readonly formatReadingTime = formatReadingTime;
 }

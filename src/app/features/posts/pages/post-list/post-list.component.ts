@@ -6,6 +6,7 @@ import { PostDto, PostService } from '../../data-access/post.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 import { CommonModule, isPlatformServer } from '@angular/common';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
+import { formatReadingTime } from '../../../../core/util/reading-time.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../core/util/tag.util';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
@@ -113,7 +114,7 @@ export class PostListComponent {
 			date: post.createdAt,
 			routePrefix: this.languageService.prefixed('/post'),
 			metaIcon: Timer02Icon,
-			metaText: `${post.estimatedReading || 5} ${this.translationService.translate('common.min', undefined, lang)}`,
+			metaText: formatReadingTime(post.estimatedReading),
 			chips: (post.tagIds ?? []).map(id => ({
 				icon: Tag01Icon,
 				label: tagNameOf(tags.get(id), lang),
