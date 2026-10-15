@@ -14,13 +14,13 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import {
+	ArrowLeftDoubleIcon,
+	ArrowRightDoubleIcon,
 	HeadphonesIcon,
 	HeadsetIcon,
 	Mic01Icon,
 	PauseIcon,
 	PlayIcon,
-	RotateLeft01Icon,
-	RotateRight01Icon,
 	VolumeHighIcon,
 	VolumeMute02Icon,
 } from '@hugeicons/core-free-icons';
@@ -329,7 +329,7 @@ export const STICKY_TOP = '1.25rem';
                             [disabled]="disabled()"
                             (click)="skipBack()"
                         >
-                            <hugeicons-icon [icon]="RotateLeft01Icon" [size]="18" [strokeWidth]="2.5" />
+                            <hugeicons-icon [icon]="ArrowLeftDoubleIcon" [size]="18" [strokeWidth]="2.5" />
                         </button>
 
                         <button
@@ -356,7 +356,7 @@ export const STICKY_TOP = '1.25rem';
                             [disabled]="disabled()"
                             (click)="skipForward()"
                         >
-                            <hugeicons-icon [icon]="RotateRight01Icon" [size]="18" [strokeWidth]="2.5" />
+                            <hugeicons-icon [icon]="ArrowRightDoubleIcon" [size]="18" [strokeWidth]="2.5" />
                         </button>
                     </div>
 
@@ -409,8 +409,8 @@ export class AudioPlayerComponent {
 	readonly Mic01Icon = Mic01Icon;
 	readonly PauseIcon = PauseIcon;
 	readonly PlayIcon = PlayIcon;
-	readonly RotateLeft01Icon = RotateLeft01Icon;
-	readonly RotateRight01Icon = RotateRight01Icon;
+	protected readonly ArrowRightDoubleIcon = ArrowRightDoubleIcon;
+	protected readonly ArrowLeftDoubleIcon = ArrowLeftDoubleIcon;
 	readonly VolumeHighIcon = VolumeHighIcon;
 	readonly VolumeMute02Icon = VolumeMute02Icon;
 
