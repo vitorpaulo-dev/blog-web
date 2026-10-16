@@ -91,6 +91,34 @@ describe('HomePageComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('loads the avatar eagerly as a sized LCP image with an accessible name', () => {
+    (postServiceMock.search as any).mockReturnValue(of({ content: [], totalPages: 0, totalElements: 0 }));
+    fixture.detectChanges();
+
+    const avatar = fixture.nativeElement.querySelector('img[src="vitor-avatar.webp"]') as HTMLImageElement;
+    expect(avatar.getAttribute('alt')).toBe('Vitor Paulo');
+    expect(avatar.getAttribute('width')).toBe('800');
+    expect(avatar.getAttribute('height')).toBe('800');
+    expect(avatar.getAttribute('fetchpriority')).toBe('high');
+    expect(avatar.getAttribute('loading')).toBeNull();
+  });
+
+  it('associates newsletter inputs with their visible labels', () => {
+    (postServiceMock.search as any).mockReturnValue(of({ content: [], totalPages: 0, totalElements: 0 }));
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const email = compiled.querySelector('input[formcontrolname="email"]');
+    const language = compiled.querySelector('input[formcontrolname="language"]');
+    const emailLabel = compiled.querySelector('#newsletter-email-label');
+    const languageLabel = compiled.querySelector('#newsletter-language-label');
+
+    expect(emailLabel?.textContent).toContain('Email');
+    expect(languageLabel?.textContent).toContain('Language');
+    expect(email?.getAttribute('aria-labelledby')).toBe('newsletter-email-label');
+    expect(language?.getAttribute('aria-labelledby')).toBe('newsletter-language-label');
+  });
+
   it('sets home meta on init', () => {
     (postServiceMock.search as any).mockReturnValue(of({ content: [], totalPages: 0, totalElements: 0 }));
 
