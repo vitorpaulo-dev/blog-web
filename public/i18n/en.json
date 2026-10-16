@@ -2,6 +2,7 @@
 	"common": {
 		"loading": "Loading...",
 		"cancel": "Cancel",
+		"search": "Search",
 		"delete": "Delete",
 		"backToDashboard": "Back to dashboard",
 		"cannotUndo": "This action cannot be undone.",

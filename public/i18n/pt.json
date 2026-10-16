@@ -2,6 +2,7 @@
 	"common": {
 		"loading": "Carregando...",
 		"cancel": "Cancelar",
+		"search": "Pesquisar",
 		"delete": "Excluir",
 		"backToDashboard": "Voltar ao painel",
 		"cannotUndo": "Esta ação não pode ser desfeita.",
