@@ -1,4 +1,12 @@
-import { buildLocaleSitemap, buildSitemapIndex, escapeXml, lastModifiedDate } from './sitemap';
+import {
+	buildLocaleSitemap,
+	buildSitemapIndex,
+	clearSitemapCache,
+	escapeXml,
+	lastModifiedDate,
+	loadSitemapCache,
+	sharedLastmod,
+} from './sitemap';
 
 describe('buildSitemapIndex', () => {
 	const siteUrl = 'https://vitorpaulo.dev';
@@ -131,5 +139,49 @@ describe('lastModifiedDate', () => {
 describe('escapeXml', () => {
 	it('escapes all XML entities', () => {
 		expect(escapeXml(`<a href="x">&'`)).toBe('&lt;a href=&quot;x&quot;&gt;&amp;&apos;');
+	});
+});
+
+describe('loadSitemapCache', () => {
+	function searchResponse(content: Array<{ slug: string; updatedAt: string }>, totalPages = 1) {
+		return { ok: true, json: async () => ({ content, totalPages }) } as unknown as Response;
+	}
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+		vi.restoreAllMocks();
+	});
+
+	it('collects entries from both search endpoints and caches the result', async () => {
+		clearSitemapCache();
+		const fetchMock = vi.fn((url: string) =>
+			Promise.resolve(
+				url.includes('/v1/post/search')
+					? searchResponse([{ slug: 'my-post', updatedAt: '2026-01-15T10:30:00Z' }])
+					: searchResponse([{ slug: 'my-project', updatedAt: '2026-02-20T08:00:00Z' }]),
+			),
+		);
+		vi.stubGlobal('fetch', fetchMock);
+
+		const cache = await loadSitemapCache();
+
+		expect(cache.posts.map((item) => item.slug)).toEqual(['my-post']);
+		expect(cache.projects.map((item) => item.slug)).toEqual(['my-project']);
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+
+		await loadSitemapCache();
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
+	it('warns and keeps an empty cache when the API is unreachable', async () => {
+		clearSitemapCache();
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+		vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('ECONNREFUSED'))));
+
+		const cache = await loadSitemapCache();
+
+		expect(warnSpy).toHaveBeenCalledTimes(1);
+		expect(cache.posts).toEqual([]);
+		expect(cache.projects).toEqual([]);
 	});
 });
