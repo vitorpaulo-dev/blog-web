@@ -13,7 +13,7 @@ import { Subscription } from 'rxjs';
 import { UploadService } from '../../core/upload/upload.service';
 
 const FALLBACK_URL = 'https://cataas.com/cat';
-const TRANSPARENT_IMAGE =
+export const TRANSPARENT_IMAGE =
 	'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
 
 const SKELETON_CLASS = 'img-skeleton';
@@ -23,12 +23,15 @@ const HANDLED_ATTRIBUTE = 'signHandled';
 const RAW_KEY_PATTERN =
 	/^(?:post|project)\/(?:banner|logo|content)\/[\w.-]+$/;
 
-function isRawKey(value: string | null): value is string {
+export function isRawKey(value: string | null): value is string {
 	return !!value && RAW_KEY_PATTERN.test(value);
 }
 
 function prepareImage(img: HTMLImageElement): void {
-	img.loading = 'lazy';
+	if (img.getAttribute('fetchpriority') !== 'high') {
+		img.loading = 'lazy';
+	}
+
 	img.classList.add(SKELETON_CLASS);
 
 	img.onload = () => {

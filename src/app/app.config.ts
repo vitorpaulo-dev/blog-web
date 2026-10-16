@@ -34,7 +34,24 @@ export const appConfig: ApplicationConfig = {
 		provideAppInitializer(() => {
 			if (isPlatformBrowser(inject(PLATFORM_ID))) {
 				const clerkService = inject(ClerkService);
-				afterNextRender(() => clerkService.init().catch(() => undefined));
+				afterNextRender(() => {
+					const loadClerk = () => {
+						globalThis.removeEventListener('pointerdown', loadClerk);
+						globalThis.removeEventListener('keydown', loadClerk);
+						globalThis.removeEventListener('scroll', loadClerk);
+						clerkService.init().catch(() => undefined);
+					};
+
+					globalThis.addEventListener('pointerdown', loadClerk);
+					globalThis.addEventListener('keydown', loadClerk);
+					globalThis.addEventListener('scroll', loadClerk);
+
+					if (typeof globalThis.requestIdleCallback === 'function') {
+						globalThis.requestIdleCallback(loadClerk, { timeout: 8000 });
+					} else {
+						setTimeout(loadClerk, 8000);
+					}
+				});
 			}
 			return inject(TranslationService).load();
 		}),
