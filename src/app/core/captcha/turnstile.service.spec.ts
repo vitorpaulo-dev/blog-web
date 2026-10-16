@@ -136,13 +136,68 @@ describe('TurnstileService', () => {
       expect(widget.reset).toHaveBeenCalledTimes(3);
     });
 
-    it('reset() delegates to the widget', () => {
-      renderWidget(vi.fn().mockReturnValue(''));
+    it('reset() delegates to the widget after a token acquisition', async () => {
+      const widget = renderWidget(vi.fn().mockReturnValue('tok-ready'));
 
       service = TestBed.inject(TurnstileService);
-      service.reset();
+      await expect(service.getToken()).resolves.toBe('tok-ready');
 
-      expect((window as any).turnstile.reset).toHaveBeenCalledWith(widgetId);
+      service.reset();
+      expect(widget.reset).toHaveBeenCalledWith(widgetId);
+    });
+
+    it('getToken() injects the turnstile script when absent and renders once it loads', async () => {
+      const scriptSelector = 'script[src*="challenges.cloudflare.com/turnstile"]';
+      document.head.querySelectorAll(scriptSelector).forEach((element) => element.remove());
+      delete (window as any).turnstile;
+
+      service = TestBed.inject(TurnstileService);
+      const acquisition = service.getToken();
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      const script = document.querySelector<HTMLScriptElement>(scriptSelector);
+      expect(script?.src).toBe('https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit');
+      expect(script?.async).toBe(true);
+
+      const widget = renderWidget(vi.fn().mockReturnValue('tok-lazy'));
+      script!.dispatchEvent(new Event('load'));
+
+      await expect(acquisition).resolves.toBe('tok-lazy');
+      expect(widget.render).toHaveBeenCalled();
+
+      document.head.querySelectorAll(scriptSelector).forEach((element) => element.remove());
+    });
+
+    it('re-injects a fresh script after the previous one failed to load', async () => {
+      const scriptSelector = 'script[src*="challenges.cloudflare.com/turnstile"]';
+      document.head.querySelectorAll(scriptSelector).forEach((element) => element.remove());
+      delete (window as any).turnstile;
+
+      service = TestBed.inject(TurnstileService);
+
+      const first = service.getToken();
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      const deadScript = document.querySelector(scriptSelector);
+      expect(deadScript).toBeTruthy();
+      deadScript!.dispatchEvent(new Event('error'));
+
+      await expect(first).resolves.toBeNull();
+      expect(document.querySelector(scriptSelector)).toBeNull();
+
+      const second = service.getToken();
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      const freshScript = document.querySelector<HTMLScriptElement>(scriptSelector);
+      expect(freshScript).toBeTruthy();
+      expect(freshScript).not.toBe(deadScript);
+
+      const widget = renderWidget(vi.fn().mockReturnValue('tok-retry'));
+      freshScript!.dispatchEvent(new Event('load'));
+
+      await expect(second).resolves.toBe('tok-retry');
+
+      document.head.querySelectorAll(scriptSelector).forEach((element) => element.remove());
     });
   });
 

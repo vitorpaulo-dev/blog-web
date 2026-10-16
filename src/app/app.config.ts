@@ -1,8 +1,8 @@
 import { provideTaiga } from '@taiga-ui/core';
-import { registerLocaleData } from '@angular/common';
+import { registerLocaleData, isPlatformBrowser } from '@angular/common';
 import localeEn from '@angular/common/locales/en';
 import localePt from '@angular/common/locales/pt';
-import { inject, provideAppInitializer, ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { inject, afterNextRender, provideAppInitializer, ApplicationConfig, provideBrowserGlobalErrorListeners, PLATFORM_ID } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 
@@ -32,7 +32,10 @@ export const appConfig: ApplicationConfig = {
 			}
 		}),
 		provideAppInitializer(() => {
-			void inject(ClerkService).init();
+			if (isPlatformBrowser(inject(PLATFORM_ID))) {
+				const clerkService = inject(ClerkService);
+				afterNextRender(() => clerkService.init().catch(() => undefined));
+			}
 			return inject(TranslationService).load();
 		}),
 	],

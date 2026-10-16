@@ -17,6 +17,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req);
   }
 
+  if (!clerkService.isLoaded()) {
+    clerkService.init().catch(() => undefined);
+  }
+
   if (!clerkService.isSignedIn()) {
     return next(req);
   }

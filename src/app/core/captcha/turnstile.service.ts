@@ -19,6 +19,8 @@ interface TurnstileWindow extends Window {
   turnstile?: TurnstileWidget;
 }
 
+const TURNSTILE_API_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+
 @Injectable({ providedIn: 'root' })
 export class TurnstileService {
   private static readonly MAX_TOKEN_ATTEMPTS = 3;
@@ -33,19 +35,14 @@ export class TurnstileService {
   private pendingToken: string | null = null;
   private tokenWaiters = new Set<(token: string | null) => void>();
   private acquisition: Promise<string | null> | null = null;
-
-  constructor() {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-
-    this.initialize();
-  }
+  private container: HTMLElement | null = null;
 
   async getToken(): Promise<string | null> {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
+
+    this.initialize();
 
     if (!this.acquisition) {
       this.acquisition = this.acquire().finally(() => {
@@ -134,9 +131,14 @@ export class TurnstileService {
   }
 
   private initialize(): void {
+    if (this.container || this.widgetId) {
+      return;
+    }
+
     const container = this.document.createElement('div');
     container.style.display = 'none';
     this.document.body.appendChild(container);
+    this.container = container;
 
     const turnstile = (window as TurnstileWindow).turnstile;
     if (turnstile) {
@@ -149,8 +151,26 @@ export class TurnstileService {
     );
     if (script) {
       script.addEventListener('load', () => this.render(container));
-      script.addEventListener('error', () => this.document.body.removeChild(container));
+      script.addEventListener('error', () => this.onScriptFailure(script, container));
+      return;
     }
+
+    const injected = this.document.createElement('script');
+    injected.src = TURNSTILE_API_URL;
+    injected.async = true;
+    injected.addEventListener('load', () => this.render(container));
+    injected.addEventListener('error', () => this.onScriptFailure(injected, container));
+    this.document.head.appendChild(injected);
+  }
+
+  private onScriptFailure(script: HTMLScriptElement, container: HTMLElement): void {
+    if (this.container !== container) {
+      return;
+    }
+
+    this.container = null;
+    script.remove();
+    container.remove();
   }
 
   private render(container: HTMLElement): void {
