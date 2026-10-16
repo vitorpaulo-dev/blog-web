@@ -457,4 +457,38 @@ describe('HomePageComponent (hydration seed)', () => {
     expect(mocks.postServiceMock.search).toHaveBeenCalledTimes(1);
     expect(fixture.componentInstance.posts().map((post) => post.slug)).toEqual(['fresh-post']);
   });
+
+  it('loads featured from the client when only the recent section is seeded', async () => {
+    const mocks = homeTestBed('browser');
+    TestBed.inject(TransferState).set(makeStateKey<GenericPageableResponse<PostDto>>('home-recent'), {
+      content: [{ id: '1', slug: 'seeded-post', tagIds: [], translations: { ENGLISH: { title: 'Seeded', content: 'X' } } }],
+      totalPages: 1,
+      totalElements: 1,
+    } as unknown as GenericPageableResponse<PostDto>);
+
+    const fixture = TestBed.createComponent(HomePageComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(mocks.postServiceMock.search).not.toHaveBeenCalled();
+    expect(mocks.postServiceMock.getFeatured).toHaveBeenCalledTimes(1);
+    expect(fixture.componentInstance.posts().map((post) => post.slug)).toEqual(['seeded-post']);
+    expect(fixture.componentInstance.featured().map((post) => post.slug)).toEqual(['featured-post']);
+  });
+
+  it('loads recent from the client when only the featured section is seeded', async () => {
+    const mocks = homeTestBed('browser');
+    TestBed.inject(TransferState).set(makeStateKey<PostDto[]>('home-featured'), [
+      { id: 'f1', slug: 'seeded-featured', tagIds: [], translations: { ENGLISH: { title: 'SF', content: '' } } },
+    ] as unknown as PostDto[]);
+
+    const fixture = TestBed.createComponent(HomePageComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(mocks.postServiceMock.getFeatured).not.toHaveBeenCalled();
+    expect(mocks.postServiceMock.search).toHaveBeenCalledTimes(1);
+    expect(fixture.componentInstance.featured().map((post) => post.slug)).toEqual(['seeded-featured']);
+    expect(fixture.componentInstance.posts().map((post) => post.slug)).toEqual(['server-post']);
+  });
 });

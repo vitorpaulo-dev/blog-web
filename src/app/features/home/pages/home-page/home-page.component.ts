@@ -341,7 +341,8 @@ export class HomePageComponent {
 	private readonly featuredSeedKey = makeStateKey<PostDto[]>('home-featured');
 	private readonly tagsSeedKey = makeStateKey<TagDto[]>('home-tags');
 
-	private skipNextLoad = false;
+	private skipRecentLoad = false;
+	private skipFeaturedLoad = false;
 
 	readonly newsletterForm = new FormGroup({
 		email: new FormControl('', {
@@ -416,13 +417,27 @@ export class HomePageComponent {
 		effect(() => {
 			this.languageService.language();
 
-			if (this.skipNextLoad) {
-				this.skipNextLoad = false;
+			const recentSeeded = this.skipRecentLoad;
+			const featuredSeeded = this.skipFeaturedLoad;
+			this.skipRecentLoad = false;
+			this.skipFeaturedLoad = false;
+
+			if (recentSeeded && featuredSeeded) {
 				return;
 			}
 
 			this.pendingTasks.run(async () => {
-				await Promise.all([this.loadRecent(), this.loadFeatured()]);
+				const tasks: Promise<void>[] = [];
+
+				if (!recentSeeded) {
+					tasks.push(this.loadRecent());
+				}
+
+				if (!featuredSeeded) {
+					tasks.push(this.loadFeatured());
+				}
+
+				await Promise.all(tasks);
 			});
 		});
 
@@ -439,19 +454,15 @@ export class HomePageComponent {
 		const recent = this.transferState.get(this.recentSeedKey, null);
 		const featured = this.transferState.get(this.featuredSeedKey, null);
 
-		if (recent === null && featured === null) {
-			return;
-		}
-
-		this.skipNextLoad = true;
-
 		if (recent) {
+			this.skipRecentLoad = true;
 			this.posts.set(recent.content);
 			this.postsLoading.set(false);
 			this.tagMap.set(buildTagMap(this.transferState.get(this.tagsSeedKey, null) ?? []));
 		}
 
 		if (featured) {
+			this.skipFeaturedLoad = true;
 			this.featured.set(featured);
 		}
 	}
