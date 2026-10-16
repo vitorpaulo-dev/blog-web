@@ -1,10 +1,11 @@
-import { Component, computed, effect, inject, PLATFORM_ID, signal } from '@angular/core';
+import { Component, computed, effect, inject, makeStateKey, PendingTasks, PLATFORM_ID, signal, TransferState } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { TuiPagination, TuiSkeleton, TuiToastService } from '@taiga-ui/kit';
 import { Tag01Icon, Timer02Icon } from '@hugeicons/core-free-icons';
-import { PostDto, PostService } from '../../data-access/post.service';
+import { GenericPageableResponse, PostDto, PostService } from '../../data-access/post.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
-import { CommonModule, isPlatformServer } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
 import { formatReadingTime } from '../../../../core/util/reading-time.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../core/util/tag.util';
@@ -12,6 +13,8 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { SeoService } from '../../../../core/seo/seo.service';
+import { UploadService } from '../../../../core/upload/upload.service';
+import { isRawKey } from '../../../../shared/directives/image-sign.directive';
 import { ContentCardComponent, ContentCardItem } from '../../../../shared/components/content-card/content-card.component';
 
 @Component({
@@ -74,7 +77,7 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 			} @else {
 				<div class="w-full">
 					@for (card of cardItems(); track card.slug; let index = $index) {
-						<app-content-card [item]="card" [showDivider]="index > 0" />
+						<app-content-card [item]="card" [showDivider]="index > 0" [eager]="index === 0" />
 					}
 				</div>
 				
@@ -91,6 +94,13 @@ export class PostListComponent {
 	private readonly toastService = inject(TuiToastService);
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly seoService = inject(SeoService);
+	private readonly pendingTasks = inject(PendingTasks);
+	private readonly transferState = inject(TransferState);
+	private readonly uploadService = inject(UploadService);
+	private readonly searchSeedKey = makeStateKey<GenericPageableResponse<PostDto>>('post-list-search');
+	private readonly tagsSeedKey = makeStateKey<TagDto[]>('post-list-tags');
+
+	private skipNextLoad = false;
 
 	query = '';
 	posts = signal<PostDto[]>([]);
@@ -128,6 +138,8 @@ export class PostListComponent {
 			description: 'All posts on vitorpaulo.dev. Read about software development, programming, and technology.',
 		});
 
+		this.applyServerSeed();
+
 		effect(() => {
 			this.languageService.language();
 			this.page();
@@ -136,47 +148,111 @@ export class PostListComponent {
 	}
 
 	load(): void {
-		if (isPlatformServer(this.platformId)) {
+		if (this.skipNextLoad) {
+			this.skipNextLoad = false;
 			return;
 		}
 
-		this.loading.set(true);
-		this.postService
-			.search({
-				query: { query: this.query || undefined },
-				page: this.page(),
-				size: 10,
-				sort: 'createdAt',
-				direction: 'DESC',
-			})
-			.subscribe({
-				next: (res) => {
-					this.posts.set(res.content);
-					this.totalPages.set(res.totalPages);
-					this.totalElements.set(res.totalElements);
-					this.loading.set(false);
-					this.loadTags(res.content);
-				},
-			error: () => {
+		this.pendingTasks.run(async () => {
+			this.loading.set(true);
+
+			try {
+				const res = await firstValueFrom(this.postService.search({
+					query: { query: this.query || undefined },
+					page: this.page(),
+					size: 10,
+					sort: 'createdAt',
+					direction: 'DESC',
+				}));
+
+				if (!isPlatformBrowser(this.platformId)) {
+					await this.signFirstBanner(res);
+				}
+
+				this.posts.set(res.content);
+				this.totalPages.set(res.totalPages);
+				this.totalElements.set(res.totalElements);
 				this.loading.set(false);
+				await this.loadTags(res.content);
+
+				if (!isPlatformBrowser(this.platformId)) {
+					this.transferState.set(this.searchSeedKey, res);
+				}
+			} catch {
+				this.loading.set(false);
+
+				if (!isPlatformBrowser(this.platformId)) {
+					return;
+				}
+
 				this.toastService.open(this.translationService.translate('posts.failedToLoad'), {
 					appearance: 'error',
 					autoClose: 5000,
 					data: '@tui.circle-x',
 				}).subscribe();
-			},
-			});
+			}
+		});
 	}
 
-	private loadTags(posts: PostDto[]): void {
+	private applyServerSeed(): void {
+		if (!isPlatformBrowser(this.platformId)) {
+			return;
+		}
+
+		const seeded = this.transferState.get(this.searchSeedKey, null);
+
+		if (!seeded) {
+			return;
+		}
+
+		this.skipNextLoad = true;
+		this.posts.set(seeded.content);
+		this.totalPages.set(seeded.totalPages);
+		this.totalElements.set(seeded.totalElements);
+		this.loading.set(false);
+
+		const seededTags = this.transferState.get(this.tagsSeedKey, null);
+
+		if (seededTags) {
+			this.tagMap.set(buildTagMap(seededTags));
+		}
+	}
+
+	private async loadTags(posts: PostDto[]): Promise<void> {
 		const ids = collectTagIds(posts);
+
 		if (ids.length === 0) {
 			this.tagMap.set(new Map());
 			return;
 		}
-		this.tagService.batch(ids).subscribe({
-			next: (tags) => this.tagMap.set(buildTagMap(tags)),
-			error: () => this.tagMap.set(new Map()),
-		});
+
+		try {
+			const tags = await firstValueFrom(this.tagService.batch(ids));
+			this.tagMap.set(buildTagMap(tags));
+
+			if (!isPlatformBrowser(this.platformId)) {
+				this.transferState.set(this.tagsSeedKey, tags);
+			}
+		} catch {
+			this.tagMap.set(new Map());
+		}
+	}
+
+	private async signFirstBanner(res: GenericPageableResponse<PostDto>): Promise<void> {
+		const first = res.content[0];
+		const key = first?.bannerUrl;
+
+		if (!key || !isRawKey(key)) {
+			return;
+		}
+
+		try {
+			const urls = await firstValueFrom(this.uploadService.sign([key]));
+			const url = urls[key];
+
+			if (url) {
+				first.bannerUrl = url;
+			}
+		} catch {}
 	}
 }

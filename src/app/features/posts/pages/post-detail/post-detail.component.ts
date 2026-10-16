@@ -223,12 +223,12 @@ import {
 								</nav>
 							}
 
-							<a href="https://hypehost.com.br/?aff=78" target="_blank" rel="noopener noreferrer" class="opacity-50 hover:opacity-100 transition-opacity duration-300 ease-in-out">
+							<a href="https://hypehost.com.br/?aff=78" target="_blank" rel="noopener noreferrer" class="w-32 opacity-50 hover:opacity-100 transition-opacity duration-300 ease-in-out">
 								<img
 									src="/ads/hypehost-banner.png"
 									alt="Advertisement"
 									loading="lazy"
-									class="w-full h-auto rounded-lg"
+									class="object-fit w-40 h-auto rounded-lg"
 								/>
 							</a>
 						</div>
@@ -545,7 +545,7 @@ export class PostDetailComponent implements AfterViewInit {
 				: null;
 
 			if (serverHtml) {
-				this.html.set(this.markdownService.sanitizeHtml(serverHtml));
+				this.html.set(await this.markdownService.restoreServerHtml(serverHtml));
 				this.toc.set(extractToc(serverHtml));
 				this.loading.set(false);
 				return;

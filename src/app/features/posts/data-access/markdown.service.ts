@@ -1,9 +1,12 @@
 import { ApplicationRef, createComponent, ElementRef, EnvironmentInjector, inject, Injectable } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { Marked, MarkedExtension, Tokens } from 'marked';
 import DOMPurify from 'dompurify';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Alert02Icon, BiohazardIcon, BulbIcon, ExclamationMarkBigIcon, NoteIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { UploadService } from '../../../core/upload/upload.service';
+import { isRawKey, TRANSPARENT_IMAGE } from '../../../shared/directives/image-sign.directive';
 
 export type CalloutType = 'note' | 'tip' | 'important' | 'warning' | 'caution';
 
@@ -31,11 +34,18 @@ const CALLOUT_RE = /^ {0,3}>[ \t]*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)][ \t]*
 
 const MARKDOWN_ALLOWED_ATTR = ['class', 'data-mermaid', 'id'];
 
+const IMG_TAG_RE = /<img\b[^>]*>/gi;
+const IMG_SRC_RE = /\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
+const IMG_LOADING_RE = /\sloading\s*=\s*(?:"[^"]*"|'[^']*')/i;
+
+const ALLOWED_IMAGE_HOSTS = ['cdn.vitorpaulo.dev'];
+
 @Injectable({ providedIn: 'root' })
 export class MarkdownService {
 	private readonly sanitizer = inject(DomSanitizer);
 	private readonly appRef = inject(ApplicationRef);
 	private readonly environmentInjector = inject(EnvironmentInjector);
+	private readonly uploadService = inject(UploadService);
 
 	markdownRendererPromise: Promise<Marked> | null = null;
 
@@ -116,16 +126,106 @@ export class MarkdownService {
 		});
 
 		if (!isBrowser) {
-			return raw;
+			return this.finalizeContentImages(this.sanitize(raw));
 		}
 
-		return this.sanitizeHtml(raw);
+		return this.sanitizer.bypassSecurityTrustHtml(
+			await this.finalizeContentImages(this.sanitize(raw))
+		);
 	}
 
-	sanitizeHtml(html: string): SafeHtml {
+	async restoreServerHtml(html: string): Promise<SafeHtml> {
 		return this.sanitizer.bypassSecurityTrustHtml(
-			DOMPurify.sanitize(html, { ADD_ATTR: MARKDOWN_ALLOWED_ATTR })
+			await this.finalizeContentImages(this.sanitize(html))
 		);
+	}
+
+	async finalizeContentImages(html: string): Promise<string> {
+		const keys: string[] = [];
+
+		for (const match of html.matchAll(IMG_TAG_RE)) {
+			const key = this.rawImageKey(match[0]);
+
+			if (key) {
+				keys.push(key);
+			}
+		}
+
+		let urls: Record<string, string> = {};
+
+		if (keys.length > 0) {
+			try {
+				urls = await firstValueFrom(this.uploadService.sign([...new Set(keys)]));
+			} catch {
+				urls = {};
+			}
+		}
+
+		let imageIndex = 0;
+
+		return html.replace(IMG_TAG_RE, (tag) => this.finalizeImageTag(tag, urls, imageIndex++ === 0));
+	}
+
+	private finalizeImageTag(tag: string, urls: Record<string, string>, isFirst: boolean): string {
+		let result = tag;
+		const src = this.imageSrc(result);
+		const key = src && isRawKey(src) ? src : null;
+
+		let safeSrc: string | null = null;
+
+		if (key) {
+			const url = urls[key];
+			safeSrc = this.isAllowedImageUrl(url) ? url : TRANSPARENT_IMAGE;
+		} else if (src === null || (src !== TRANSPARENT_IMAGE && !this.isAllowedImageUrl(src))) {
+			safeSrc = TRANSPARENT_IMAGE;
+		}
+
+		if (safeSrc !== null) {
+			result = result.replace(IMG_SRC_RE, `src="${safeSrc.replace(/&/g, '&amp;')}"`);
+		}
+
+		if (isFirst) {
+			result = result.replace(IMG_LOADING_RE, '');
+
+			if (!/fetchpriority\s*=/i.test(result)) {
+				result = result.replace(/^<img/i, '<img fetchpriority="high"');
+			}
+
+			return result;
+		}
+
+		if (!/\sloading\s*=/i.test(result)) {
+			result = result.replace(/^<img/i, '<img loading="lazy"');
+		}
+
+		return result;
+	}
+
+	private isAllowedImageUrl(value: string | null | undefined): boolean {
+		if (!value || /["'<>\s]/.test(value) || !/^https:\/\//i.test(value)) {
+			return false;
+		}
+
+		try {
+			return ALLOWED_IMAGE_HOSTS.includes(new URL(value).hostname);
+		} catch {
+			return false;
+		}
+	}
+
+	private imageSrc(imgTag: string): string | null {
+		const src = imgTag.match(IMG_SRC_RE);
+		return src ? src[1] ?? src[2] : null;
+	}
+
+	private rawImageKey(imgTag: string): string | null {
+		const value = this.imageSrc(imgTag);
+
+		return isRawKey(value) ? value : null;
+	}
+
+	private sanitize(html: string): string {
+		return DOMPurify.sanitize(html, { ADD_ATTR: MARKDOWN_ALLOWED_ATTR });
 	}
 
 	async renderArticle(articleEl: ElementRef<HTMLElement> | undefined): Promise<void> {

@@ -44,7 +44,8 @@ export interface ContentCardItem {
 					<img
 						[appImageSign]="item().imageUrl ?? ''"
 						[alt]="item().title"
-						loading="lazy"
+						[attr.loading]="eager() ? 'eager' : 'lazy'"
+						[attr.fetchpriority]="eager() ? 'high' : null"
 						class="w-full h-full object-cover group-hover:scale-105 transition-transform"
 					/>
 				</div>
@@ -87,6 +88,7 @@ export interface ContentCardItem {
 export class ContentCardComponent {
 	item = input.required<ContentCardItem>();
 	showDivider = input(false);
+	eager = input(false);
 
 	protected readonly Calendar01Icon = Calendar01Icon;
 }

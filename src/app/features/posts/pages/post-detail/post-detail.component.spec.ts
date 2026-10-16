@@ -10,7 +10,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { TuiToastService } from '@taiga-ui/kit';
 import { makeStateKey, signal, TransferState } from '@angular/core';
-import { DomSanitizer } from '@angular/platform-browser';
 import { PLATFORM_ID } from '@angular/core';
 import { SeoService } from '../../../../core/seo/seo.service';
 import { TagService } from '../../../tags/data-access/tag.service';
@@ -54,7 +53,7 @@ describe('PostDetailComponent', () => {
     markdownServiceMock = {
       renderMarkdown: vi.fn().mockResolvedValue('<p>Test</p>'),
       renderArticle: vi.fn(),
-      sanitizeHtml: vi.fn((html: string) => html as never),
+      restoreServerHtml: vi.fn((html: string) => Promise.resolve(html as never)),
     };
 
     routerMock = {
@@ -350,9 +349,8 @@ describe('PostDetailComponent', () => {
   });
 
   it('reuses server-rendered markdown from transfer state without re-rendering', async () => {
-    const sanitizer = TestBed.inject(DomSanitizer);
-    markdownServiceMock.sanitizeHtml = vi.fn(
-      (html: string) => sanitizer.bypassSecurityTrustHtml(html) as never,
+    markdownServiceMock.restoreServerHtml = vi.fn(
+      (html: string) => Promise.resolve(html as never),
     );
     (postServiceMock.getBySlug as any).mockReturnValue(
       of({
@@ -371,7 +369,7 @@ describe('PostDetailComponent', () => {
     await vi.waitFor(() => expect(component.loading()).toBe(false));
 
     expect(markdownServiceMock.renderMarkdown).not.toHaveBeenCalled();
-    expect(markdownServiceMock.sanitizeHtml).toHaveBeenCalledWith('<h1 id="hello">Hello</h1>');
+    expect(markdownServiceMock.restoreServerHtml).toHaveBeenCalledWith('<h1 id="hello">Hello</h1>');
     expect(component.toc()).toEqual([{ id: 'hello', text: 'Hello', level: 1 }]);
   });
 
@@ -479,7 +477,7 @@ describe('PostDetailComponent (server platform)', () => {
           },
         },
         translationProvider(),
-        { provide: MarkdownService, useValue: { renderMarkdown, renderArticle: vi.fn(), sanitizeHtml: (html: string) => html } },
+        { provide: MarkdownService, useValue: { renderMarkdown, renderArticle: vi.fn(), restoreServerHtml: (html: string) => Promise.resolve(html as never) } },
         { provide: Router, useValue: { navigate: vi.fn() } },
         { provide: TuiToastService, useValue: { open: vi.fn().mockReturnValue(of(true)) } },
         { provide: SeoService, useValue: { setPageMeta, setArticleTags: vi.fn(), setTitle: vi.fn() } },
