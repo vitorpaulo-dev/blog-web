@@ -1,9 +1,12 @@
 import { ApplicationRef, createComponent, ElementRef, EnvironmentInjector, inject, Injectable } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { Marked, MarkedExtension, Tokens } from 'marked';
 import DOMPurify from 'dompurify';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Alert02Icon, BiohazardIcon, BulbIcon, ExclamationMarkBigIcon, NoteIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { UploadService } from '../../../core/upload/upload.service';
+import { isRawKey, TRANSPARENT_IMAGE } from '../../../shared/directives/image-sign.directive';
 
 export type CalloutType = 'note' | 'tip' | 'important' | 'warning' | 'caution';
 
@@ -31,11 +34,16 @@ const CALLOUT_RE = /^ {0,3}>[ \t]*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)][ \t]*
 
 const MARKDOWN_ALLOWED_ATTR = ['class', 'data-mermaid', 'id'];
 
+const IMG_TAG_RE = /<img\b[^>]*>/gi;
+const IMG_SRC_RE = /\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
+const IMG_LOADING_RE = /\sloading\s*=\s*(?:"[^"]*"|'[^']*')/i;
+
 @Injectable({ providedIn: 'root' })
 export class MarkdownService {
 	private readonly sanitizer = inject(DomSanitizer);
 	private readonly appRef = inject(ApplicationRef);
 	private readonly environmentInjector = inject(EnvironmentInjector);
+	private readonly uploadService = inject(UploadService);
 
 	markdownRendererPromise: Promise<Marked> | null = null;
 
@@ -116,16 +124,81 @@ export class MarkdownService {
 		});
 
 		if (!isBrowser) {
-			return raw;
+			return this.finalizeContentImages(raw);
 		}
 
-		return this.sanitizeHtml(raw);
+		return this.sanitizer.bypassSecurityTrustHtml(
+			await this.finalizeContentImages(this.sanitize(raw))
+		);
 	}
 
-	sanitizeHtml(html: string): SafeHtml {
+	async restoreServerHtml(html: string): Promise<SafeHtml> {
 		return this.sanitizer.bypassSecurityTrustHtml(
-			DOMPurify.sanitize(html, { ADD_ATTR: MARKDOWN_ALLOWED_ATTR })
+			await this.finalizeContentImages(this.sanitize(html))
 		);
+	}
+
+	async finalizeContentImages(html: string): Promise<string> {
+		const keys: string[] = [];
+
+		for (const match of html.matchAll(IMG_TAG_RE)) {
+			const key = this.rawImageKey(match[0]);
+
+			if (key) {
+				keys.push(key);
+			}
+		}
+
+		let urls: Record<string, string> = {};
+
+		if (keys.length > 0) {
+			try {
+				urls = await firstValueFrom(this.uploadService.sign([...new Set(keys)]));
+			} catch {
+				urls = {};
+			}
+		}
+
+		let imageIndex = 0;
+
+		return html.replace(IMG_TAG_RE, (tag) => this.finalizeImageTag(tag, urls, imageIndex++ === 0));
+	}
+
+	private finalizeImageTag(tag: string, urls: Record<string, string>, isFirst: boolean): string {
+		let result = tag;
+		const key = this.rawImageKey(result);
+
+		if (key) {
+			const url = urls[key];
+			result = result.replace(IMG_SRC_RE, `src="${url ? url.replace(/&/g, '&amp;') : TRANSPARENT_IMAGE}"`);
+		}
+
+		if (isFirst) {
+			result = result.replace(IMG_LOADING_RE, '');
+
+			if (!/fetchpriority\s*=/i.test(result)) {
+				result = result.replace(/^<img/i, '<img fetchpriority="high"');
+			}
+
+			return result;
+		}
+
+		if (!/\sloading\s*=/i.test(result)) {
+			result = result.replace(/^<img/i, '<img loading="lazy"');
+		}
+
+		return result;
+	}
+
+	private rawImageKey(imgTag: string): string | null {
+		const src = imgTag.match(IMG_SRC_RE);
+		const value = src ? src[1] ?? src[2] : null;
+
+		return isRawKey(value) ? value : null;
+	}
+
+	private sanitize(html: string): string {
+		return DOMPurify.sanitize(html, { ADD_ATTR: MARKDOWN_ALLOWED_ATTR });
 	}
 
 	async renderArticle(articleEl: ElementRef<HTMLElement> | undefined): Promise<void> {
