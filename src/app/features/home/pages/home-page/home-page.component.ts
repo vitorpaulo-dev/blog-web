@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, PLATFORM_ID, signal } from '@angular/core';
+import { Component, computed, effect, inject, PLATFORM_ID, PendingTasks, signal, TransferState, makeStateKey } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { TuiAppearance, TuiButton, TuiDropdown, TuiError, TuiInput, TuiLink, TuiTextfield } from '@taiga-ui/core';
@@ -13,11 +13,11 @@ import {
 	Tag01Icon,
 	Timer02Icon,
 } from '@hugeicons/core-free-icons';
-import { PostDto, PostService } from '../../../posts/data-access/post.service';
+import { GenericPageableResponse, PostDto, PostService } from '../../../posts/data-access/post.service';
 import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 import { Frequency as SubscriberFrequency, NewsletterService } from '../../../dashboard/data-access/newsletter.service';
 import { RouterLink } from '@angular/router';
-import { CommonModule, isPlatformServer } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { TuiCardLarge } from '@taiga-ui/layout';
 import { TuiChevron, TuiDataListWrapper, TuiSelect, TuiSkeleton, TuiToastService } from '@taiga-ui/kit';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
@@ -27,6 +27,8 @@ import { LanguageService, Language } from '../../../../core/i18n/language.servic
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { SeoService } from '../../../../core/seo/seo.service';
+import { UploadService } from '../../../../core/upload/upload.service';
+import { isRawKey } from '../../../../shared/directives/image-sign.directive';
 import { ContentCardComponent, ContentCardItem } from '../../../../shared/components/content-card/content-card.component';
 import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 
@@ -134,7 +136,7 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 				} @else {
 					<div class="w-full">
 						@for (card of cardItems(); track card.slug; let index = $index) {
-							<app-content-card [item]="card" [showDivider]="index > 0" />
+							<app-content-card [item]="card" [showDivider]="index > 0" [eager]="index === 0" />
 						}
 					</div>
 				}
@@ -332,6 +334,14 @@ export class HomePageComponent {
 	private readonly turnstileService = inject(TurnstileService);
 	private readonly newsletterService = inject(NewsletterService);
 	private readonly seoService = inject(SeoService);
+	private readonly pendingTasks = inject(PendingTasks);
+	private readonly transferState = inject(TransferState);
+	private readonly uploadService = inject(UploadService);
+	private readonly recentSeedKey = makeStateKey<GenericPageableResponse<PostDto>>('home-recent');
+	private readonly featuredSeedKey = makeStateKey<PostDto[]>('home-featured');
+	private readonly tagsSeedKey = makeStateKey<TagDto[]>('home-tags');
+
+	private skipNextLoad = false;
 
 	readonly newsletterForm = new FormGroup({
 		email: new FormControl('', {
@@ -401,13 +411,19 @@ export class HomePageComponent {
 			description: 'I write about programming, technology, and the projects I build, sharing things I learn, experiments I try, and ideas I find interesting along the way.',
 		});
 
+		this.applyServerSeed();
+
 		effect(() => {
-			if (isPlatformServer(this.platformId)) {
+			this.languageService.language();
+
+			if (this.skipNextLoad) {
+				this.skipNextLoad = false;
 				return;
 			}
 
-			this.loadRecent();
-			this.loadFeatured();
+			this.pendingTasks.run(async () => {
+				await Promise.all([this.loadRecent(), this.loadFeatured()]);
+			});
 		});
 
 		effect(() => {
@@ -415,52 +431,114 @@ export class HomePageComponent {
 		});
 	}
 
-	private loadFeatured(): void {
-		this.postService.getFeatured(this.languageService.language()).subscribe({
-			next: (posts) => this.featured.set(posts),
-			error: () => this.featured.set([]),
-		});
+	private applyServerSeed(): void {
+		if (!isPlatformBrowser(this.platformId)) {
+			return;
+		}
+
+		const recent = this.transferState.get(this.recentSeedKey, null);
+		const featured = this.transferState.get(this.featuredSeedKey, null);
+
+		if (recent === null && featured === null) {
+			return;
+		}
+
+		this.skipNextLoad = true;
+
+		if (recent) {
+			this.posts.set(recent.content);
+			this.postsLoading.set(false);
+			this.tagMap.set(buildTagMap(this.transferState.get(this.tagsSeedKey, null) ?? []));
+		}
+
+		if (featured) {
+			this.featured.set(featured);
+		}
+	}
+
+	private async loadFeatured(): Promise<void> {
+		try {
+			const posts = await firstValueFrom(this.postService.getFeatured(this.languageService.language()));
+			this.featured.set(posts);
+
+			if (!isPlatformBrowser(this.platformId)) {
+				this.transferState.set(this.featuredSeedKey, posts);
+			}
+		} catch {
+			this.featured.set([]);
+		}
 	}
 
 	protected firstTranslation = firstTranslation;
 
-	private loadRecent(): void {
+	private async loadRecent(): Promise<void> {
 		this.postsLoading.set(true);
-		this.postService
-			.search({
+
+		try {
+			const response = await firstValueFrom(this.postService.search({
 				query: { query: undefined },
 				page: 0,
 				size: 5,
 				sort: 'createdAt',
 				direction: 'DESC',
-			})
-			.subscribe({
-				next: (r) => {
-					this.posts.set(r.content);
-					this.postsLoading.set(false);
-					this.loadTags(r.content);
-				},
-		error: () => {
+			}));
+
+			if (!isPlatformBrowser(this.platformId)) {
+				await this.signFirstBanner(response);
+			}
+
+			this.posts.set(response.content);
 			this.postsLoading.set(false);
-			this.toastService.open(this.translationService.translate('home.failedToLoad'), {
-				appearance: 'error',
-				autoClose: 5000,
-				data: '@tui.circle-x',
-			}).subscribe();
-		},
-			});
+			await this.loadTags(response.content);
+
+			if (!isPlatformBrowser(this.platformId)) {
+				this.transferState.set(this.recentSeedKey, response);
+			}
+		} catch {
+			if (!isPlatformBrowser(this.platformId)) {
+				return;
+			}
+
+			this.postsLoading.set(false);
+			this.openToast(this.translationService.translate('home.failedToLoad'));
+		}
 	}
 
-	private loadTags(posts: PostDto[]): void {
+	private async loadTags(posts: PostDto[]): Promise<void> {
 		const ids = collectTagIds(posts);
 		if (ids.length === 0) {
 			this.tagMap.set(new Map());
 			return;
 		}
-		this.tagService.batch(ids).subscribe({
-			next: (tags) => this.tagMap.set(buildTagMap(tags)),
-			error: () => this.tagMap.set(new Map()),
-		});
+
+		try {
+			const tags = await firstValueFrom(this.tagService.batch(ids));
+			this.tagMap.set(buildTagMap(tags));
+
+			if (!isPlatformBrowser(this.platformId)) {
+				this.transferState.set(this.tagsSeedKey, tags);
+			}
+		} catch {
+			this.tagMap.set(new Map());
+		}
+	}
+
+	private async signFirstBanner(res: GenericPageableResponse<PostDto>): Promise<void> {
+		const first = res.content[0];
+		const key = first?.bannerUrl;
+
+		if (!key || !isRawKey(key)) {
+			return;
+		}
+
+		try {
+			const urls = await firstValueFrom(this.uploadService.sign([key]));
+			const url = urls[key];
+
+			if (url) {
+				first.bannerUrl = url;
+			}
+		} catch {}
 	}
 
 	readonly subscribe = async (): Promise<void> => {

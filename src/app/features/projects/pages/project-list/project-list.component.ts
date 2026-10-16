@@ -1,12 +1,16 @@
-import { Component, computed, effect, inject, PLATFORM_ID, signal } from '@angular/core';
+import { Component, computed, effect, inject, makeStateKey, PendingTasks, PLATFORM_ID, signal, TransferState } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { TuiPagination, TuiSkeleton, TuiToastService } from '@taiga-ui/kit';
 import { EyeIcon, SourceCodeIcon } from '@hugeicons/core-free-icons';
-import { CommonModule, isPlatformServer } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { GenericPageableResponse } from '../../../posts/data-access/post.service';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 import { SeoService } from '../../../../core/seo/seo.service';
+import { UploadService } from '../../../../core/upload/upload.service';
+import { isRawKey } from '../../../../shared/directives/image-sign.directive';
 import { excerpt, firstTranslation } from '../../../../core/util/text.util';
 import { buildTagMap, collectTagIds, tagName as tagNameOf } from '../../../../core/util/tag.util';
 import { ProjectDto, ProjectService } from '../../data-access/project.service';
@@ -73,7 +77,7 @@ import { ContentCardComponent, ContentCardItem } from '../../../../shared/compon
 			} @else {
 				<div class="w-full">
 					@for (card of cardItems(); track card.slug; let index = $index) {
-						<app-content-card [item]="card" [showDivider]="index > 0" />
+						<app-content-card [item]="card" [showDivider]="index > 0" [eager]="index === 0" />
 					}
 				</div>
 
@@ -90,6 +94,13 @@ export class ProjectListComponent {
 	private readonly toastService = inject(TuiToastService);
 	private readonly platformId = inject(PLATFORM_ID);
 	private readonly seoService = inject(SeoService);
+	private readonly pendingTasks = inject(PendingTasks);
+	private readonly transferState = inject(TransferState);
+	private readonly uploadService = inject(UploadService);
+	private readonly searchSeedKey = makeStateKey<GenericPageableResponse<ProjectDto>>('project-list-search');
+	private readonly tagsSeedKey = makeStateKey<TagDto[]>('project-list-tags');
+
+	private skipNextLoad = false;
 
 	projects = signal<ProjectDto[]>([]);
 	loading = signal(false);
@@ -126,6 +137,8 @@ export class ProjectListComponent {
 			description: 'I write about programming, technology, and the projects I build, sharing things I learn, experiments I try, and ideas I find interesting along the way.',
 		});
 
+		this.applyServerSeed();
+
 		effect(() => {
 			this.languageService.language();
 			this.page();
@@ -134,47 +147,117 @@ export class ProjectListComponent {
 	}
 
 	load(): void {
-		if (isPlatformServer(this.platformId)) {
+		if (this.skipNextLoad) {
+			this.skipNextLoad = false;
 			return;
 		}
 
-		this.loading.set(true);
-		this.projectService
-			.search({
-				query: {},
-				page: this.page(),
-				size: 10,
-				sort: 'createdAt',
-				direction: 'DESC',
-			})
-			.subscribe({
-				next: (res) => {
-					this.projects.set(res.content);
-					this.totalPages.set(res.totalPages);
-					this.totalElements.set(res.totalElements);
-					this.loading.set(false);
-					this.loadTags(res.content);
-				},
-			error: () => {
+		this.pendingTasks.run(async () => {
+			this.loading.set(true);
+
+			try {
+				const res = await firstValueFrom(this.projectService.search({
+					query: {},
+					page: this.page(),
+					size: 10,
+					sort: 'createdAt',
+					direction: 'DESC',
+				}));
+
+				if (!isPlatformBrowser(this.platformId)) {
+					await this.signFirstBanner(res);
+				}
+
+				this.projects.set(res.content);
+				this.totalPages.set(res.totalPages);
+				this.totalElements.set(res.totalElements);
 				this.loading.set(false);
+				await this.loadTags(res.content);
+
+				if (!isPlatformBrowser(this.platformId)) {
+					this.transferState.set(this.searchSeedKey, res);
+				}
+			} catch {
+				this.loading.set(false);
+
+				if (!isPlatformBrowser(this.platformId)) {
+					return;
+				}
+
 				this.toastService.open(this.translationService.translate('projects.failedToLoad'), {
 					appearance: 'error',
 					autoClose: 5000,
 					data: '@tui.circle-x',
 				}).subscribe();
-			},
-			});
+			}
+		});
 	}
 
-	private loadTags(projects: ProjectDto[]): void {
+	private applyServerSeed(): void {
+		if (!isPlatformBrowser(this.platformId)) {
+			return;
+		}
+
+		const seeded = this.transferState.get(this.searchSeedKey, null);
+
+		if (!seeded) {
+			return;
+		}
+
+		this.skipNextLoad = true;
+		this.projects.set(seeded.content);
+		this.totalPages.set(seeded.totalPages);
+		this.totalElements.set(seeded.totalElements);
+		this.loading.set(false);
+
+		const seededTags = this.transferState.get(this.tagsSeedKey, null);
+
+		if (seededTags) {
+			this.tagMap.set(buildTagMap(seededTags));
+		}
+	}
+
+	private async loadTags(projects: ProjectDto[]): Promise<void> {
 		const ids = collectTagIds(projects);
+
 		if (ids.length === 0) {
 			this.tagMap.set(new Map());
 			return;
 		}
-		this.tagService.batch(ids).subscribe({
-			next: (tags) => this.tagMap.set(buildTagMap(tags)),
-			error: () => this.tagMap.set(new Map()),
-		});
+
+		try {
+			const tags = await firstValueFrom(this.tagService.batch(ids));
+			this.tagMap.set(buildTagMap(tags));
+
+			if (!isPlatformBrowser(this.platformId)) {
+				this.transferState.set(this.tagsSeedKey, tags);
+			}
+		} catch {
+			this.tagMap.set(new Map());
+		}
+	}
+
+	private async signFirstBanner(res: GenericPageableResponse<ProjectDto>): Promise<void> {
+		const first = res.content[0];
+		const key = first ? first.logoUrl || first.bannerUrl : null;
+
+		if (!key || !isRawKey(key)) {
+			return;
+		}
+
+		try {
+			const urls = await firstValueFrom(this.uploadService.sign([key]));
+			const url = urls[key];
+
+			if (!url) {
+				return;
+			}
+
+			if (first.logoUrl) {
+				first.logoUrl = url;
+			} else {
+				first.bannerUrl = url;
+			}
+		} catch {}
 	}
 }
