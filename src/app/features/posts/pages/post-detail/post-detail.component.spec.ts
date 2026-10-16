@@ -9,7 +9,8 @@ import { MarkdownService } from '../../data-access/markdown.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { TuiToastService } from '@taiga-ui/kit';
-import { signal } from '@angular/core';
+import { makeStateKey, signal, TransferState } from '@angular/core';
+import { DomSanitizer } from '@angular/platform-browser';
 import { PLATFORM_ID } from '@angular/core';
 import { SeoService } from '../../../../core/seo/seo.service';
 import { TagService } from '../../../tags/data-access/tag.service';
@@ -53,6 +54,7 @@ describe('PostDetailComponent', () => {
     markdownServiceMock = {
       renderMarkdown: vi.fn().mockResolvedValue('<p>Test</p>'),
       renderArticle: vi.fn(),
+      sanitizeHtml: vi.fn((html: string) => html as never),
     };
 
     routerMock = {
@@ -347,6 +349,32 @@ describe('PostDetailComponent', () => {
     expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'smooth' });
   });
 
+  it('reuses server-rendered markdown from transfer state without re-rendering', async () => {
+    const sanitizer = TestBed.inject(DomSanitizer);
+    markdownServiceMock.sanitizeHtml = vi.fn(
+      (html: string) => sanitizer.bypassSecurityTrustHtml(html) as never,
+    );
+    (postServiceMock.getBySlug as any).mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-post',
+        translations: { ENGLISH: { title: 'Test', content: '# Hello' } },
+      }),
+    );
+    TestBed.inject(TransferState).set(
+      makeStateKey<string>('post-detail-html-test-post'),
+      '<h1 id="hello">Hello</h1>',
+    );
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await vi.waitFor(() => expect(component.loading()).toBe(false));
+
+    expect(markdownServiceMock.renderMarkdown).not.toHaveBeenCalled();
+    expect(markdownServiceMock.sanitizeHtml).toHaveBeenCalledWith('<h1 id="hello">Hello</h1>');
+    expect(component.toc()).toEqual([{ id: 'hello', text: 'Hello', level: 1 }]);
+  });
+
   it('renders the full TOC expanded with level indentation and no toggles', async () => {
     (postServiceMock.getBySlug as any).mockReturnValue(
       of({
@@ -451,7 +479,7 @@ describe('PostDetailComponent (server platform)', () => {
           },
         },
         translationProvider(),
-        { provide: MarkdownService, useValue: { renderMarkdown, renderArticle: vi.fn() } },
+        { provide: MarkdownService, useValue: { renderMarkdown, renderArticle: vi.fn(), sanitizeHtml: (html: string) => html } },
         { provide: Router, useValue: { navigate: vi.fn() } },
         { provide: TuiToastService, useValue: { open: vi.fn().mockReturnValue(of(true)) } },
         { provide: SeoService, useValue: { setPageMeta, setArticleTags: vi.fn(), setTitle: vi.fn() } },
@@ -510,6 +538,26 @@ describe('PostDetailComponent (server platform)', () => {
     expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain('Test');
     expect(fixture.nativeElement.querySelector('article')?.innerHTML).toContain('Rendered');
     expect(setPageMeta).toHaveBeenCalledTimes(1);
+  });
+
+  it('stores the rendered html in transfer state so hydration skips re-rendering', async () => {
+    getBySlug.mockReturnValue(
+      of({
+        id: '1',
+        slug: 'test-post',
+        translations: { ENGLISH: { title: 'Test', content: 'Hello world', summary: 's' } },
+      }),
+    );
+    renderMarkdown.mockResolvedValue('<p>Hello world</p>');
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const stored = TestBed.inject(TransferState).get(
+      makeStateKey<string>('post-detail-html-test-post'),
+      null,
+    );
+    expect(stored).toBe('<p>Hello world</p>');
   });
 
   it('delivers the error branch on the server when the fetch fails', async () => {

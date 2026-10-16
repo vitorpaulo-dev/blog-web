@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, PLATFORM_ID, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { EMPTY, of, switchMap } from 'rxjs';
@@ -127,5 +127,25 @@ describe('ImageSignDirective', () => {
 		const img = fixture.nativeElement.querySelector('[data-testid="full"]') as HTMLImageElement;
 		expect(sign).not.toHaveBeenCalled();
 		expect(img.getAttribute('src')).toBe('https://cdn.example/photo.jpg');
+	});
+
+	it('renders the transparent placeholder instead of the raw key on the server', () => {
+		const sign = vi.fn().mockReturnValue(of({}));
+
+		TestBed.configureTestingModule({
+			imports: [HostComponent],
+			providers: [
+				{ provide: UploadService, useValue: { sign } },
+				{ provide: PLATFORM_ID, useValue: 'server' },
+			],
+		});
+
+		const fixture = TestBed.createComponent(HostComponent);
+		fixture.componentInstance.rawSrc.set('project/banner/a.png');
+		fixture.detectChanges();
+
+		const img = fixture.nativeElement.querySelector('[data-testid="raw"]') as HTMLImageElement;
+		expect(sign).not.toHaveBeenCalled();
+		expect(img.getAttribute('src')).toBe(TRANSPARENT_IMAGE_PLACEHOLDER);
 	});
 });

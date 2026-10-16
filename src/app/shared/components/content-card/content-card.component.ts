@@ -43,7 +43,6 @@ export interface ContentCardItem {
 					class="w-full md:w-56 lg:w-64 shrink-0 aspect-video rounded-xl border border-border bg-surface overflow-hidden">
 					<img
 						[appImageSign]="item().imageUrl ?? ''"
-						[src]="item().imageUrl"
 						[alt]="item().title"
 						loading="lazy"
 						class="w-full h-full object-cover group-hover:scale-105 transition-transform"
@@ -63,9 +62,9 @@ export interface ContentCardItem {
 					<span class="truncate">{{ item().metaText }}</span>
 				</div>
 
-				<h3 class="truncate text-lg font-semibold leading-tight text-foreground group-hover:text-accent transition-colors">
+				<h2 class="truncate text-lg font-semibold leading-tight text-foreground group-hover:text-accent transition-colors">
 					{{ item().title }}
-				</h3>
+				</h2>
 
 				<p class="text-sm text-muted leading-relaxed line-clamp-3 group-hover:text-muted/50 transition-all">
 					{{ item().excerpt }}

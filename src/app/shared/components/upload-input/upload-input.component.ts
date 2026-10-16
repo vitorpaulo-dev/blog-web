@@ -63,7 +63,6 @@ import { ImageSignDirective } from '../../directives/image-sign.directive';
 					<div class="relative aspect-video w-full overflow-hidden bg-black/20">
 						<img
 							[appImageSign]="imageUrl"
-							[src]="imageUrl"
 							[alt]="previewAlt() || ('shared.upload.previewAlt' | translate)"
 							loading="lazy"
 							class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"

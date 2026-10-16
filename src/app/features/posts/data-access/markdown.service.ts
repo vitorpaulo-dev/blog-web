@@ -29,6 +29,8 @@ interface CalloutToken extends Tokens.Generic {
 
 const CALLOUT_RE = /^ {0,3}>[ \t]*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)][ \t]*([^\n]*)\n((?:>.*(?:\n|$))*)/i;
 
+const MARKDOWN_ALLOWED_ATTR = ['class', 'data-mermaid', 'id'];
+
 @Injectable({ providedIn: 'root' })
 export class MarkdownService {
 	private readonly sanitizer = inject(DomSanitizer);
@@ -117,8 +119,12 @@ export class MarkdownService {
 			return raw;
 		}
 
+		return this.sanitizeHtml(raw);
+	}
+
+	sanitizeHtml(html: string): SafeHtml {
 		return this.sanitizer.bypassSecurityTrustHtml(
-			DOMPurify.sanitize(raw, { ADD_ATTR: ['class', 'data-mermaid', 'id'] })
+			DOMPurify.sanitize(html, { ADD_ATTR: MARKDOWN_ALLOWED_ATTR })
 		);
 	}
 

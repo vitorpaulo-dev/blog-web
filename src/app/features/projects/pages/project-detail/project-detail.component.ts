@@ -97,7 +97,6 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 				@if (p.bannerUrl) {
 					<img
 						[appImageSign]="p.bannerUrl"
-						[src]="p.bannerUrl"
 						[alt]="content()?.title"
 						class="mb-6 w-full aspect-video object-cover rounded-xl border border-border"
 					/>
@@ -107,7 +106,6 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 					@if (p.logoUrl) {
 						<img
 							[appImageSign]="p.logoUrl"
-							[src]="p.logoUrl"
 							[alt]="content()?.title"
 							class="size-16 rounded-xl border border-border object-cover flex-shrink-0"
 						/>
@@ -161,7 +159,7 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 					@for (author of p.authors; track author.id) {
 						<a tuiChip [href]="'/author/' + author.slug">
 							@if (author.avatarUrl) {
-								<img [src]="author.avatarUrl" class="rounded-xl" [alt]="author.name" loading="lazy" />
+								<img [src]="author.avatarUrl" class="rounded-xl" width="40" height="40" [alt]="author.name" loading="lazy" />
 							}
 							{{ author.name }}
 						</a>
