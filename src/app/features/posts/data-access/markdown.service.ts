@@ -1,4 +1,5 @@
-import { ApplicationRef, createComponent, ElementRef, EnvironmentInjector, inject, Injectable } from '@angular/core';
+import { ApplicationRef, createComponent, ElementRef, EnvironmentInjector, inject, Injectable, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { Marked, MarkedExtension, Tokens } from 'marked';
 import DOMPurify from 'dompurify';
@@ -46,6 +47,7 @@ export class MarkdownService {
 	private readonly appRef = inject(ApplicationRef);
 	private readonly environmentInjector = inject(EnvironmentInjector);
 	private readonly uploadService = inject(UploadService);
+	private readonly platformId = inject(PLATFORM_ID);
 
 	markdownRendererPromise: Promise<Marked> | null = null;
 
@@ -225,6 +227,10 @@ export class MarkdownService {
 	}
 
 	private sanitize(html: string): string {
+		if (!isPlatformBrowser(this.platformId)) {
+			return html;
+		}
+
 		return DOMPurify.sanitize(html, { ADD_ATTR: MARKDOWN_ALLOWED_ATTR });
 	}
 
