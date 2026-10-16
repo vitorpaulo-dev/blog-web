@@ -5,10 +5,13 @@ import {
 	effect,
 	ElementRef,
 	inject,
+	makeStateKey,
 	PendingTasks,
 	PLATFORM_ID,
 	SecurityContext,
 	signal,
+	StateKey,
+	TransferState,
 	ViewChild,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -136,7 +139,6 @@ import {
 				@if (p.bannerUrl) {
 					<img
 						[appImageSign]="p.bannerUrl"
-						[src]="p.bannerUrl"
 						[alt]="content()?.title"
 						class="w-full aspect-video object-cover rounded-xl border border-border mb-6"
 					/>
@@ -180,7 +182,7 @@ import {
 				<div class="mt-3 flex flex-wrap gap-2">
 					@for (author of p.authors; track author.id) {
 						<a tuiChip [href]="'/author/' + author.slug">
-							<img [src]="author.avatarUrl" class="rounded-xl" [alt]="author.name" loading="lazy" />
+							<img [src]="author.avatarUrl" class="rounded-xl" width="40" height="40" [alt]="author.name" loading="lazy" />
 
 							{{ author.name }}
 						</a>
@@ -201,7 +203,7 @@ import {
 					<aside class="hidden xl:block absolute right-full top-0 h-full w-[calc((100vw-56rem)/2-1rem)] mx-auto px-1 pr-6">
 						<div class="sticky top-24">
 							@if (toc().length > 0) {
-								<nav [attr.aria-label]="'posts.toc' | translate" class="mb-6 opacity-50 hover:opacity-100 transition-opacity duration-300 ease-in-out">
+								<nav [attr.aria-label]="'posts.toc' | translate" class="mb-6">
 									<p class="text-xs font-semibold uppercase tracking-wider text-muted mb-2">
 										{{ 'posts.toc' | translate }}
 									</p>
@@ -242,10 +244,10 @@ import {
 				@if (projects().length > 0) {
 					<hr class="my-8" />
 					<section>
-						<h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+						<h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
 							<hugeicons-icon [icon]="projectsIcon" [size]="20" [strokeWidth]="2.5" />
 							{{ 'posts.relatedProjects' | translate }}
-						</h3>
+						</h2>
 						<div class="flex flex-col gap-4">
 							@for (card of cardItems(); track card.slug; let index = $index) {
 								<app-content-card [item]="card" [showDivider]="index > 0" class="border border-accent-secondary rounded-lg" />
@@ -259,25 +261,25 @@ import {
 				<section class="flex flex-wrap items-center justify-between gap-2">
 					<div class="flex flex-wrap gap-2">
 						<button tuiChip class="inline-flex items-center gap-2" [disabled]="reactionBusy()" (click)="onReact('LOVE')">
-							<img loading="lazy" src="/reactions/red-heart.png" [alt]="'common.reactionLovedIt' | translate" class="w-5" />
+							<img loading="lazy" src="/reactions/red-heart.png" width="20" height="20" [alt]="'common.reactionLovedIt' | translate" class="w-5" />
 							<span>{{ 'common.reactionLovedIt' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.loveCount }}</span>
 						</button>
 
 						<button tuiChip class="inline-flex items-center gap-2" [disabled]="reactionBusy()" (click)="onReact('CELEBRATE')">
-							<img loading="lazy" src="/reactions/party-popper.png" [alt]="'common.reactionHellYeah' | translate" class="w-5" />
+							<img loading="lazy" src="/reactions/party-popper.png" width="20" height="20" [alt]="'common.reactionHellYeah' | translate" class="w-5" />
 							<span>{{ 'common.reactionHellYeah' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.celebrateCount }}</span>
 						</button>
 
 						<button tuiChip class="inline-flex items-center gap-2" [disabled]="reactionBusy()" (click)="onReact('GENIUS')">
-							<img loading="lazy" src="/reactions/exploding-head.png" [alt]="'common.reactionMindBlown' | translate" class="w-5" />
+							<img loading="lazy" src="/reactions/exploding-head.png" width="20" height="20" [alt]="'common.reactionMindBlown' | translate" class="w-5" />
 							<span>{{ 'common.reactionMindBlown' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.geniusCount }}</span>
 						</button>
 
 						<button tuiChip class="inline-flex items-center gap-2" [disabled]="reactionBusy()" (click)="onReact('HELP')">
-							<img loading="lazy" src="/reactions/suffering-cat.webp" [alt]="'common.reactionWhat' | translate" class="w-5" />
+							<img loading="lazy" src="/reactions/suffering-cat.webp" width="20" height="20" [alt]="'common.reactionWhat' | translate" class="w-5" />
 							<span>{{ 'common.reactionWhat' | translate }}</span>
 							<span class="font-mono text-muted text-xs">{{ p.helpCount }}</span>
 						</button>
@@ -292,7 +294,7 @@ import {
 				<hr class="my-8" />
 
 				<div>
-					<h3 class="text-lg font-semibold mb-3">{{ 'posts.comments' | translate }}</h3>
+					<h2 class="text-lg font-semibold mb-3">{{ 'posts.comments' | translate }}</h2>
 
 					<app-giscus></app-giscus>
 				</div>
@@ -314,12 +316,13 @@ export class PostDetailComponent implements AfterViewInit {
 	private readonly seoService = inject(SeoService);
 	private readonly sanitizer = inject(DomSanitizer);
 	private readonly pendingTasks = inject(PendingTasks);
+	private readonly transferState = inject(TransferState);
 
 	readonly isBrowser = isPlatformBrowser(this.platformId);
 
 	tocIndentClass(level: 1 | 2 | 3): string | null {
 		if (level === 2) return 'my-1 ml-4 text-muted/70';
-		if (level === 3) return 'my-1 ml-8 text-muted/60';
+		if (level === 3) return 'my-1 ml-8 text-muted/75';
 		return 'text-muted';
 	}
 
@@ -344,6 +347,9 @@ export class PostDetailComponent implements AfterViewInit {
 	readonly postListLink = computed(() => this.languageService.prefixed('/post'));
 	readonly projectListLink = computed(() => this.languageService.prefixed('/project'));
 	readonly slug = this.route.snapshot.paramMap.get('slug');
+	private readonly htmlTransferKey: StateKey<string> = makeStateKey<string>(
+		`post-detail-html-${this.route.snapshot.paramMap.get('slug')}`,
+	);
 
 	readonly postTags = computed<TagDto[]>(() => {
 		const post = this.post();
@@ -534,8 +540,24 @@ export class PostDetailComponent implements AfterViewInit {
 		this.error.set(null);
 
 		try {
+			const serverHtml = this.isBrowser
+				? this.transferState.get(this.htmlTransferKey, null)
+				: null;
+
+			if (serverHtml) {
+				this.html.set(this.markdownService.sanitizeHtml(serverHtml));
+				this.toc.set(extractToc(serverHtml));
+				this.loading.set(false);
+				return;
+			}
+
 			const rendered = await this.markdownService.renderMarkdown(content, this.isBrowser);
 			const htmlWithIds = withHeadingIds(this.asHtmlString(rendered));
+
+			if (!this.isBrowser) {
+				this.transferState.set(this.htmlTransferKey, htmlWithIds);
+			}
+
 			this.html.set(
 				this.isBrowser
 					? this.sanitizer.bypassSecurityTrustHtml(htmlWithIds)

@@ -33,7 +33,7 @@ export class DashboardLayoutComponent {
 		return user?.fullName ?? user?.firstName ?? this.translationService.translate('dashboard.nav.userFallback');
 	});
 
-	protected readonly userAvatar = computed(() => this.clerkService.user()?.imageUrl || 'vitor-avatar.png');
+	protected readonly userAvatar = computed(() => this.clerkService.user()?.imageUrl || 'vitor-avatar.webp');
 
 	protected openProfile(): void {
 		this.clerkService.openUserProfile();

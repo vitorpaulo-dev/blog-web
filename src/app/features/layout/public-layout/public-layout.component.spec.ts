@@ -3,6 +3,7 @@ import { PublicLayoutComponent } from './public-layout.component';
 import { provideTaiga } from '@taiga-ui/core';
 import { PostService } from '../../posts/data-access/post.service';
 import { LanguageService } from '../../../core/i18n/language.service';
+import { translationProvider } from '../../../core/i18n/testing';
 import { Router, Routes, provideRouter } from '@angular/router';
 import { Component } from '@angular/core';
 import { of } from 'rxjs';
@@ -53,6 +54,7 @@ describe('PublicLayoutComponent', () => {
         provideRouter(testRoutes),
         { provide: PostService, useValue: postServiceMock },
         { provide: LanguageService, useValue: languageServiceMock },
+        translationProvider(),
       ],
     }).compileComponents();
   });
@@ -81,6 +83,24 @@ describe('PublicLayoutComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     const buttons = compiled.querySelectorAll('button');
     expect(buttons.length).toBeGreaterThan(0);
+  });
+
+  it('gives header links and controls accessible names and uses a real button for search toggle', async () => {
+    const fixture = TestBed.createComponent(PublicLayoutComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    const linkedin = compiled.querySelector('a[href*="linkedin"]');
+    expect(linkedin?.getAttribute('aria-label')).toBe('LinkedIn');
+    expect(linkedin?.getAttribute('rel')).toContain('noopener');
+
+    const github = compiled.querySelector('a[href*="github.com"]');
+    expect(github?.getAttribute('aria-label')).toBe('GitHub');
+    expect(github?.getAttribute('rel')).toContain('noreferrer');
+
+    expect(compiled.querySelector('header a:not([href])')).toBeNull();
+    expect(compiled.querySelector('button[aria-label="Search"]')).toBeTruthy();
   });
 
   describe('switchLanguage', () => {

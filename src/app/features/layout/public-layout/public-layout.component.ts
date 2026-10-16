@@ -11,6 +11,7 @@ import { PostService } from '../../posts/data-access/post.service';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { Github01Icon, Linkedin01Icon, Search01Icon, StickyNote01Icon } from '@hugeicons/core-free-icons';
 import { LanguageService, type Language } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
 	selector: 'app-public-layout',
@@ -31,6 +32,7 @@ import { LanguageService, type Language } from '../../../core/i18n/language.serv
 		TuiTextfield,
 		TuiTitle,
 		HugeiconsIconComponent,
+		TranslatePipe,
 	],
 	templateUrl: './public-layout.component.html',
 	styleUrl: './public-layout.component.css',

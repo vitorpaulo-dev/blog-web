@@ -6,6 +6,7 @@ import {
 	OnDestroy,
 	OnInit,
 	PLATFORM_ID,
+	signal,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Subscription } from 'rxjs';
@@ -77,6 +78,7 @@ function getSignKey(img: HTMLImageElement): string | null {
 
 @Directive({
 	selector: 'img[appImageSign]',
+	host: { '[src]': 'resolvedSrc' },
 })
 export class ImageSignDirective implements OnInit, OnDestroy {
 	readonly appImageSign = input.required<string>();
@@ -86,7 +88,19 @@ export class ImageSignDirective implements OnInit, OnDestroy {
 		inject<ElementRef<HTMLImageElement>>(ElementRef);
 	private readonly platformId = inject(PLATFORM_ID);
 
+	private readonly signedSrc = signal<string | null>(null);
+
 	private subscription?: Subscription;
+
+	get resolvedSrc(): string {
+		const signed = this.signedSrc();
+		if (signed !== null) {
+			return signed;
+		}
+
+		const key = this.appImageSign();
+		return isRawKey(key) ? TRANSPARENT_IMAGE : key;
+	}
 
 	ngOnInit(): void {
 		if (!isPlatformBrowser(this.platformId)) {
@@ -105,10 +119,19 @@ export class ImageSignDirective implements OnInit, OnDestroy {
 
 		this.subscription = this.uploadService.sign([key]).subscribe({
 			next: (urls) => {
-				setSignedImage(img, urls[key]);
+				const url = urls[key];
+
+				if (url) {
+					this.signedSrc.set(url);
+					return;
+				}
+
+				applyFallback(img);
+				this.signedSrc.set(FALLBACK_URL);
 			},
 			error: () => {
 				applyFallback(img);
+				this.signedSrc.set(FALLBACK_URL);
 			},
 		});
 	}

@@ -1,6 +1,100 @@
+import { environment } from '../environments/environment';
+
 export interface SitemapItem {
 	slug: string;
 	updatedAt: string;
+}
+
+export interface SitemapCache {
+	posts: SitemapItem[];
+	projects: SitemapItem[];
+	fetchedAt: number;
+}
+
+const SITEMAP_TTL_MS = 60 * 60 * 1000;
+const SITEMAP_PAGE_SIZE = 50;
+
+interface SearchPageResponse {
+	content: Array<{ slug: string; updatedAt: string }>;
+	totalPages: number;
+}
+
+let sitemapCache: SitemapCache | null = null;
+
+export function clearSitemapCache(): void {
+	sitemapCache = null;
+}
+
+async function fetchSearchEntries(path: string): Promise<SitemapItem[]> {
+	const items: SitemapItem[] = [];
+	let totalPages = 1;
+	let page = 0;
+
+	while (page < totalPages) {
+		const response = await fetch(`${environment.apiBaseUrl}${path}`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				query: {},
+				page,
+				size: SITEMAP_PAGE_SIZE,
+				sort: 'createdAt',
+				direction: 'DESC',
+			}),
+		});
+
+		if (!response.ok) {
+			throw new Error(`Search request failed with status ${response.status}`);
+		}
+
+		const data = (await response.json()) as SearchPageResponse;
+		items.push(
+			...(data.content ?? []).map((item) => ({
+				slug: item.slug,
+				updatedAt: item.updatedAt,
+			})),
+		);
+		totalPages = data.totalPages ?? 1;
+		page += 1;
+	}
+
+	return items;
+}
+
+export async function loadSitemapCache(): Promise<SitemapCache> {
+	const now = Date.now();
+
+	if (!sitemapCache || now - sitemapCache.fetchedAt > SITEMAP_TTL_MS) {
+		try {
+			const [posts, projects] = await Promise.all([
+				fetchSearchEntries('/v1/post/search'),
+				fetchSearchEntries('/v1/project/search'),
+			]);
+
+			sitemapCache = { posts, projects, fetchedAt: now };
+		} catch (error) {
+			console.warn('[sitemap] Failed to refresh sitemap entries from the API', error);
+			sitemapCache = { posts: [], projects: [], fetchedAt: now };
+		}
+	}
+
+	return sitemapCache;
+}
+
+export function sharedLastmod(cache: SitemapCache): string {
+	let latest = '';
+
+	for (const item of [...cache.posts, ...cache.projects]) {
+		const date = new Date(item.updatedAt);
+		if (Number.isNaN(date.getTime())) {
+			continue;
+		}
+		if (!latest || date.getTime() > new Date(latest).getTime()) {
+			latest = item.updatedAt;
+		}
+	}
+
+	return latest ? lastModifiedDate(latest) : new Date(cache.fetchedAt).toISOString();
 }
 
 export type SitemapLocale = 'en' | 'pt';

@@ -132,7 +132,7 @@ describe('DashboardLayoutComponent', () => {
   it('should fall back to the local avatar asset when the user has no imageUrl', async () => {
     await setup({ fullName: 'Vitor Paulo' });
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('footer img')?.getAttribute('src')).toBe('vitor-avatar.png');
+    expect(compiled.querySelector('footer img')?.getAttribute('src')).toBe('vitor-avatar.webp');
   });
 
   it('should not render the view-site button', async () => {

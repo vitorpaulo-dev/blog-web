@@ -46,7 +46,7 @@ img.img-skeleton {
 		background-color: var(--color-surface);
 	}
 	50% {
-		background-color: var(--color-accent-secondary);
+		background-color: var(--color-border);
 	}
 }
 
@@ -59,6 +59,8 @@ img.img-skeleton {
 
 	/* Primary = visible/actionable purple */
 	--color-accent: #7c3aed;
+
+	--color-accent-text: #a78bfa;
 
 	/* Secondary = deeper purple */
 	--color-accent-secondary: #5b21b6;
@@ -173,7 +175,7 @@ img.img-skeleton {
 	--tui-text-primary-on-accent-2: #f5f3fa;
 
 	/* Primary action text */
-	--tui-text-action: #7c3aed;
+	--tui-text-action: #a78bfa;
 	--tui-text-action-hover: #8b5cf6;
 
 	/* Statuses */

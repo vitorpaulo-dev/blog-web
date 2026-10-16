@@ -142,12 +142,15 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 			<section aria-labelledby="about-title" class="mx-auto py-6 md:py-10 border-t border-border">
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
 					<img
-						src="vitor-avatar.png"
-						loading="lazy"
+						src="vitor-avatar.webp"
+						alt="Vitor Paulo"
+						width="800"
+						height="800"
+						fetchpriority="high"
 						class="col-span-1 md:col-span-1 select-none pointer-events-none object-cover rounded-xl border border-border bg-surface overflow-hidden flex items-center justify-center text-muted"
 					/>
 					<div class="col-span-1 md:col-span-2">
-						<p class="text-xs uppercase tracking-widest text-accent font-light mb-2 font-mono">{{ 'home.aboutEyebrow' | translate }}</p>
+						<p class="text-xs uppercase tracking-widest text-accent-text font-light mb-2 font-mono">{{ 'home.aboutEyebrow' | translate }}</p>
 						<h2 class="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{{ 'home.aboutHeading' | translate }}</h2>
 						<div class="mt-4 space-y-4 text-muted leading-relaxed">
 							<p class="whitespace-pre-line">{{ 'home.aboutBody' | translate }}</p>
@@ -162,7 +165,7 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 			>
 				<div class="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start lg:gap-16">
 					<div class="lg:col-span-7">
-						<p class="mb-3 font-mono text-xs font-medium uppercase tracking-wide text-accent">
+						<p class="mb-3 font-mono text-xs font-medium uppercase tracking-wide text-accent-text">
 							{{ 'home.newsletterEyebrow' | translate }}
 						</p>
 						<h2
@@ -198,7 +201,10 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 							class="mt-6 flex flex-col gap-6"
 						>
 							<div>
-								<p class="mb-2 font-mono text-xs uppercase tracking-widest text-muted">
+								<p
+									id="newsletter-email-label"
+									class="mb-2 font-mono text-xs uppercase tracking-widest text-muted"
+								>
 									{{ 'home.emailLabel' | translate }}
 								</p>
 								<tui-textfield>
@@ -207,6 +213,7 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 										type="email"
 										formControlName="email"
 										[placeholder]="'home.emailPlaceholder' | translate"
+										aria-labelledby="newsletter-email-label"
 										autocomplete="email"
 									/>
 								</tui-textfield>
@@ -240,11 +247,14 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 
 							<div class="flex flex-col gap-5 border-t border-border/60 pt-6">
 								<div>
-									<p class="mb-2 font-mono text-xs uppercase tracking-widest text-muted">
+									<p
+										id="newsletter-language-label"
+										class="mb-2 font-mono text-xs uppercase tracking-widest text-muted"
+									>
 										{{ 'home.languageLabel' | translate }}
 									</p>
 									<tui-textfield tuiChevron [content]="languageOption" [stringify]="stringifyLanguage">
-										<input tuiSelect formControlName="language" />
+										<input tuiSelect formControlName="language" aria-labelledby="newsletter-language-label" />
 										<tui-data-list-wrapper *tuiDropdown [itemContent]="languageOption" [items]="languages" />
 									</tui-textfield>
 								</div>
@@ -284,7 +294,7 @@ import { TurnstileService } from '../../../../core/captcha/turnstile.service';
 			</section>
 
 			<section aria-labelledby="opensource" class="py-6 md:py-10 border-t border-border">
-				<p class="text-xs uppercase tracking-widest text-accent font-light mb-2 font-mono">{{ 'home.builtInOpenEyebrow' | translate }}</p>
+				<p class="text-xs uppercase tracking-widest text-accent-text font-light mb-2 font-mono">{{ 'home.builtInOpenEyebrow' | translate }}</p>
 				<h1 class="font-bold text-2xl whitespace-pre-line">
 					{{ 'home.builtInOpenHeading' | translate }}
 				</h1>
@@ -347,7 +357,7 @@ export class HomePageComponent {
 
 	protected readonly frequencyPillActive = 'bg-accent font-bold text-foreground';
 
-	protected readonly frequencyPillIdle = 'font-medium text-muted hover:text-accent';
+	protected readonly frequencyPillIdle = 'font-medium text-muted hover:text-accent-text';
 
 	selectFrequency(frequency: SubscriberFrequency): void {
 		this.newsletterForm.controls.frequency.setValue(frequency);
