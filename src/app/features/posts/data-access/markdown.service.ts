@@ -38,6 +38,8 @@ const IMG_TAG_RE = /<img\b[^>]*>/gi;
 const IMG_SRC_RE = /\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
 const IMG_LOADING_RE = /\sloading\s*=\s*(?:"[^"]*"|'[^']*')/i;
 
+const ALLOWED_IMAGE_HOSTS = ['cdn.vitorpaulo.dev'];
+
 @Injectable({ providedIn: 'root' })
 export class MarkdownService {
 	private readonly sanitizer = inject(DomSanitizer);
@@ -124,7 +126,7 @@ export class MarkdownService {
 		});
 
 		if (!isBrowser) {
-			return this.finalizeContentImages(raw);
+			return this.finalizeContentImages(this.sanitize(raw));
 		}
 
 		return this.sanitizer.bypassSecurityTrustHtml(
@@ -166,11 +168,20 @@ export class MarkdownService {
 
 	private finalizeImageTag(tag: string, urls: Record<string, string>, isFirst: boolean): string {
 		let result = tag;
-		const key = this.rawImageKey(result);
+		const src = this.imageSrc(result);
+		const key = src && isRawKey(src) ? src : null;
+
+		let safeSrc: string | null = null;
 
 		if (key) {
 			const url = urls[key];
-			result = result.replace(IMG_SRC_RE, `src="${url ? url.replace(/&/g, '&amp;') : TRANSPARENT_IMAGE}"`);
+			safeSrc = this.isAllowedImageUrl(url) ? url : TRANSPARENT_IMAGE;
+		} else if (src === null || (src !== TRANSPARENT_IMAGE && !this.isAllowedImageUrl(src))) {
+			safeSrc = TRANSPARENT_IMAGE;
+		}
+
+		if (safeSrc !== null) {
+			result = result.replace(IMG_SRC_RE, `src="${safeSrc.replace(/&/g, '&amp;')}"`);
 		}
 
 		if (isFirst) {
@@ -190,9 +201,25 @@ export class MarkdownService {
 		return result;
 	}
 
-	private rawImageKey(imgTag: string): string | null {
+	private isAllowedImageUrl(value: string | null | undefined): boolean {
+		if (!value || /["'<>\s]/.test(value) || !/^https:\/\//i.test(value)) {
+			return false;
+		}
+
+		try {
+			return ALLOWED_IMAGE_HOSTS.includes(new URL(value).hostname);
+		} catch {
+			return false;
+		}
+	}
+
+	private imageSrc(imgTag: string): string | null {
 		const src = imgTag.match(IMG_SRC_RE);
-		const value = src ? src[1] ?? src[2] : null;
+		return src ? src[1] ?? src[2] : null;
+	}
+
+	private rawImageKey(imgTag: string): string | null {
+		const value = this.imageSrc(imgTag);
 
 		return isRawKey(value) ? value : null;
 	}

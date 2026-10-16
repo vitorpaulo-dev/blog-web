@@ -39,7 +39,7 @@ describe('MarkdownService', () => {
 	let sign: ReturnType<typeof vi.fn>;
 
 	beforeEach(() => {
-		sign = vi.fn().mockReturnValue(of({ 'post/banner/a.png': 'https://cdn.example/banner/a.png' }));
+		sign = vi.fn().mockReturnValue(of({ 'post/banner/a.png': 'https://cdn.vitorpaulo.dev/banner/a.png' }));
 		TestBed.configureTestingModule({ providers: [uploadServiceMock(sign)] });
 		service = TestBed.inject(MarkdownService);
 		sanitizer = TestBed.inject(DomSanitizer);
@@ -66,13 +66,13 @@ describe('MarkdownService', () => {
 		expect(html).toContain('class="mermaid"');
 	});
 
-	it('returns an untrusted plain string on the server so bindings sanitize it', async () => {
+	it('returns an untrusted plain string on the server so the binding sanitizes it', async () => {
 		const result = await service.renderMarkdown('anything', false);
 
 		expect(typeof result).toBe('string');
-		expect(result).toContain('src="https://cdn.example/banner/a.png"');
+		expect(result).toContain('src="https://cdn.vitorpaulo.dev/banner/a.png"');
 		expect(result).toContain('fetchpriority="high"');
-		expect(result).toContain('<script>alert(2)</script>');
+		expect(result).not.toContain('post/banner/a.png');
 	});
 });
 
@@ -178,20 +178,20 @@ describe('MarkdownService finalizeContentImages', () => {
 	});
 
 	it('replaces raw content keys with signed urls and escapes ampersands', async () => {
-		sign.mockReturnValue(of({ 'post/content/a.png': 'https://cdn.example/a.png?X-Amz-S=1&t=2' }));
+		sign.mockReturnValue(of({ 'post/content/a.png': 'https://cdn.vitorpaulo.dev/a.png?X-Amz-S=1&t=2' }));
 
 		const html = await service.finalizeContentImages('<p><img src="post/content/a.png" alt="A"></p>');
 
 		expect(sign).toHaveBeenCalledWith(['post/content/a.png']);
-		expect(html).toContain('src="https://cdn.example/a.png?X-Amz-S=1&amp;t=2"');
+		expect(html).toContain('src="https://cdn.vitorpaulo.dev/a.png?X-Amz-S=1&amp;t=2"');
 		expect(html).toContain('fetchpriority="high"');
 		expect(html).not.toContain('loading=');
 	});
 
 	it('marks the first content image eager and every later image lazy', async () => {
 		sign.mockReturnValue(of({
-			'post/content/a.png': 'https://cdn.example/a.png',
-			'project/content/b.png': 'https://cdn.example/b.png',
+			'post/content/a.png': 'https://cdn.vitorpaulo.dev/a.png',
+			'project/content/b.png': 'https://cdn.vitorpaulo.dev/b.png',
 		}));
 
 		const html = await service.finalizeContentImages(
@@ -207,7 +207,7 @@ describe('MarkdownService finalizeContentImages', () => {
 	});
 
 	it('signs each distinct key once and normalizes later images to lazy', async () => {
-		sign.mockReturnValue(of({ 'post/content/a.png': 'https://cdn.example/a.png' }));
+		sign.mockReturnValue(of({ 'post/content/a.png': 'https://cdn.vitorpaulo.dev/a.png' }));
 
 		const html = await service.finalizeContentImages(
 			'<img src="post/content/a.png"><img src="post/content/a.png"><img src="https://example.com/x.png">',
@@ -220,14 +220,14 @@ describe('MarkdownService finalizeContentImages', () => {
 	});
 
 	it('uses the transparent placeholder when signing returns no url', async () => {
-		sign.mockReturnValue(of({ 'post/content/a.png': '', 'post/content/b.png': 'https://cdn.example/b.png' }));
+		sign.mockReturnValue(of({ 'post/content/a.png': '', 'post/content/b.png': 'https://cdn.vitorpaulo.dev/b.png' }));
 
 		const html = await service.finalizeContentImages(
 			'<img src="post/content/a.png"><img src="post/content/b.png">',
 		);
 
 		expect(html).toContain(`src="${TRANSPARENT_PLACEHOLDER}"`);
-		expect(html).toContain('src="https://cdn.example/b.png"');
+		expect(html).toContain('src="https://cdn.vitorpaulo.dev/b.png"');
 	});
 
 	it('falls back to placeholders for every raw key when signing fails', async () => {
@@ -245,12 +245,12 @@ describe('MarkdownService finalizeContentImages', () => {
 		sign.mockReturnValue(of({}));
 
 		const html = await service.finalizeContentImages(
-			'<img src="https://cdn.example/a.png"><img src="https://cdn.example/b.png">',
+			'<img src="https://cdn.vitorpaulo.dev/a.png"><img src="https://cdn.vitorpaulo.dev/b.png">',
 		);
 
 		expect(sign).not.toHaveBeenCalled();
-		expect(html).toContain('<img fetchpriority="high" src="https://cdn.example/a.png">');
-		expect(html).toContain('<img loading="lazy" src="https://cdn.example/b.png">');
+		expect(html).toContain('<img fetchpriority="high" src="https://cdn.vitorpaulo.dev/a.png">');
+		expect(html).toContain('<img loading="lazy" src="https://cdn.vitorpaulo.dev/b.png">');
 	});
 
 	it('leaves html without images untouched', async () => {
@@ -265,7 +265,7 @@ describe('MarkdownService finalizeContentImages', () => {
 		const sanitizer = TestBed.inject(DomSanitizer);
 
 		const safe = await service.restoreServerHtml(
-			'<img src="https://cdn.example/a.png?sig=1&t=2"><script>alert(1)</script><img src="https://cdn.example/b.png">',
+			'<img src="https://cdn.vitorpaulo.dev/a.png?sig=1&t=2"><script>alert(1)</script><img src="https://cdn.vitorpaulo.dev/b.png">',
 		);
 
 		const html = sanitizer.sanitize(SecurityContext.HTML, safe) ?? '';
