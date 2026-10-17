@@ -157,12 +157,12 @@ import { TagService, TagDto } from '../../../tags/data-access/tag.service';
 
 				<div class="mt-3 flex flex-wrap gap-2">
 					@for (author of p.authors; track author.id) {
-						<a tuiChip [href]="'/author/' + author.slug">
+						<p tuiChip>
 							@if (author.avatarUrl) {
 								<img [src]="author.avatarUrl" class="rounded-xl" width="40" height="40" [alt]="author.name" loading="lazy" />
 							}
 							{{ author.name }}
-						</a>
+						</p>
 					}
 					
 					@for (tag of projectTags(); track tag.id) {
